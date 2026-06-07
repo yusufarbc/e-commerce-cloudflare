@@ -10,7 +10,7 @@
     "dev:client": "npm run dev --prefix client",
     "dev:admin": "npm run dev --prefix admin",
     "db:seed": "npm run seed --prefix server/api",
-    "db:migrate": "npx wrangler d1 migrations apply DB --local --prefix server/api"
+    "db:migrate": "npx wrangler d1 migrations apply DB --local --cwd server/api"
   },
   "devDependencies": {
     "concurrently": "^8.2.0"

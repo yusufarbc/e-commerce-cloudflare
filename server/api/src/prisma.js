@@ -23,10 +23,25 @@ export function getPrisma(env) {
  */
 const prismaProxy = new Proxy({}, {
     get(target, prop) {
-        if (!cachedPrisma) {
-            throw new Error("Prisma client has not been initialized with env yet! Run getPrisma(env) in middleware.");
+        if (cachedPrisma) {
+            return Reflect.get(cachedPrisma, prop);
         }
-        return Reflect.get(cachedPrisma, prop);
+        
+        // Return a lazy proxy for the database model (e.g. prisma.urun)
+        // so that it can be passed to repositories at startup without throwing an error.
+        return new Proxy({}, {
+            get(modelTarget, modelProp) {
+                if (!cachedPrisma) {
+                    throw new Error("Prisma client has not been initialized with env yet! Run getPrisma(env) in middleware.");
+                }
+                const model = Reflect.get(cachedPrisma, prop);
+                const val = Reflect.get(model, modelProp);
+                if (typeof val === 'function') {
+                    return val.bind(model);
+                }
+                return val;
+            }
+        });
     }
 });
 

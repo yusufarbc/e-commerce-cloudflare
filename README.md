@@ -14,31 +14,25 @@ Below is the serverless architecture diagram showing how the client storefront, 
 
 ```mermaid
 graph TD
-    %% Styling
-    classDef default fill:#1e1e24,stroke:#555,stroke-width:1px,color:#fff;
-    classDef highlight fill:#deff36,stroke:#191919,stroke-width:2px,color:#191919;
-    classDef serverless fill:#f6821f,stroke:#fff,stroke-width:1px,color:#fff;
-    
-    %% Nodes
-    Storefront["🛍️ Storefront (React Pages)"]:::highlight
-    Admin["⚙️ Admin Dashboard (React Pages)"]:::highlight
-    API["⚡ Workers API (Hono)"]:::serverless
-    
-    D1[("💾 Cloudflare D1 (SQLite)")]:::serverless
-    R2["📦 Cloudflare R2 (Assets)"]:::serverless
-    
-    Brevo["📧 Brevo Email API (REST)"]
-    Param["💳 Param POS Gateway (SOAP)"]
-    
-    %% Relationships
-    Storefront -->|HTTPS REST API| API
-    Admin -->|JWT Auth & REST API| API
-    Admin -->|Resizes & Direct Upload| R2
-    
-    API -->|Prisma ORM / D1 Adapter| D1
-    API -->|R2 Binding / Direct PUT| R2
-    API -->|Fetch API (HTTP REST)| Brevo
-    API -->|SOAP XML & Web Crypto| Param
+    classDef cfPages fill:#deff36,stroke:#191919,stroke-width:2px,color:#191919
+    classDef cfWorkers fill:#f6821f,stroke:#fff,stroke-width:1px,color:#fff
+    classDef external fill:#1e1e24,stroke:#555,stroke-width:1px,color:#ccc
+
+    Storefront["Storefront\nReact PWA - Cloudflare Pages"]:::cfPages
+    Admin["Admin Dashboard\nReact SPA - Cloudflare Pages"]:::cfPages
+    API["Workers API\nHono - Cloudflare Workers"]:::cfWorkers
+    D1[("D1 Database\nCloudflare SQLite")]:::cfWorkers
+    R2["R2 Object Storage\nCloudflare Assets"]:::cfWorkers
+    Brevo["Brevo\nTransactional Email API"]:::external
+    Param["Param POS\nPayment Gateway"]:::external
+
+    Storefront -->|HTTPS REST| API
+    Admin -->|JWT Auth REST| API
+    Admin -->|Client-side Resize and Upload| R2
+    API -->|Prisma D1 Adapter| D1
+    API -->|R2 Binding PUT| R2
+    API -->|Fetch HTTP REST| Brevo
+    API -->|SOAP XML via Fetch| Param
 ```
 
 ---
