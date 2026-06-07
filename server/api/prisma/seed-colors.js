@@ -9,7 +9,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const colorsDir = process.env.RENKLER_DIR
   ? path.resolve(process.env.RENKLER_DIR)
-  : path.resolve(__dirname, '..', '..', '..', 'renkler');
+  : path.resolve(__dirname, 'data');
 const files = [
   path.join(colorsDir, 'polisan-ic-cephe-renkler.csv'),
   path.join(colorsDir, 'polisan-dis-cephe-renkler.csv')

@@ -1,16 +1,17 @@
 import prisma from '../prisma.js';
+import { config } from '../config.js';
 
 /**
- * Service responsible for order business logic, payment processing, and checkout operations.
- * Handles the complete order lifecycle from creation to completion.
+ * Service for managing order processing and checkout operations.
+ * Houses business rules including validations, shipping cost calculations, payment integration, and email triggers.
  */
 export class OrderService {
     /**
      * Creates an instance of OrderService.
-     * @param {import('../repositories/orderRepository.js').OrderRepository} orderRepository - Order repository for data access.
-     * @param {import('./productService.js').ProductService} productService - Product service for price validation.
-     * @param {import('./paramService.js').ParamService} paramService - Param POS payment gateway service.
-     * @param {import('./emailService.js').EmailService} emailService - Email notification service.
+     * @param {import('../repositories/orderRepository.js').OrderRepository} orderRepository - Order repository.
+     * @param {import('./productService.js').ProductService} productService - Product service.
+     * @param {import('./paramService.js').ParamService} paramService - POS service.
+     * @param {import('./emailService.js').EmailService} emailService - Email service.
      */
     constructor(orderRepository, productService, paramService, emailService) {
         this.orderRepository = orderRepository;
@@ -20,21 +21,20 @@ export class OrderService {
     }
 
     /**
-     * Processes checkout request, validates cart items, calculates totals, and initiates payment.
-     * @param {Object} checkoutData - Cart items, guest info, and invoice details.
+     * Initiates checkout session, calculates total pricing/shipping, and records a PENDING order.
+     * @param {Object} checkoutData - Items list and shipping/invoice billing details.
      * @returns {Promise<Object>} Checkout result with payment page URL.
      */
     async processCheckout(checkoutData) {
         const { items, guestInfo: customerInfo } = checkoutData;
 
-        // 1. Toplam Hesaplama ve Doğrulama
+        // 1. Total Price Calculation and Validations
         let subTotal = 0;
         let totalDesi = 0;
         let totalWeight = 0;
-        const indexItems = []; // Prisma veritabanı için
+        const indexItems = []; // Array to map line items for Prisma schema
 
-
-        // Ürünleri doğrula ve toplamı hesapla
+        // Validate products and calculate total weight/prices
         for (const item of items) {
             const product = await this.productService.getProductById(item.id);
             if (product) {
@@ -45,18 +45,20 @@ export class OrderService {
                 const selectedColor = typeof item.selectedColor === 'string' ? item.selectedColor.trim() : '';
 
                 if (productColors.length > 0 && !selectedColor) {
-                    throw new Error(`${product.ad} için renk seçimi zorunludur.`);
+                    throw new Error(`Color selection is required for ${product.ad}.`);
                 }
 
                 if (selectedColor && !productColors.includes(selectedColor)) {
-                    throw new Error(`${product.ad} için seçilen renk geçersiz.`);
+                    throw new Error(`Selected color for ${product.ad} is invalid.`);
                 }
 
-                // Find color code from palette if available
-                let finalColorName = selectedColor || null;
-                if (selectedColor && Array.isArray(product.renkKartelasi)) {
-                    const colorRecord = product.renkKartelasi.find(c => c.name === selectedColor);
-                    if (colorRecord && colorRecord.code) {
+                // Resolve color code from palette if available
+                let finalColorName = selectedColor;
+                if (selectedColor) {
+                    const colorRecord = await prisma.renkKartelasi.findFirst({
+                        where: { name: selectedColor, aktif: true }
+                    });
+                    if (colorRecord) {
                         finalColorName = `${selectedColor} (${colorRecord.code})`;
                     }
                 }
@@ -64,7 +66,7 @@ export class OrderService {
                 subTotal += unitPrice * item.quantity;
                 totalWeight += Number(product.agirlik || 1) * item.quantity;
 
-                // Veritabanı Kaydı İçin (Snapshot Dahil)
+                // Build database snapshot record representation
                 indexItems.push({
                     urunId: product.id,
                     secilenRenk: finalColorName,
@@ -75,31 +77,20 @@ export class OrderService {
                     urunFiyatSnapshot: unitPrice,
                     toplamFiyat: unitPrice * item.quantity
                 });
-
             }
         }
 
-        // Safeguard: Block orders > 100kg
+        // Safeguard: Block orders exceeding 100kg limits
         if (totalWeight > 100) {
-            throw new Error('Sipariş toplam ağırlığı 100kg üzerindedir. Lütfen toplu satış ve özel nakliye için satis@e-market.com veya WhatsApp hattımız üzerinden iletişime geçiniz.');
+            throw new Error('Order total weight exceeds 100kg limit. Please contact satis@e-market.com or our WhatsApp line for bulk cargo shipping pricing.');
         }
 
-
-
-        // ... (existing helper methods if any)
-
-        // Kargo Ücreti Mantığı (Kademeli Fiyatlandırma - Dinamik)
+        // Shipping Fee Logic (Dynamic Tier Pricing)
         let settings = await prisma.sistemAyarlari.findUnique({ where: { id: 'global-settings' } });
-
         const ucretsizKargoAltLimit = settings && settings.ucretsizKargoAltLimit ? Number(settings.ucretsizKargoAltLimit) : 5000.00;
-
         let shippingFee = 0;
 
-        // Ücretsiz Kargo Kontrolu
-        // Ücretsiz Kargo Mantığı İptal Edildi - Her Sipariş Ücretli
-        // if (subTotal >= ucretsizKargoAltLimit) { ... } logic removed
-
-        // Dinamik Fiyat Listesi Kontrolü
+        // Dynamic price list tiers from dashboard settings
         let priceList = settings && settings.kargoFiyatListesi ? settings.kargoFiyatListesi : null;
         if (typeof priceList === 'string') {
             try {
@@ -110,26 +101,22 @@ export class OrderService {
         }
 
         if (Array.isArray(priceList) && priceList.length > 0) {
-            // Listeyi ağırlığa göre sırala (küçükten büyüğe)
-            // JSON format: [{ "maxWeight": 1, "price": 50 }, { "maxWeight": 2, "price": 100 }]
+            // Sort list by weight tier ascending
             const sortedList = [...priceList].sort((a, b) => a.maxWeight - b.maxWeight);
 
-            // Uygun aralığı bul
+            // Find matching weight tier
             const matchingTier = sortedList.find(tier => totalWeight <= tier.maxWeight);
 
             if (matchingTier) {
                 shippingFee = Number(matchingTier.price);
             } else {
-                // If weight exceeds the max defined tier, calculate based on the last tier + extra cost
+                // If weight exceeds the maximum tier, calculate base price plus surcharge per extra kg
                 const lastTier = sortedList[sortedList.length - 1];
                 const extraWeight = Math.ceil(totalWeight - lastTier.maxWeight);
-
-                // Add 15 TL for every extra kg (Matching Frontend Logic)
                 shippingFee = Number(lastTier.price) + (extraWeight * 15.00);
             }
         } else {
-            // Fallback: Kod içi varsayılan tablo (Admin panelinden ayar yapılmamışsa)
-            // Aralıklar: 0-1, 1-2, 2-3, 3-4, 4-5, 5-10, 10-20, 20-35, 35-50, 50-75, 75-100
+            // Fallback: Hardcoded default tiers if system configurations are missing
             if (totalWeight <= 1) shippingFee = 65.00;
             else if (totalWeight <= 2) shippingFee = 85.00;
             else if (totalWeight <= 3) shippingFee = 105.00;
@@ -142,42 +129,39 @@ export class OrderService {
             else if (totalWeight <= 75) shippingFee = 1200.00;
             else if (totalWeight <= 100) shippingFee = 1600.00;
             else {
-                // 100 kg üzeri: Otomatik hesaplama yok, iletişime geçilmeli
                 shippingFee = null;
             }
         }
 
+        if (shippingFee === null) {
+            throw new Error('Shipping calculations failed for this weight. Contact customer support.');
+        }
 
-        // Küsürat hatalarını önle
+        // Round shipping fee to avoid float precision errors
         shippingFee = Number(shippingFee.toFixed(2));
-
         const toplamTutar = subTotal + shippingFee;
 
-
-
-        // 2. Bekleyen Siparişi Oluştur (PENDING Order)
+        // 2. Generate and Insert Pending Order Record
         const { isCorporate, companyName, taxOffice, taxNumber } = checkoutData.invoiceInfo || {};
 
-        // Kısa Sipariş Numarası Üret (Örn: 738492)
+        // Generate short 6-digit reference number
         const siparisNumarasi = Math.floor(100000 + Math.random() * 900000).toString();
 
-        // Ad Soyad Ayrıştırma
+        // Split Full Name into First and Last names
         const fullNameParts = customerInfo.name.trim().split(' ');
         const soyad = fullNameParts.length > 1 ? fullNameParts.pop() : '';
         const ad = fullNameParts.join(' ');
 
-        // Telefon Formatlama (+90...)
-        let rawPhone = customerInfo.phone.replace(/\s/g, ''); // Boşlukları kaldır
+        // Format Turkish phone numbers into standard format
+        let rawPhone = customerInfo.phone.replace(/\s/g, '');
         if (rawPhone.startsWith('0')) {
             rawPhone = '+90' + rawPhone.substring(1);
         } else if (!rawPhone.startsWith('+')) {
-            rawPhone = '+90' + rawPhone; // 5XX... -> +905XX... varsayımı
+            rawPhone = '+90' + rawPhone;
         }
 
         const ulke = 'Türkiye';
-
-        // Güvenli Takip Tokeni Oluştur (UUID)
-        const takipTokeni = crypto.randomUUID();
+        const takipTokeni = crypto.randomUUID(); // Secure unique tracking token
 
         const orderData = {
             toplamTutar,
@@ -185,7 +169,7 @@ export class OrderService {
             durum: 'BEKLEMEDE',
             siparisNumarasi: siparisNumarasi,
             takipTokeni: takipTokeni,
-            ad: ad || customerInfo.name, // Ayrıştırma başarısızsa tam adı kullan
+            ad: ad || customerInfo.name,
             soyad: soyad,
             eposta: customerInfo.email,
             telefon: rawPhone,
@@ -205,34 +189,31 @@ export class OrderService {
 
         const siparis = await this.orderRepository.createOrder(orderData);
 
-        // 3. Return order details - Param requires card info from frontend
-        // Payment will be initiated when customer submits card form
         return {
             status: 'pending_payment',
             orderId: siparis.id,
             orderNumber: siparis.siparisNumarasi,
             total: siparis.toplamTutar,
-            message: 'Sipariş oluşturuldu, ödeme bekleniyor'
+            message: 'Order created successfully, awaiting payment'
         };
     }
 
     /**
-     * Initiates Param payment with card details.
-     * Called after customer submits card information.
+     * Initiates Param payment gateway session with card details.
      * @param {string} orderId - Order UUID.
      * @param {Object} cardInfo - Card details (cardNumber, cardExpMonth, cardExpYear, cardCvc).
-     * @param {Object} buyerInfo - Buyer info (name, surname, phone, ip).
-     * @returns {Promise<Object>} UCD_HTML for 3D redirect or error.
+     * @param {Object} buyerInfo - Buyer details (IP address, etc.).
+     * @returns {Promise<Object>} 3D secure redirect HTML or error object.
      */
     async initiateParamPayment(orderId, cardInfo, buyerInfo) {
         const siparis = await this.orderRepository.getOrderById(orderId);
 
         if (!siparis) {
-            throw new Error('Sipariş bulunamadı.');
+            throw new Error('Order not found.');
         }
 
         if (siparis.durum !== 'BEKLEMEDE') {
-            throw new Error('Bu sipariş için ödeme yapılamaz.');
+            throw new Error('This order is not eligible for payment.');
         }
 
         try {
@@ -249,7 +230,7 @@ export class OrderService {
 
             const paymentResult = await this.paramService.startPaymentProcess(siparis, [], buyer);
 
-            // Store dekont ID for later verification
+            // Store verification code/token
             if (paymentResult.dekontId) {
                 await this.orderRepository.updatePaymentToken(siparis.id, paymentResult.dekontId);
             }
@@ -261,23 +242,20 @@ export class OrderService {
             };
         } catch (error) {
             console.error('Param Payment Error:', error);
-            return { status: 'failure', errorMessage: error.message || 'Ödeme başlatılamadı.' };
+            return { status: 'failure', errorMessage: error.message || 'Payment initiation failed.' };
         }
     }
 
     /**
-     * Completes payment after successful Param 3D callback.
-     * Verifies callback data and finalizes order.
-     * @param {Object} callbackData - POST data from Param callback.
-     * @returns {Promise<Object>} Completion result with order details.
+     * Completes and finalizes payment after successful 3D secure callback.
+     * @param {Object} callbackData - Callback parameters sent from Param gateway.
+     * @returns {Promise<Object>} Payment completion results.
      */
     async completePayment(callbackData) {
         try {
-            // 1. Verify callback with Param service
             const result = this.paramService.verifyCallback(callbackData);
 
             if (result.status === 'success') {
-                // 2. Find order by siparisNumarasi from callback (Param sends our order number as 'orderId')
                 console.log('Completing payment, Order Number:', result.siparisNumarasi);
 
                 const siparis = await this.orderRepository.getOrderByNumber(result.siparisNumarasi);
@@ -286,16 +264,17 @@ export class OrderService {
                     throw new Error('Order not found for the given payment.');
                 }
 
-                // 3. Update order with payment ID
+                // Update payment transaction token
                 await this.orderRepository.updatePaymentToken(siparis.id, result.paymentId);
 
-                // 4. Finalize order (update status)
+                // Finalize order status and manage inventory
                 await this.orderRepository.finalizeOrder(siparis.id);
 
-                // 5. Send confirmation email
+                // Fetch finalized order details to trigger email dispatches
                 const freshOrder = await this.orderRepository.getOrderById(siparis.id);
 
                 if (freshOrder) {
+                    // Send customer order confirmation
                     await this.emailService.sendOrderConfirmation(freshOrder.eposta, freshOrder.ad, {
                         id: freshOrder.id,
                         orderNumber: freshOrder.siparisNumarasi,
@@ -304,7 +283,7 @@ export class OrderService {
                         items: freshOrder.kalemler
                     });
 
-                    // Internal notification for seller team with full order/address details.
+                    // Send internal new order alert to seller team
                     await this.emailService.sendSellerNewOrderNotification(freshOrder);
                 }
 
@@ -317,7 +296,7 @@ export class OrderService {
             } else {
                 return {
                     status: 'failure',
-                    errorMessage: result.errorMessage || 'Ödeme doğrulanamadı.',
+                    errorMessage: result.errorMessage || 'Payment verification failed.',
                     orderNumber: result.siparisNumarasi
                 };
             }
@@ -328,34 +307,34 @@ export class OrderService {
     }
 
     /**
-     * Cancels an order with a specified reason and processes refund if applicable.
-     * @param {string} token - Order tracking token.
-     * @param {string} reason - Cancellation reason.
-     * @returns {Promise<Object>} Success message with refund status.
+     * Cancels an order, releases hold slots, and refunds payment if applicable.
+     * @param {string} token - Secure tracking token.
+     * @param {string} reason - Cancellation reason statement.
+     * @returns {Promise<Object>} Result message with status.
      */
     async cancelOrder(token, reason) {
         const order = await this.orderRepository.getOrderByTrackingToken(token);
 
         if (!order) {
-            throw new Error('Sipariş bulunamadı.');
+            throw new Error('Order not found.');
         }
 
         if (order.durum === 'IPTAL_EDILDI') {
-            throw new Error('Sipariş zaten iptal edilmiş.');
+            throw new Error('Order is already canceled.');
         }
 
         if (order.durum === 'KARGOLANDI' || order.durum === 'TESLIM_EDILDI' || order.durum === 'TAMAMLANDI') {
-            throw new Error('Kargoya verilmiş veya tamamlanmış siparişler iptal edilemez.');
+            throw new Error('Shipped or completed orders cannot be canceled.');
         }
 
         const hasNonReturnableItems = Array.isArray(order.kalemler)
             && order.kalemler.some((line) => line.iadeyeUygunMuSnapshot === false || line.urun?.iadeImkaniVar === false);
 
         if (hasNonReturnableItems) {
-            throw new Error('Bu siparişte özel yapım/iade edilemez ürün olduğu için iptal edilemez.');
+            throw new Error('This order contains custom or non-returnable items and cannot be canceled.');
         }
 
-        console.log(`[Sipariş İptali] Sipariş: ${order.siparisNumarasi}, Sebep: ${reason}`);
+        console.log(`[Order Cancel] Order: ${order.siparisNumarasi}, Reason: ${reason}`);
 
         let refundStatus = 'NONE';
 
@@ -366,23 +345,21 @@ export class OrderService {
                 console.log(`[Param Refund] Successful, Order: ${order.siparisNumarasi}`);
             } catch (error) {
                 console.error(`[Param Refund Failed] Order: ${order.siparisNumarasi}`, error);
-                // Continue with cancellation even if refund fails, but log it
-                // Admin notification mechanism should be added for production
             }
         }
 
         await this.orderRepository.cancelOrder(order.id);
 
-        // İptal Maili Gönder
+        // Send cancellation email to customer
         if (order.eposta) {
             await this.emailService.sendCancellationNotification(order.eposta, order.ad, {
                 orderNumber: order.siparisNumarasi,
                 refundStatus: refundStatus,
-                trackingToken: token // trackingToken is passed as 'token' argument to this method
+                trackingToken: token
             });
         }
 
-        return { status: 'success', message: 'Sipariş başarıyla iptal edildi ve ücret iadesi işlemi başlatıldı.' };
+        return { status: 'success', message: 'Order successfully canceled and refund process initiated.' };
     }
 
     /**
@@ -397,7 +374,7 @@ export class OrderService {
     /**
      * Retrieves an order by ID with optional email verification.
      * @param {string} id - Order UUID.
-     * @param {string} [email] - Email address for verification (optional).
+     * @param {string} [email] - Email address for verification.
      * @returns {Promise<Object|null>} Order object or null if not found.
      * @throws {Error} If email is provided but doesn't match.
      */
@@ -406,7 +383,7 @@ export class OrderService {
         if (!siparis) return null;
 
         if (email && siparis.eposta !== email) {
-            throw new Error('Erişim reddedildi: E-posta adresi eşleşmiyor.');
+            throw new Error('Access denied: Email address does not match.');
         }
 
         return siparis;

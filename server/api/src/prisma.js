@@ -4,7 +4,7 @@ import { PrismaD1 } from '@prisma/adapter-d1';
 let cachedPrisma = null;
 
 /**
- * Cloudflare D1 için Prisma Client'ı başlatır ve önbelleğe alır.
+ * Initializes and caches the Prisma Client configured with the Cloudflare D1 Adapter.
  * @param {Object} env - Hono request environment variables (c.env).
  * @returns {PrismaClient}
  */
@@ -17,9 +17,9 @@ export function getPrisma(env) {
 }
 
 /**
- * Global Prisma Client Proxy nesnesi.
- * Repositories ve Services içindeki mevcut kodların değişmeden çalışmasını sağlar.
- * İlk HTTP isteğinde middleware tarafından getPrisma(c.env) çağrıldığında initialize olur.
+ * Global Prisma Client Proxy.
+ * Ensures repository and service files do not need to be refactored to consume a dynamic client.
+ * Initialized during the first HTTP request middleware execution.
  */
 const prismaProxy = new Proxy({}, {
     get(target, prop) {

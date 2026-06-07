@@ -1,23 +1,23 @@
 import { BaseRepository } from './baseRepository.js';
 
 /**
- * Sipariş veri etkileşimlerini yöneten Repository.
- * Temel CRUD işlemleri için BaseRepository'yi genişletir.
+ * Repository for handling Order data interactions.
+ * Extends BaseRepository for standard CRUD operations.
  */
 export class OrderRepository extends BaseRepository {
     /**
-     * OrderRepository örneği oluşturur.
-     * @param {import('@prisma/client').PrismaClient} dbClient - Veritabanı istemcisi (PrismaClient).
+     * Creates an instance of OrderRepository.
+     * @param {import('@prisma/client').PrismaClient} dbClient - Database client (PrismaClient).
      */
     constructor(dbClient) {
         super(dbClient.siparis);
-        this.prisma = dbClient; // Transaction işlemleri için gerekli
+        this.prisma = dbClient; // Required for transaction queries
     }
 
     /**
-     * İlişkili kalemleriyle birlikte yeni bir sipariş oluşturur.
-     * @param {Object} orderData - Kalemleri de içeren sipariş verisi.
-     * @returns {Promise<Object>} Oluşturulan sipariş.
+     * Creates a new order with its associated line items.
+     * @param {Object} orderData - Order data containing line items.
+     * @returns {Promise<Object>} The created order.
      */
     async createOrder(orderData) {
         return this.model.create({
@@ -26,11 +26,11 @@ export class OrderRepository extends BaseRepository {
     }
 
     /**
-     * Ödeme ve sipariş durumunu günceller.
-     * @param {string} id - Sipariş ID.
-     * @param {string} paymentStatus - Yeni ödeme durumu.
-     * @param {string} status - Yeni sipariş durumu.
-     * @returns {Promise<Object>} Güncellenen sipariş.
+     * Updates payment and order status.
+     * @param {string} id - Order ID.
+     * @param {string} paymentStatus - New payment status.
+     * @param {string} status - New order status.
+     * @returns {Promise<Object>} The updated order.
      */
     async updateStatus(id, paymentStatus, status) {
         return this.model.update({
@@ -43,9 +43,9 @@ export class OrderRepository extends BaseRepository {
     }
 
     /**
-     * ID'ye göre siparişi, kalemleri ve ürün detaylarıyla birlikte getirir.
-     * @param {string} id - Sipariş ID.
-     * @returns {Promise<Object>} Sipariş detayları.
+     * Retrieves an order by ID with line items and product details.
+     * @param {string} id - Order ID.
+     * @returns {Promise<Object>} Detailed order object.
      */
     async getOrderById(id) {
         return this.model.findUnique({
@@ -61,15 +61,15 @@ export class OrderRepository extends BaseRepository {
     }
 
     /**
-     * Siparişi tamamlar: Durumu 'HAZIRLANIYOR' yapar, ödemeyi başarılı işaretler ve stoğu düşer.
-     * Atomikliği sağlamak için veritabanı "transaction" kullanır.
+     * Finalizes the order: marks status as 'HAZIRLANIYOR', payment as 'SUCCESS', and manages inventory/invoicing.
+     * Uses db transaction to ensure atomicity.
      * 
-     * @param {string} id - Sipariş ID
-     * @returns {Promise<Object>} Güncellenen Sipariş
+     * @param {string} id - Order ID.
+     * @returns {Promise<Object>} The finalized order.
      */
     async finalizeOrder(id) {
         return this.prisma.$transaction(async (tx) => {
-            // 1. Sipariş kalemlerini ve o anki ürün bilgilerini getir
+            // 1. Fetch order lines and snapshot product info
             const siparis = await tx.siparis.findUnique({
                 where: { id },
                 include: { kalemler: true }
@@ -77,25 +77,25 @@ export class OrderRepository extends BaseRepository {
 
             if (!siparis) throw new Error('Sipariş bulunamadı');
 
-            // 2. Stok takibi yapılmadığı için stok düşürme işlemi kaldırıldı.
-            // (Eskiden burada kalem.adet kadar stok düşürülüyordu)
+            // 2. Inventory tracking is disabled so stock deduction is skipped.
+            // (Previously, quantity was deducted from product stock here)
 
-            // 3. Sipariş Durumunu Güncelle
+            // 3. Update Order Status
             return tx.siparis.update({
                 where: { id },
                 data: {
                     durum: 'HAZIRLANIYOR',
                     odemeDurumu: 'SUCCESS',
-                    faturaDurumu: 'DUZENLENMEDI' // Fatura sonradan düzenlenecek
+                    faturaDurumu: 'DUZENLENMEDI' // Invoice to be issued later
                 }
             });
         });
     }
 
     /**
-     * Sipariş için ödeme tokenini günceller.
-     * @param {string} id - Sipariş ID.
-     * @param {string} token - Iyzico'dan gelen ödeme tokeni.
+     * Updates the payment token for an order.
+     * @param {string} id - Order ID.
+     * @param {string} token - Payment gateway token.
      */
     async updatePaymentToken(id, token) {
         return this.model.update({
@@ -105,9 +105,9 @@ export class OrderRepository extends BaseRepository {
     }
 
     /**
-     * Ödeme tokenine göre siparişi bulur.
-     * @param {string} token - Ödeme tokeni.
-     * @returns {Promise<Object>} Sipariş.
+     * Finds an order by its payment token.
+     * @param {string} token - Payment token.
+     * @returns {Promise<Object>} Order.
      */
     async getOrderByPaymentToken(token) {
         return this.model.findUnique({
@@ -117,9 +117,9 @@ export class OrderRepository extends BaseRepository {
     }
 
     /**
-     * Sipariş numarasına göre siparişi getirir.
-     * @param {string} orderNumber - Sipariş numarası (6 haneli).
-     * @returns {Promise<Object>} Sipariş ve kalemleri.
+     * Finds an order by its 6-digit order number.
+     * @param {string} orderNumber - 6-digit order number.
+     * @returns {Promise<Object>} Order with line items.
      */
     async getOrderByNumber(orderNumber) {
         return this.model.findUnique({
@@ -135,9 +135,9 @@ export class OrderRepository extends BaseRepository {
     }
 
     /**
-     * Takip tokenine göre siparişi getirir.
-     * @param {string} token - Takip tokeni.
-     * @returns {Promise<Object>} Sipariş ve kalemleri.
+     * Finds an order by its secure tracking token.
+     * @param {string} token - Tracking UUID token.
+     * @returns {Promise<Object>} Order with line items.
      */
     async getOrderByTrackingToken(token) {
         return this.model.findUnique({
@@ -153,9 +153,9 @@ export class OrderRepository extends BaseRepository {
     }
 
     /**
-     * Bir siparişi IPTAL_EDILDI durumuna çeker.
-     * @param {string} id - Sipariş ID.
-     * @returns {Promise<Object>} Güncellenen sipariş.
+     * Sets an order status to IPTAL_EDILDI (Canceled).
+     * @param {string} id - Order ID.
+     * @returns {Promise<Object>} The updated order.
      */
     async cancelOrder(id) {
         return this.model.update({

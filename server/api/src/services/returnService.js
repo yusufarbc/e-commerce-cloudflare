@@ -2,13 +2,13 @@ import prisma from '../prisma.js';
 
 export class ReturnService {
     /**
-     * İade talebi oluşturur.
+     * Creates a return request.
      * @param {Object} data - { token, iadeTipi, sebepAciklamasi, fotografUrls }
      */
     async createReturnRequest(data) {
         const { token, iadeTipi, sebepAciklamasi, fotografUrls } = data;
 
-        // 1. Siparişi Bul
+        // 1. Find the Order
         const order = await prisma.siparis.findUnique({
             where: { takipTokeni: token },
             include: {
@@ -25,7 +25,7 @@ export class ReturnService {
             throw new Error('Sipariş bulunamadı.');
         }
 
-        // 2. Kontroller
+        // 2. Run validations
         if (order.durum !== 'TESLIM_EDILDI') {
             throw new Error('Sadece teslim edilmiş siparişler için iade talebi oluşturulabilir.');
         }
@@ -41,11 +41,9 @@ export class ReturnService {
             throw new Error('Bu siparişte özel yapım/iade edilemez ürün bulunduğu için iade talebi oluşturulamaz.');
         }
 
-        // 3. 14 Gün Kuralı
+        // 3. 14 Days Rule validation
         if (!order.teslimTarihi) {
-            // Eğer teslim tarihi yoksa, bir hata veya varsayılan bir davranış (örneğin delivered status update time kullanılmalıydı)
-            // Ancak şimdilik güvenli olması için teslim tarihinin kayıtlı olmasını zorunlu kılıyoruz.
-            // Eski siparişler için bu sorun olabilir, manuel düzeltme gerekebilir.
+            // If delivery date is missing, raise error. We enforce delivery date to be registered.
             throw new Error('Sipariş teslim tarihi bilgisi eksik, iade işlemi başlatılamıyor. Lütfen destek ile iletişime geçin.');
         }
 
@@ -56,7 +54,7 @@ export class ReturnService {
             throw new Error('İade süresi (14 gün) dolmuştur.');
         }
 
-        // 4. İade Talebini Oluştur
+        // 4. Create the Return Request
         const iade = await prisma.iadeTalebi.create({
             data: {
                 siparisId: order.id,
@@ -67,7 +65,7 @@ export class ReturnService {
             }
         });
 
-        // 5. Sipariş Durumunu Güncelle
+        // 5. Update Order Status
         await prisma.siparis.update({
             where: { id: order.id },
             data: { durum: 'IADE_TALEP_EDILDI' }
@@ -80,7 +78,7 @@ export class ReturnService {
     }
 
     /**
-     * Siparişin iade durumunu getirir.
+     * Retrieves the return status of an order.
      */
     async getReturnStatus(token) {
         const order = await prisma.siparis.findUnique({

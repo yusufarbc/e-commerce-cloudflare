@@ -153,7 +153,7 @@ export class EmailService {
     }
 
     /**
-     * Müşteriye sipariş iptal bilgilendirmesi gönderir.
+     * Sends order cancellation email notification to customer.
      */
     async sendCancellationNotification(toEmail, toName, details) {
         const isRefunded = details.refundStatus === 'SUCCESS';

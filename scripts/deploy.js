@@ -10,6 +10,12 @@ const rl = readline.createInterface({
 
 const askQuestion = (query) => new Promise((resolve) => rl.question(query, resolve));
 
+/**
+ * Executes a terminal command synchronously and returns the output.
+ * @param {string} command - Command to run.
+ * @param {string} cwd - Current working directory.
+ * @returns {Object} Execution result wrapper.
+ */
 function runCommand(command, cwd = process.cwd()) {
     console.log(`\n\x1b[36mRunning: ${command} (in ${cwd})\x1b[0m`);
     try {
@@ -24,107 +30,107 @@ function runCommand(command, cwd = process.cwd()) {
 
 async function main() {
     console.log('\x1b[35m========================================================\x1b[0m');
-    console.log('\x1b[35m⚡ E-MARKET CLOUDFLARE SUNUCUSUZ DEPLOY SİHİRBAZI ⚡\x1b[0m');
+    console.log('\x1b[35m⚡ E-MARKET CLOUDFLARE SERVERLESS DEPLOY WIZARD ⚡\x1b[0m');
     console.log('\x1b[35m========================================================\x1b[0m\n');
 
-    // 1. Kimlik Doğrulama Kontrolü
-    console.log('1. Cloudflare kimlik doğrulaması kontrol ediliyor...');
+    // 1. Authentication Check
+    console.log('1. Checking Cloudflare authentication status...');
     const authCheck = runCommand('npx wrangler whoami');
     if (!authCheck.success || authCheck.output.includes('You are not authenticated')) {
-        console.log('\n\x1b[33m[!] Cloudflare hesabınız açık değil. Lütfen tarayıcıda açılacak sayfadan giriş yapın.\x1b[0m');
+        console.log('\n\x1b[33m[!] You are not authenticated with Cloudflare. Opening login page in your browser...\x1b[0m');
         runCommand('npx wrangler login');
         
-        // Yeniden kontrol et
+        // Recheck authentication status
         const secondAuthCheck = runCommand('npx wrangler whoami');
         if (!secondAuthCheck.success || secondAuthCheck.output.includes('You are not authenticated')) {
-            console.log('\x1b[31m[❌] Giriş başarısız oldu. Lütfen terminalden "npx wrangler login" komutunu el ile çalıştırıp tekrar deneyin.\x1b[0m');
+            console.log('\x1b[31m[❌] Login failed. Please run "npx wrangler login" manually in your terminal and try again.\x1b[0m');
             rl.close();
             return;
         }
     }
-    console.log('\x1b[32m[✓] Kimlik doğrulaması başarılı.\x1b[0m');
+    console.log('\x1b[32m[✓] Authentication successful.\x1b[0m');
 
-    // 2. D1 Veritabanı Oluşturma
-    const createDbAnswer = await askQuestion('\n2. D1 Veritabanı oluşturulsun mu? (y/n): ');
+    // 2. D1 Database Creation
+    const createDbAnswer = await askQuestion('\n2. Do you want to create a D1 Database? (y/n): ');
     let dbId = '';
     if (createDbAnswer.toLowerCase() === 'y') {
         const dbName = 'ecommerce-d1';
-        console.log(`D1 Veritabanı oluşturuluyor: ${dbName}...`);
+        console.log(`Creating D1 database: ${dbName}...`);
         const dbResult = runCommand(`npx wrangler d1 create ${dbName}`);
         
         if (dbResult.success) {
-            // Extract UUID using regex
+            // Extract UUID from output
             const match = dbResult.output.match(/database_id = "([a-f0-9-]+)"/);
             if (match && match[1]) {
                 dbId = match[1];
-                console.log(`\x1b[32m[✓] Veritabanı başarıyla oluşturuldu. ID: ${dbId}\x1b[0m`);
+                console.log(`\x1b[32m[✓] Database created successfully. ID: ${dbId}\x1b[0m`);
                 
-                // Update wrangler.toml
+                // Update wrangler.toml with the newly generated D1 database_id
                 const tomlPath = path.join(process.cwd(), 'server', 'api', 'wrangler.toml');
                 if (fs.existsSync(tomlPath)) {
                     let tomlContent = fs.readFileSync(tomlPath, 'utf8');
                     tomlContent = tomlContent.replace(/database_id = ".*"/, `database_id = "${dbId}"`);
                     fs.writeFileSync(tomlPath, tomlContent, 'utf8');
-                    console.log('\x1b[32m[✓] wrangler.toml dosyası yeni database_id ile güncellendi.\x1b[0m');
+                    console.log('\x1b[32m[✓] Updated wrangler.toml with new database_id.\x1b[0m');
                 }
             } else {
-                console.log('\x1b[33m[!] Veritabanı oluşturuldu ancak ID tespit edilemedi. Lütfen elle wrangler.toml dosyasına ekleyin.\x1b[0m');
+                console.log('\x1b[33m[!] Database created but UUID could not be resolved from output. Please write it manually in wrangler.toml.\x1b[0m');
             }
         } else {
-            console.log('\x1b[31m[❌] Veritabanı oluşturulamadı. Zaten varsa veya hata oluştuysa manuel devam edebilirsiniz.\x1b[0m');
+            console.log('\x1b[31m[❌] Failed to create D1 Database. If it already exists, you can proceed manually.\x1b[0m');
         }
     }
 
-    // 3. R2 Bucket Oluşturma
-    const createR2Answer = await askQuestion('\n3. R2 Görsel Depolama Bucket oluşturulsun mu? (y/n): ');
+    // 3. R2 Bucket Creation
+    const createR2Answer = await askQuestion('\n3. Do you want to create an R2 Object Storage Bucket for images? (y/n): ');
     if (createR2Answer.toLowerCase() === 'y') {
-        console.log('R2 Bucket oluşturuluyor: ecommerce-r2...');
+        console.log('Creating R2 bucket: ecommerce-r2...');
         const r2Result = runCommand('npx wrangler r2 bucket create ecommerce-r2');
         if (r2Result.success) {
-            console.log('\x1b[32m[✓] R2 Bucket başarıyla oluşturuldu.\x1b[0m');
+            console.log('\x1b[32m[✓] R2 Bucket created successfully.\x1b[0m');
         } else {
-            console.log('\x1b[33m[!] R2 Bucket oluşturulamadı veya zaten mevcut.\x1b[0m');
+            console.log('\x1b[33m[!] R2 Bucket could not be created or already exists.\x1b[0m');
         }
     }
 
-    // 4. Veritabanı Göçlerini Uygulama (Migrations Apply)
-    const migrateAnswer = await askQuestion('\n4. Veritabanı şeması Cloudflare D1 (Remote) üzerine uygulansın mı? (y/n): ');
+    // 4. Remote Migrations
+    const migrateAnswer = await askQuestion('\n4. Do you want to apply database migrations to remote D1? (y/n): ');
     if (migrateAnswer.toLowerCase() === 'y') {
-        console.log('Uzak D1 veritabanı şeması güncelleniyor (Remote Migrations Apply)...');
+        console.log('Applying migrations to remote database (D1)...');
         const migrateResult = runCommand('npx wrangler d1 migrations apply DB --remote --cwd server/api');
         if (migrateResult.success) {
-            console.log('\x1b[32m[✓] Veritabanı göçleri başarıyla uygulandı.\x1b[0m');
+            console.log('\x1b[32m[✓] Database migrations applied successfully.\x1b[0m');
         } else {
-            console.log('\x1b[31m[❌] Veritabanı göçleri uygulanırken hata oluştu.\x1b[0m');
+            console.log('\x1b[31m[❌] Error applying database migrations.\x1b[0m');
         }
     }
 
-    // 5. Workers API Deploy Etme
-    const deployApiAnswer = await askQuestion('\n5. Workers API (Hono) Cloudflare üzerine deploy edilsin mi? (y/n): ');
+    // 5. Workers API Deployment
+    const deployApiAnswer = await askQuestion('\n5. Do you want to deploy the Workers API (Hono) to Cloudflare? (y/n): ');
     let apiEndpoint = '';
     if (deployApiAnswer.toLowerCase() === 'y') {
-        console.log('Workers API deploy ediliyor...');
+        console.log('Deploying Workers API...');
         const deployResult = runCommand('npx wrangler deploy --cwd server/api');
         if (deployResult.success) {
-            // Find url from output: https://ecommerce-api.yusufarbc.workers.dev
+            // Match Workers url format e.g. https://ecommerce-api.username.workers.dev
             const match = deployResult.output.match(/https:\/\/[a-z0-9-.]+\.workers\.dev/);
             if (match) {
                 apiEndpoint = match[0];
-                console.log(`\x1b[32m[✓] Workers API başarıyla yüklendi! URL: ${apiEndpoint}\x1b[0m`);
+                console.log(`\x1b[32m[✓] Workers API deployed successfully! URL: ${apiEndpoint}\x1b[0m`);
             } else {
-                console.log('\x1b[32m[✓] Workers API başarıyla yüklendi! Lütfen Cloudflare panelinizden URL\'i kontrol edin.\x1b[0m');
+                console.log('\x1b[32m[✓] Workers API deployed successfully! Check your Cloudflare dashboard for the URL.\x1b[0m');
             }
         } else {
-            console.log('\x1b[31m[❌] API deploy edilirken hata oluştu.\x1b[0m');
+            console.log('\x1b[31m[❌] Failed to deploy Workers API.\x1b[0m');
         }
     }
 
     if (!apiEndpoint) {
-        apiEndpoint = await askQuestion('\n[?] Lütfen Workers API (Hono) adresinizi girin (Örn: https://ecommerce-api.kullanici.workers.dev): ');
+        apiEndpoint = await askQuestion('\n[?] Please enter your Workers API base URL (e.g. https://ecommerce-api.user.workers.dev): ');
     }
 
-    // 6. _redirects Dosyalarını Oluşturma (CORS ve Proxy İçin)
-    console.log('\n6. _redirects dosyaları proxy kuralları ile oluşturuluyor...');
+    // 6. Write _redirects Files (Prevents CORS via Pages Proxy Yönlendirme)
+    console.log('\n6. Generating _redirects proxy rules...');
     const redirectContent = `/api/* ${apiEndpoint}/api/:splat 200\n`;
     
     // Client public
@@ -137,45 +143,45 @@ async function main() {
     if (!fs.existsSync(adminPublicDir)) fs.mkdirSync(adminPublicDir, { recursive: true });
     fs.writeFileSync(path.join(adminPublicDir, '_redirects'), redirectContent, 'utf8');
     
-    console.log('\x1b[32m[✓] _redirects dosyaları client/public ve admin/public klasörlerine eklendi.\x1b[0m');
+    console.log('\x1b[32m[✓] _redirects files generated in client/public and admin/public.\x1b[0m');
 
-    // 7. Önyüz Derleme ve Dağıtım (Build & Pages Deploy)
-    const deployPagesAnswer = await askQuestion('\n7. Storefront ve Admin panelleri build edilip Cloudflare Pages\'e yüklensin mi? (y/n): ');
+    // 7. Pages Build & Deploy
+    const deployPagesAnswer = await askQuestion('\n7. Do you want to build and deploy storefront and admin panels to Cloudflare Pages? (y/n): ');
     if (deployPagesAnswer.toLowerCase() === 'y') {
         // Client Build
-        console.log('Storefront (client) derleniyor...');
+        console.log('Building storefront client app...');
         const clientBuild = runCommand('npm.cmd run build --prefix client');
         
         // Admin Build
-        console.log('Admin Dashboard derleniyor...');
+        console.log('Building admin dashboard app...');
         const adminBuild = runCommand('npm.cmd run build --prefix admin');
 
         if (clientBuild.success) {
-            console.log('Storefront (client) Cloudflare Pages\'e deploy ediliyor...');
+            console.log('Deploying Storefront to Cloudflare Pages...');
             const clientDeploy = runCommand('npx wrangler pages deploy client/dist --project-name e-market-client');
             if (clientDeploy.success) {
-                console.log('\x1b[32m[✓] Storefront başarıyla deploy edildi!\x1b[0m');
+                console.log('\x1b[32m[✓] Storefront deployed successfully!\x1b[0m');
             }
         } else {
-            console.log('\x1b[31m[❌] Storefront build edilemediğinden deploy atlandı.\x1b[0m');
+            console.log('\x1b[31m[❌] Skipping Storefront deployment due to build error.\x1b[0m');
         }
 
         if (adminBuild.success) {
-            console.log('Admin Dashboard Cloudflare Pages\'e deploy ediliyor...');
+            console.log('Deploying Admin Dashboard to Cloudflare Pages...');
             const adminDeploy = runCommand('npx wrangler pages deploy admin/dist --project-name e-market-admin');
             if (adminDeploy.success) {
-                console.log('\x1b[32m[✓] Admin Dashboard başarıyla deploy edildi!\x1b[0m');
+                console.log('\x1b[32m[✓] Admin Dashboard deployed successfully!\x1b[0m');
             }
         } else {
-            console.log('\x1b[31m[❌] Admin Dashboard build edilemediğinden deploy atlandı.\x1b[0m');
+            console.log('\x1b[31m[❌] Skipping Admin Dashboard deployment due to build error.\x1b[0m');
         }
     }
 
     console.log('\n\x1b[35m========================================================\x1b[0m');
-    console.log('\x1b[32m🎉 DEPLOYMENT TAMAMLANDI! 🎉\x1b[0m');
-    console.log(`\x1b[36m- API Worker Adresi: ${apiEndpoint}\x1b[0m`);
-    console.log('\x1b[36m- Storefront Müşteri Sayfası: https://e-market-client.pages.dev\x1b[0m');
-    console.log('\x1b[36m- Admin Dashboard Paneli: https://e-market-admin.pages.dev\x1b[0m');
+    console.log('\x1b[32m🎉 DEPLOYMENT WIZARD COMPLETE! 🎉\x1b[0m');
+    console.log(`\x1b[36m- API Worker Endpoint: ${apiEndpoint}\x1b[0m`);
+    console.log('\x1b[36m- Storefront Pages: https://e-market-client.pages.dev\x1b[0m');
+    console.log('\x1b[36m- Admin Pages: https://e-market-admin.pages.dev\x1b[0m');
     console.log('\x1b[35m========================================================\x1b[0m\n');
 
     rl.close();
