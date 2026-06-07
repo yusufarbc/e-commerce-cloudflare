@@ -31,8 +31,6 @@
     "helmet": "^7.0.0",
     "hono": "^4.12.23",
     "jsonwebtoken": "^9.0.1",
-    "nodemailer": "^7.0.12",
-    "sib-api-v3-sdk": "^8.5.0",
     "soap": "^1.6.3",
     "zod": "^3.21.4"
   },

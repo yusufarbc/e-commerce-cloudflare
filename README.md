@@ -23,7 +23,7 @@ graph TD
     API["Workers API\nHono - Cloudflare Workers"]:::cfWorkers
     D1[("D1 Database\nCloudflare SQLite")]:::cfWorkers
     R2["R2 Object Storage\nCloudflare Assets"]:::cfWorkers
-    Brevo["Brevo\nTransactional Email API"]:::external
+    Email["Email Sending\nCloudflare Email Routing"]:::cfWorkers
     Param["Param POS\nPayment Gateway"]:::external
 
     Storefront -->|HTTPS REST| API
@@ -31,7 +31,7 @@ graph TD
     Admin -->|Client-side Resize and Upload| R2
     API -->|Prisma D1 Adapter| D1
     API -->|R2 Binding PUT| R2
-    API -->|Fetch HTTP REST| Brevo
+    API -->|Send Email Binding| Email
     API -->|SOAP XML via Fetch| Param
 ```
 
@@ -46,7 +46,7 @@ graph TD
 | **API Backend** | Hono Framework | Ultra-fast REST API designed for V8 isolates, providing zero cold start. |
 | **Database** | Cloudflare D1 & Prisma ORM | Serverless SQL database using Prisma with `@prisma/adapter-d1`. |
 | **Asset Storage** | Cloudflare R2 | S3-compatible object storage for product images with zero egress fees. |
-| **Integrations** | Web Crypto & Fetch | Native REST integrations for Brevo API (emails) & Param POS Gateway (3D secure payments). |
+| **Integrations** | Cloudflare Email & Web Crypto | Native Workers Email Sending (send_email) & Param POS Gateway (3D secure payments). |
 
 ---
 
@@ -114,15 +114,25 @@ Your local endpoints will be available at:
 Create a `.env` file inside `server/api/` based on `server/api/.env.example`:
 
 - `ADMIN_JWT_SECRET`: Secret key used for signing administrator session tokens.
-- `BREVO_API_KEY`: API token from Brevo for sending transactional emails.
-- `SMTP_SENDER`: Email sender header format (e.g., `E-Market <siparis@e-market-domain.com>`).
+- `SMTP_SENDER`: Email sender header format (e.g., `E-Market <siparis@e-market-domain.com>`). Note that this sender email must be verified on your Cloudflare account.
 - `PARAM_CLIENT_CODE`, `PARAM_CLIENT_USERNAME`, `PARAM_CLIENT_PASSWORD`, `PARAM_GUID`: Parameters for the Param POS Gateway interface.
 
 ---
 
 ## ☁️ Deploying to Cloudflare
 
-### 1. D1 Database Creation
+### Automatic Deployment (Recommended)
+You can deploy the entire stack (D1 database, R2 bucket, Hono API Worker, Storefront Pages, and Admin Pages) with a single interactive script:
+```bash
+npm run deploy
+```
+The wizard will automatically check your authentication, guide you through creating cloud resources, update configuration files, set up proxy redirects, build, and deploy all components.
+
+---
+
+### Manual Deployment Steps (Alternative)
+
+#### 1. D1 Database Creation
 Create your production D1 Database in Cloudflare:
 ```bash
 npx wrangler d1 create ecommerce-d1
@@ -140,21 +150,26 @@ Apply migrations to production D1:
 npx wrangler d1 migrations apply ecommerce-d1 --remote
 ```
 
-### 2. R2 Storage Bucket Creation
+#### 2. R2 Storage Bucket Creation
 Create an R2 Bucket for product assets:
 ```bash
 npx wrangler r2 bucket create ecommerce-r2
 ```
 
-### 3. Deploy API Worker
+#### 3. Deploy API Worker
 Deploy the Workers API using wrangler:
 ```bash
 cd server/api
 npx wrangler deploy
 ```
 
-### 4. Deploy Storefront & Admin to Cloudflare Pages
-Deploy `client/dist` and `admin/dist` directly as Cloudflare Pages projects using the Cloudflare dashboard or Wrangler:
+#### 4. Configure Redirects and Deploy Frontends to Cloudflare Pages
+Create a `_redirects` file in `client/public/_redirects` and `admin/public/_redirects` pointing to your deployed API URL to avoid CORS:
+```text
+/api/* https://your-workers-api-url.workers.dev/api/:splat 200
+```
+
+Build and deploy `client/dist` and `admin/dist` directly as Cloudflare Pages projects:
 ```bash
 # Build Client & Admin
 npm run build --prefix client

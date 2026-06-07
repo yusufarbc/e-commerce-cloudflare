@@ -35,3 +35,6 @@ migrations_dir = "migrations"
 binding = "IMAGES_BUCKET"
 bucket_name = "ecommerce-r2"
 preview_bucket_name = "ecommerce-r2"
+
+[[send_email]]
+name = "EMAIL"

@@ -32,12 +32,15 @@ export const config = {
   adminJwtSecret: 'secure-admin-token-secret-12345'
 };
 
+export let currentEnv = null;
+
 /**
  * Initializes the global config object with Workers environment variables in-place.
  * Preserves nested object references so that static DI modules remain updated.
  * @param {Object} env - Worker env object (c.env).
  */
 export function initConfig(env) {
+  currentEnv = env;
   config.port = env.PORT || 8787;
   config.corsOrigin = env.CORS_ORIGIN || '*';
   config.nodeEnv = env.NODE_ENV || 'development';

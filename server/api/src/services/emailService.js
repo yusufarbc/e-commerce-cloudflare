@@ -1,4 +1,4 @@
-import { config } from '../config.js';
+import { config, currentEnv } from '../config.js';
 
 /**
  * Service for handling email notifications via Brevo (Sendinblue) HTTP API.
@@ -31,44 +31,40 @@ export class EmailService {
     }
 
     /**
-     * Sends an email via Brevo REST API.
+     * Sends an email via Cloudflare Workers Email Routing Send Email API.
      * @private
      */
     async _sendMail({ toEmail, toName, subject, htmlContent }) {
-        const apiKey = config.brevo.apiKey;
-        if (!apiKey) {
-            console.warn('[Email] Email skipped: BREVO_API_KEY is not set');
+        const env = currentEnv;
+        if (!env || !env.EMAIL) {
+            console.warn('[Email] Email skipped: Cloudflare EMAIL binding is not configured in c.env');
             return;
         }
 
-        const payload = {
-            sender: this.sender,
-            to: [{ email: toEmail, name: toName || toEmail }],
-            replyTo: this.replyTo,
-            subject: subject,
-            htmlContent: htmlContent
-        };
-
         try {
-            const response = await fetch('https://api.brevo.com/v3/smtp/email', {
-                method: 'POST',
-                headers: {
-                    'accept': 'application/json',
-                    'content-type': 'application/json',
-                    'api-key': apiKey
-                },
-                body: JSON.stringify(payload)
-            });
+            const { EmailMessage } = await import("cloudflare:email");
+            
+            // Build raw RFC 822 / MIME format message
+            const rawMime = [
+                `From: ${this.sender.name} <${this.sender.email}>`,
+                `To: ${toName || toEmail} <${toEmail}>`,
+                `Subject: =?utf-8?B?${btoa(unescape(encodeURIComponent(subject)))}?=`, // Base64 encoding for UTF-8 subject compatibility
+                `MIME-Version: 1.0`,
+                `Content-Type: text/html; charset=utf-8`,
+                ``,
+                htmlContent
+            ].join('\r\n');
 
-            if (!response.ok) {
-                const errText = await response.text();
-                throw new Error(`Brevo API responded with status ${response.status}: ${errText}`);
-            }
+            const message = new EmailMessage(
+                this.sender.email,
+                toEmail,
+                rawMime
+            );
 
-            const data = await response.json();
-            console.log('[Email] Email sent successfully via HTTP. MessageId:', data.messageId);
+            await env.EMAIL.send(message);
+            console.log('[Email] Email sent successfully via Cloudflare Send Email API.');
         } catch (error) {
-            console.error('[Email] Failed to send email via HTTP:', error);
+            console.error('[Email] Failed to send email via Cloudflare:', error);
         }
     }
 
