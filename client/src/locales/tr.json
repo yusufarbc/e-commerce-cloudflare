@@ -1,0 +1,82 @@
+{
+    "common": {
+        "loading": "Yükleniyor...",
+        "error": "Bir hata oluştu",
+        "retry": "Tekrar Dene",
+        "searchPlaceholder": "Ürün ara...",
+        "addToCart": "Sepete Ekle",
+        "outOfStock": "Stokta Yok",
+        "currency": "₺"
+    },
+    "header": {
+        "home": "Ana Sayfa",
+        "trackOrder": "Sipariş Takibi",
+        "adminPanel": "Yönetici Paneli"
+    },
+    "home": {
+        "featuredProducts": "Öne Çıkan Ürünler",
+        "categoryResults": "Kategori Sonuçları",
+        "noProducts": "Bu kategoride ürün bulunamadı.",
+        "allCategories": "Tüm Kategoriler"
+    },
+    "cart": {
+        "title": "Sepetim",
+        "empty": "Sepetiniz boş.",
+        "subtotal": "Ara Toplam",
+        "checkout": "Ödeme Yap",
+        "continueShopping": "Alışverişe Devam Et",
+        "remove": "Sil"
+    },
+    "checkout": {
+        "title": "Ödeme Sayfası",
+        "personalInfo": "Kişisel Bilgiler",
+        "shippingInfo": "Teslimat Bilgileri",
+        "paymentInfo": "Ödeme Bilgileri",
+        "name": "Ad",
+        "surname": "Soyad",
+        "email": "E-posta",
+        "city": "Şehir",
+        "district": "İlçe",
+        "address": "Adres",
+        "zipCode": "Posta Kodu",
+        "phone": "Telefon",
+        "cardNumber": "Kart Numarası",
+        "expiryDate": "Son Kullanma Tarihi",
+        "cvc": "CVC",
+        "cardHolderName": "Kart Üzerindeki İsim",
+        "submitPayment": "Ödemeyi Tamamla",
+        "processing": "İşleniyor..."
+    },
+    "productDetail": {
+        "description": "Ürün Açıklaması",
+        "category": "Kategori",
+        "stock": "Stok Durumu",
+        "inStock": "Stokta Var",
+        "quantity": "Adet"
+    },
+    "status": {
+        "success": "İşlem Başarılı",
+        "failure": "İşlem Başarısız",
+        "paymentSuccessful": "Ödemeniz başarıyla alındı.",
+        "paymentFailed": "Ödeme işlemi sırasında bir hata oluştu.",
+        "orderNumber": "Sipariş Numaranız",
+        "backToHome": "Ana Sayfaya Dön"
+    },
+    "orders": {
+        "status": "Durum",
+        "cancelOrder": "Siparişi İptal Et",
+        "cancelConfirm": "Siparişinizi iptal etmek istediğinize emin misiniz?",
+        "cancelReason": "İptal Nedeni (İsteğe bağlı)",
+        "whatsappSupport": "WhatsApp Destek",
+        "cancelSuccess": "Siparişiniz başarıyla iptal edildi.",
+        "cancelError": "İptal işlemi başarısız oldu.",
+        "date": "Tarih",
+        "total": "Toplam",
+        "items": "Ürünler",
+        "pending": "Beklemede",
+        "processing": "Hazırlanıyor",
+        "shipped": "Kargolandı",
+        "delivered": "Teslim Edildi",
+        "cancelled": "İptal Edildi"
+    }
+}

@@ -1,57 +1,191 @@
-# e-commerce-cloudflare
+# ⚡ E-Market: Serverless E-Commerce Platform on Cloudflare
 
-Cloudflare, geleneksel sunucu mimarilerinden (PENR gibi) farklı olarak, her şeyi "uç noktada" (edge) ve sunucusuz (serverless) çalıştıran devasa bir platformdur. Kurmakta olduğun yapı için bu ekosistemi tek bir tabloda ve özetle şöyle toplayabiliriz:
+E-Market is a modern, high-performance, fully serverless e-commerce platform designed from the ground up to deploy and run entirely within the **Cloudflare Ecosystem**. 
 
----
+Unlike traditional monoliths or containerized setups, E-Market leverages lightweight V8 isolates (Cloudflare Workers), serverless SQL databases (Cloudflare D1), free-egress object storage (Cloudflare R2), and lightning-fast CDNs (Cloudflare Pages) to deliver sub-millisecond response times, absolute security, and near-zero running costs.
 
-## Cloudflare Modern Uygulama Ekosistemi
-
-### 🏗️ Temel Servisler (Core Stack)
-
-* **Cloudflare Pages (Frontend):** React uygulamalarını barındırır. GitHub/GitLab ile tam entegredir; her "push" işleminde otomatik deploy olur. Dünyanın en hızlı CDN ağını kullanır.
-* **Cloudflare Workers (Backend):** JavaScript/TypeScript fonksiyonlarıdır. Geleneksel sunucu (Node.js) yerine V8 Isolate kullanır; bu sayede "cold start" (ilk açılış gecikmesi) yaşatmaz.
-* **Cloudflare D1 (Database):** SQL tabanlı (SQLite) sunucusuz veritabanıdır. JSON veya ilişkisel verilerini tutmak için idealdir.
-* **Cloudflare R2 (Storage):** Obje depolama servisidir. Ürün görsellerini ve dosyaları burada saklarsın. Diğer bulut sağlayıcıların aksine, veriyi dışarı çekerken (egress) ücret almaz.
-
-
+This project is open-source, fully responsive, and works as a Progressive Web App (PWA) out-of-the-box.
 
 ---
 
-### 📧 Email Çözümleri (İletişim)
+## 📐 System Architecture
 
-Cloudflare üzerinde mail trafiğini yönetmek için üç ana yolun var:
+Below is the serverless architecture diagram showing how the client storefront, admin dashboard, server API, databases, and third-party integrations interact:
 
-1.  **Email Routing:** Sınırsız sayıda `islem@alanadin.com` gibi adres oluşturup bunları kişisel mailine yönlendirebilirsin. (Tamamen Ücretsiz)
-2.  **Workers Send Email:** Alan adın Cloudflare üzerindeyse, doğrudan Workers içinden kod yazarak mail gönderebilirsin.
-3.  **Third Party API (Önerilen):** E-ticaret gibi "mailin ulaşmama lüksü olmayan" işlerde, Workers içinden **Resend** veya **Postmark** gibi servislerin API'sine `fetch` isteği atarak mail göndermek en güvenli yoldur.
-
-
+```mermaid
+graph TD
+    %% Styling
+    classDef default fill:#1e1e24,stroke:#555,stroke-width:1px,color:#fff;
+    classDef highlight fill:#deff36,stroke:#191919,stroke-width:2px,color:#191919;
+    classDef serverless fill:#f6821f,stroke:#fff,stroke-width:1px,color:#fff;
+    
+    %% Nodes
+    Storefront["🛍️ Storefront (React Pages)"]:::highlight
+    Admin["⚙️ Admin Dashboard (React Pages)"]:::highlight
+    API["⚡ Workers API (Hono)"]:::serverless
+    
+    D1[("💾 Cloudflare D1 (SQLite)")]:::serverless
+    R2["📦 Cloudflare R2 (Assets)"]:::serverless
+    
+    Brevo["📧 Brevo Email API (REST)"]
+    Param["💳 Param POS Gateway (SOAP)"]
+    
+    %% Relationships
+    Storefront -->|HTTPS REST API| API
+    Admin -->|JWT Auth & REST API| API
+    Admin -->|Resizes & Direct Upload| R2
+    
+    API -->|Prisma ORM / D1 Adapter| D1
+    API -->|R2 Binding / Direct PUT| R2
+    API -->|Fetch API (HTTP REST)| Brevo
+    API -->|SOAP XML & Web Crypto| Param
+```
 
 ---
 
-### 🔒 Güvenlik ve Yönetim (Admin Panel Çözümü)
+## 🛠️ Core Technology Stack
 
-Uygulamanın siber güvenlik katmanını ve admin girişini kod yazmadan halletmeni sağlar:
-
-* **Cloudflare Access (Zero Trust):** Admin panelini (`/admin`) korumaya alır. Sadece senin belirlediğin e-postalar, tek kullanımlık şifre (OTP) ile içeri girebilir. Login ekranı kodlamana gerek kalmaz.
-* **Turnstile:** Siteni botlardan koruyan, kullanıcıyı yormayan modern (CAPTCHA alternatifi) doğrulama servisidir.
-
----
-
-### 💰 Hızlı Maliyet & Limit Özeti (Ücretsiz Planlar)
-
-| Özellik | Ücretsiz Plan Kapasitesi | Senaryo |
+| Component | Technology | Description |
 | :--- | :--- | :--- |
-| **Bant Genişliği** | **Sınırsız** | Video/Resim yükü için bedava. |
-| **Workers** | Günde 100.000 İstek | API çağrıları için fazlasıyla yeterli. |
-| **D1 (Database)** | 5M Okuma / 1M Yazma (Aylık) | Küçük/Orta ölçekli e-ticaret için bedava. |
-| **R2 (Storage)** | 10 GB Depolama | Binlerce ürün resmi için yeterli. |
-| **Zero Trust** | 50 Kullanıcıya kadar bedava | Sadece sen ve ekibin gireceği için bedava. |
+| **Storefront** | React, Vite, PWA, Tailwind CSS | Fully responsive storefront, SEO-optimized, with PWA offline-capability and multilingual support. |
+| **Admin Panel** | React, Vite, CSS, Lucide | Premium, dark-mode dashboard with interactive charts, Canvas-based client-side image compression, and direct uploads. |
+| **API Backend** | Hono Framework | Ultra-fast REST API designed for V8 isolates, providing zero cold start. |
+| **Database** | Cloudflare D1 & Prisma ORM | Serverless SQL database using Prisma with `@prisma/adapter-d1`. |
+| **Asset Storage** | Cloudflare R2 | S3-compatible object storage for product images with zero egress fees. |
+| **Integrations** | Web Crypto & Fetch | Native REST integrations for Brevo API (emails) & Param POS Gateway (3D secure payments). |
 
 ---
 
-### Neden Bu Yapı?
+## 📁 Repository Structure
 
-Geleneksel bir VPS (Sanal Sunucu) kiraladığında; işletim sistemi güncelleme, firewall ayarları, SSH güvenliği ve veritabanı yedeği gibi "angarya" işlerle uğraşman gerekir. Cloudflare'de ise bu katmanların tamamı platform tarafından yönetilir. Sen sadece kodunu yazarsın, geri kalan her şeyi Cloudflare dünya genelindeki 300'den fazla veri merkezinde senin yerine halleder.
+```text
+e-commerce-cloudflare/
+├── client/              # React Storefront (Pages)
+├── admin/               # React Admin Dashboard (Pages)
+├── server/
+│   └── api/             # Hono REST API Worker (Workers)
+│       ├── prisma/      # Prisma SQLite migrations and seed scripts
+│       └── src/         # API Controllers, Repositories, and Services
+├── scripts/             # Utility extraction scripts
+└── package.json         # Monorepo management scripts
+```
 
-Bu yapıya geçerken ilk olarak hangi parçayı (Frontend mi yoksa API mi) Cloudflare üzerine taşımayı planlıyorsun?
+---
+
+## 🚀 Local Development Quickstart
+
+### Prerequisites
+- [Node.js](https://nodejs.org/) (v18 or higher recommended)
+- [NPM](https://www.npmjs.com/) (bundled with Node.js)
+- Cloudflare Wrangler CLI (installed automatically via devDependencies)
+
+### 1. Install Dependencies
+Install all node modules recursively across the monorepo root, client, admin, and server/api directories:
+```bash
+npm run install:all
+```
+
+### 2. Set Up Local SQLite Database
+Run D1 migrations locally using Wrangler and Prisma generate:
+```bash
+# Generate Prisma Client
+npm run dev:api -- npx prisma generate
+
+# Apply migrations to local D1 instance
+npm run db:migrate
+```
+
+### 3. Seed Database
+Seed initial system configurations and dummy products into your local database:
+```bash
+npm run db:seed
+```
+
+### 4. Start Development Servers
+Run all applications (Storefront, Admin, and Workers API) concurrently:
+```bash
+npm run dev
+```
+
+Your local endpoints will be available at:
+- **Workers API:** `http://localhost:8787`
+- **Storefront:** `http://localhost:5173` (configured locally)
+- **Admin Panel:** `http://localhost:5174` (configured locally)
+
+---
+
+## ⚙️ Environment Configuration
+
+### Workers API Environment Variables
+Create a `.env` file inside `server/api/` based on `server/api/.env.example`:
+
+- `ADMIN_JWT_SECRET`: Secret key used for signing administrator session tokens.
+- `BREVO_API_KEY`: API token from Brevo for sending transactional emails.
+- `SMTP_SENDER`: Email sender header format (e.g., `E-Market <siparis@e-market-domain.com>`).
+- `PARAM_CLIENT_CODE`, `PARAM_CLIENT_USERNAME`, `PARAM_CLIENT_PASSWORD`, `PARAM_GUID`: Parameters for the Param POS Gateway interface.
+
+---
+
+## ☁️ Deploying to Cloudflare
+
+### 1. D1 Database Creation
+Create your production D1 Database in Cloudflare:
+```bash
+npx wrangler d1 create ecommerce-d1
+```
+Copy the outputted `database_id` and paste it inside `server/api/wrangler.toml`:
+```toml
+[[d1_databases]]
+binding = "DB"
+database_name = "ecommerce-d1"
+database_id = "YOUR_CLOUDFLARE_D1_DATABASE_UUID"
+```
+
+Apply migrations to production D1:
+```bash
+npx wrangler d1 migrations apply ecommerce-d1 --remote
+```
+
+### 2. R2 Storage Bucket Creation
+Create an R2 Bucket for product assets:
+```bash
+npx wrangler r2 bucket create ecommerce-r2
+```
+
+### 3. Deploy API Worker
+Deploy the Workers API using wrangler:
+```bash
+cd server/api
+npx wrangler deploy
+```
+
+### 4. Deploy Storefront & Admin to Cloudflare Pages
+Deploy `client/dist` and `admin/dist` directly as Cloudflare Pages projects using the Cloudflare dashboard or Wrangler:
+```bash
+# Build Client & Admin
+npm run build --prefix client
+npm run build --prefix admin
+
+# Deploy Client
+npx wrangler pages deploy client/dist --project-name e-market-client
+
+# Deploy Admin
+npx wrangler pages deploy admin/dist --project-name e-market-admin
+```
+
+---
+
+## 🤝 Contributing
+
+We welcome contributions to E-Market! Feel free to:
+1. Fork the Repository.
+2. Create your Feature Branch (`git checkout -b feature/AmazingFeature`).
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`).
+4. Push to the Branch (`git push origin feature/AmazingFeature`).
+5. Open a Pull Request.
+
+---
+
+## 📄 License
+
+This project is licensed under the MIT License. See `LICENSE` for more information.

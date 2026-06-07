@@ -1,0 +1,40 @@
+# E-Market - Online Alışveriş Platformu
+
+## Site Hakkında
+E-Market (e-market.com), Türkiye geneline hizmet veren profesyonel bir e-ticaret platformudur. Farklı kategorilerde binlerce ürünü en uygun fiyatlarla kullanıcılara sunmaktadır.
+
+## Ürün Kategorileri
+- **Elektronik**: Telefonlar, bilgisayarlar, aksesuarlar.
+- **Ev & Yaşam**: Mobilya, dekorasyon, mutfak gereçleri.
+- **Moda & Kozmetik**: Giyim, ayakkabı, kişisel bakım.
+- **Yapı Market**: El aletleri, boya, tadilat malzemeleri.
+
+## Teknik Özellikler
+- **Altyapı**: Serverless ve Dağıtık Mimari
+- **Frontend (Pages)**: 
+  - Framework: React 18 + Vite
+  - Styling: Tailwind CSS 3.x
+  - State/Hooks: Custom hooks, Context API
+  - Routing: React Router DOM 6.x
+  - SEO: React Helmet Async
+  - PWA: Vite Plugin PWA
+  - Icons: Lucide React
+- **Backend (Workers)**: 
+  - Framework: Hono + Cloudflare Workers
+  - Database: Cloudflare D1 (SQLite) via Prisma ORM
+  - Object Storage: Cloudflare R2
+- **Ödeme**: Param POS Entegrasyonu
+- **Güvenlik**: Cloudflare WAF, Rate Limiting
+
+## İletişim & Destek
+- E-posta: bilgi@e-market.com
+- Telefon: 0850 000 00 00
+- Yer: Karaköy, İstanbul, Türkiye
+
+## API Kullanımı (Geliştiriciler & Botlar için)
+- **Sitemap**: https://api.e-market.com/api/v1/sitemap.xml
+
+## Politikalar
+- **Kargo**: Belirli limit üzeri ücretsiz kargo (güncel limit için site ayarlarına bakınız)
+- **İade**: 14 gün içinde koşulsuz iade hakkı (Mesafeli Satış Sözleşmesi kapsamında)
+- **Teslimat**: Hızlı kargo ile Türkiye genelinde gönderim yapılmaktadır.

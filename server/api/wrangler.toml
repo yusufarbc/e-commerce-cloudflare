@@ -1,0 +1,37 @@
+name = "ecommerce-api"
+main = "src/app.js"
+compatibility_date = "2024-04-03"
+compatibility_flags = [ "nodejs_compat" ]
+
+[vars]
+NODE_ENV = "development"
+CORS_ORIGIN = "*"
+CLIENT_URL = "http://localhost:3000"
+API_URL = "http://localhost:8787"
+ORDER_NOTIFICATION_EMAIL = "bilgi@e-market-domain.com"
+CDN_URL = "https://cdn.e-market-domain.com"
+GOOGLE_MERCHANT_TOKEN = "test-token"
+ADMIN_JWT_SECRET = "secure-admin-token-secret-12345"
+
+# Param POS credentials (Test API values as default)
+PARAM_CLIENT_CODE = "test"
+PARAM_CLIENT_USERNAME = "test"
+PARAM_CLIENT_PASSWORD = "test"
+PARAM_GUID = "00000000-0000-0000-0000-000000000000"
+PARAM_BASE_URL = "https://testposws.param.com.tr/turkpos.ws/service_turkpos_prod.asmx?wsdl"
+
+# Brevo API credentials
+BREVO_API_KEY = "xkeysib-test-key"
+SMTP_SENDER = "E-Market <siparis@e-market-domain.com>"
+SMTP_REPLY_TO = "bilgi@e-market-domain.com"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "ecommerce-d1"
+database_id = "your-d1-database-uuid-here"
+migrations_dir = "migrations"
+
+[[r2_buckets]]
+binding = "IMAGES_BUCKET"
+bucket_name = "ecommerce-r2"
+preview_bucket_name = "ecommerce-r2"
