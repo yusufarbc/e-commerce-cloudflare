@@ -15,12 +15,12 @@ export function MaintenancePage() {
             </div>
 
             <div className="z-10 max-w-2xl w-full bg-white/5 backdrop-blur-lg rounded-3xl p-8 md:p-12 border border-white/10 shadow-2xl">
-                <div className="w-24 h-24 bg-brand-yellow rounded-full flex items-center justify-center mx-auto mb-8 shadow-lg shadow-brand-yellow/20 animate-pulse">
+                <div className="w-24 h-24 bg-brand-yellow rounded-full flex items-center justify-center mx-auto mb-8 shadow-lg shadow-indigo-500/20 animate-pulse">
                     <Settings size={48} className="text-corporate-black animate-spin-slow" />
                 </div>
 
                 <h1 className="text-4xl md:text-5xl font-black text-white mb-6 tracking-tight">
-                    BAKIM <span className="text-brand-yellow">MODU</span>
+                    BAKIM <span className="text-indigo-600">MODU</span>
                 </h1>
 
                 <p className="text-lg md:text-xl text-gray-300 mb-8 leading-relaxed">
@@ -37,7 +37,7 @@ export function MaintenancePage() {
                     <p className="text-sm text-gray-400">Acil durumlar için bize ulaşın:</p>
                     <a
                         href="mailto:bilgi@e-market.com"
-                        className="text-brand-yellow font-bold hover:text-white transition-colors text-lg"
+                        className="text-indigo-600 font-bold hover:text-white transition-colors text-lg"
                     >
                         bilgi@e-market.com
                     </a>

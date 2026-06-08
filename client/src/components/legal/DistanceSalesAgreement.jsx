@@ -47,12 +47,11 @@ export function DistanceSalesAgreement() {
                     <div className="bg-red-50 p-4 rounded-lg border border-red-100">
                         <p className="font-bold text-red-800 mb-2">Mevzuat gereği aşağıdaki ürünlerde cayma hakkı kullanılamaz:</p>
                         <ul className="list-disc pl-5 mt-2 space-y-2">
-                            <li>Alıcının isteği veya kişisel ihtiyaçları doğrultusunda hazırlanan, özel ölçü ile kesilen ürünler (kablo, halat, hortum vb.).</li>
-                            <li>Tesliminden sonra ambalaj, bant, mühür, paket gibi koruyucu unsurları açılmış olan; iadesi sağlık ve hijyen açısından uygun olmayan veya niteliği itibarıyla geri gönderilmeye elverişli olmayan (boya, kimyasal yapıştırıcılar, teknik sıvılar vb.) ürünler.</li>
+                            <li>Alıcının istekleri veya kişisel ihtiyaçları doğrultusunda hazırlanan, üzerinde değişiklik veya ilaveler yapılarak kişiye özel hale getirilen ürünler.</li>
+                            <li>Tesliminden sonra ambalaj, bant, mühür, paket gibi koruyucu unsurları açılmış olan; iadesi sağlık ve hijyen açısından uygun olmayan (kozmetik, kişisel bakım, kulaklık vb.) veya niteliği itibarıyla geri gönderilmeye elverişli olmayan ürünler.</li>
                         </ul>
                     </div>
                 </section>
-
                 <section>
                     <h2 className="text-lg font-bold text-corporate-black uppercase mb-2">Madde 5 - Yürürlük</h2>
                     <p>ALICI, site üzerinden verdiği siparişe ait ödemeyi gerçekleştirdiğinde işbu sözleşmenin tüm şartlarını kabul etmiş sayılır.</p>

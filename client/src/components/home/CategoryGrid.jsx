@@ -11,7 +11,7 @@ export function CategoryGrid({ activeCategory }) {
             {/* Breadcrumb */}
             <nav className="flex items-center gap-2 text-sm mb-8 bg-gray-50 px-4 py-3 rounded-lg border border-gray-200">
                 <span
-                    className="cursor-pointer hover:text-brand-yellow transition-colors font-medium text-gray-600 hover:underline"
+                    className="cursor-pointer hover:text-indigo-600 transition-colors font-medium text-gray-600 hover:underline"
                     onClick={() => navigate('/')}
                 >
                     Anasayfa
@@ -44,7 +44,7 @@ export function CategoryGrid({ activeCategory }) {
                                 <div className="absolute inset-0 bg-gradient-to-t from-corporate-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                             </div>
                             <div className="p-5 text-center bg-white">
-                                <h3 className="font-black text-base text-corporate-black group-hover:text-brand-yellow transition-colors duration-300 line-clamp-2">{sub.ad}</h3>
+                                <h3 className="font-black text-base text-corporate-black group-hover:text-indigo-600 transition-colors duration-300 line-clamp-2">{sub.ad}</h3>
                                 <p className="text-xs text-gray-500 font-bold uppercase mt-2 tracking-wider">Ürünleri İncele →</p>
                             </div>
                         </div>

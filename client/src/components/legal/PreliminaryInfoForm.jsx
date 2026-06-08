@@ -40,9 +40,8 @@ export function PreliminaryInfoForm() {
                     <h2 className="text-lg font-bold text-corporate-black uppercase mb-2">4. Cayma Hakkı</h2>
                     <p>ALICI, 14 (on dört) gün içinde herhangi bir gerekçe göstermeksizin ve cezai şart ödemeksizin sözleşmeden cayma hakkına sahiptir. Cayma süresi, malın ALICI'ya teslim edildiği gün başlar.</p>
                     <p className="mt-2 text-red-600 font-bold">İstisnalar:</p>
-                    <p>Paketi açılmış kimyasal ürünler (tiner, boya vb.), özel ölçülü ürünler ve doğası gereği iadesi mümkün olmayan mallarda cayma hakkı kullanılamaz.</p>
+                    <p>Alıcının istekleri veya kişisel ihtiyaçları doğrultusunda hazırlanan kişiye özel ürünler, hızlı bozulan veya son kullanma tarihi geçebilecek ürünler, tesliminden sonra koruyucu unsurları açılmış iadesi sağlık/hijyen açısından uygun olmayan ürünler ve doğası gereği iadesi mümkün olmayan mallarda cayma hakkı kullanılamaz.</p>
                 </section>
-
                 <section>
                     <h2 className="text-lg font-bold text-corporate-black uppercase mb-2">5. Şikayet ve İtirazlar</h2>
                     <p>Tüketici, şikayet ve itirazları konusundaki başvurularını, her yıl Gümrük ve Ticaret Bakanlığı tarafından belirlenen parasal sınırlar dahilinde, yerleşim yerinin bulunduğu veya tüketici işleminin yapıldığı yerdeki Tüketici Hakem Heyetine veya Tüketici Mahkemesine yapabilir.</p>

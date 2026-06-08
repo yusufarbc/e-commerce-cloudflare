@@ -29,7 +29,7 @@ export function PrivacyPolicy() {
                     <h2 className="text-lg font-bold text-corporate-black uppercase mb-2">2. Kişisel Verilerin İşlenme Amacı</h2>
                     <p>Kişisel verileriniz (ad, soyad, adres, iletişim), 6698 sayılı KVKK uyarınca yalnızca aşağıdaki amaçlarla işlenmektedir:</p>
                     <ul className="list-disc pl-5 mt-2 space-y-1">
-                        <li>Siparişlerinizin oluşturulması, ürünlerin (inşaat malzemeleri, hırdavat vb.) tarafınıza teslim edilmesi.</li>
+                        <li>Siparişlerinizin oluşturulması, ürünlerin tarafınıza teslim edilmesi.</li>
                         <li>Fatura düzenlenmesi ve yasal muhasebe süreçlerinin yürütülmesi.</li>
                         <li>Kargo ve lojistik süreçlerinin yönetilmesi.</li>
                     </ul>

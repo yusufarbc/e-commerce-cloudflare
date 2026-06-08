@@ -66,7 +66,7 @@ async function main() {
                 console.log(`\x1b[32m[✓] Database created successfully. ID: ${dbId}\x1b[0m`);
                 
                 // Update wrangler.toml with the newly generated D1 database_id
-                const tomlPath = path.join(process.cwd(), 'server', 'api', 'wrangler.toml');
+                const tomlPath = path.join(process.cwd(), 'api', 'wrangler.toml');
                 if (fs.existsSync(tomlPath)) {
                     let tomlContent = fs.readFileSync(tomlPath, 'utf8');
                     tomlContent = tomlContent.replace(/database_id = ".*"/, `database_id = "${dbId}"`);
@@ -97,7 +97,7 @@ async function main() {
     const migrateAnswer = await askQuestion('\n4. Do you want to apply database migrations to remote D1? (y/n): ');
     if (migrateAnswer.toLowerCase() === 'y') {
         console.log('Applying migrations to remote database (D1)...');
-        const migrateResult = runCommand('npx wrangler d1 migrations apply DB --remote --cwd server/api');
+        const migrateResult = runCommand('npx wrangler d1 migrations apply DB --remote --cwd api');
         if (migrateResult.success) {
             console.log('\x1b[32m[✓] Database migrations applied successfully.\x1b[0m');
         } else {
@@ -110,7 +110,7 @@ async function main() {
     let apiEndpoint = '';
     if (deployApiAnswer.toLowerCase() === 'y') {
         console.log('Deploying Workers API...');
-        const deployResult = runCommand('npx wrangler deploy --cwd server/api');
+        const deployResult = runCommand('npx wrangler deploy --cwd api');
         if (deployResult.success) {
             // Match Workers url format e.g. https://ecommerce-api.username.workers.dev
             const match = deployResult.output.match(/https:\/\/[a-z0-9-.]+\.workers\.dev/);

@@ -67,7 +67,7 @@ export function CartSidebar() {
                             <p className="text-gray-500 mb-6">Henüz sepetinize ürün eklemediniz.</p>
                             <button
                                 onClick={closeSidebar}
-                                className="bg-brand-yellow text-corporate-black px-6 py-3 rounded-full font-bold hover:bg-yellow-300 transition-colors flex items-center gap-2"
+                                className="bg-brand-yellow text-white px-6 py-3 rounded-full font-bold hover:bg-indigo-700 transition-colors flex items-center gap-2"
                             >
                                 Alışverişe Başla
                                 <ArrowRight size={18} />
@@ -168,7 +168,7 @@ export function CartSidebar() {
                         {/* Checkout Button */}
                         <button
                             onClick={handleCheckout}
-                            className="w-full bg-brand-yellow text-corporate-black py-4 rounded-xl font-bold text-lg hover:bg-corporate-black hover:text-brand-yellow transition-all shadow-lg hover:shadow-xl flex items-center justify-center gap-2 transform active:scale-95"
+                            className="w-full bg-brand-yellow text-white py-4 rounded-xl font-bold text-lg hover:bg-corporate-black hover:text-indigo-600 transition-all shadow-lg hover:shadow-xl flex items-center justify-center gap-2 transform active:scale-95"
                         >
                             Ödemeye Geç
                             <ArrowRight size={20} />

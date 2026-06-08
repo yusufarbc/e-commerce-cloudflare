@@ -22,7 +22,7 @@ function StepIndicator({ currentStep }) {
                 {steps.map((step, index) => (
                     <div key={step.id} className="flex items-center">
                         <div className={`flex items-center justify-center w-10 h-10 rounded-full border-2 transition-all duration-300 ${currentStep >= step.id
-                            ? 'bg-brand-yellow border-brand-yellow text-corporate-black'
+                            ? 'bg-brand-yellow border-indigo-600 text-corporate-black'
                             : 'bg-white border-gray-300 text-gray-400'
                             }`}>
                             <step.icon size={20} />
@@ -334,7 +334,7 @@ export function CheckoutPage() {
                 <CreditCard size={64} className="mx-auto text-gray-300 mb-4" />
                 <h2 className="text-2xl font-bold text-gray-700 mb-2">Sepetiniz Boş</h2>
                 <p className="text-gray-500 mb-6">Ödeme yapabilmek için sepetinize ürün ekleyin.</p>
-                <a href="/" className="inline-flex items-center gap-2 bg-brand-yellow text-corporate-black px-6 py-3 rounded-full font-bold hover:bg-yellow-300 transition-colors">
+                <a href="/" className="inline-flex items-center gap-2 bg-brand-yellow text-white px-6 py-3 rounded-full font-bold hover:bg-indigo-700 transition-colors">
                     <ArrowLeft size={18} />
                     Alışverişe Devam Et
                 </a>
@@ -365,7 +365,7 @@ export function CheckoutPage() {
                             {currentStep === 1 && (
                                 <div className="space-y-6 animate-in fade-in duration-300">
                                     <h2 className="text-xl font-bold text-corporate-black flex items-center gap-2">
-                                        <MapPin size={24} className="text-brand-yellow" />
+                                        <MapPin size={24} className="text-indigo-600" />
                                         Teslimat Bilgileri
                                     </h2>
 
@@ -374,7 +374,7 @@ export function CheckoutPage() {
                                             <label className="block text-sm font-medium text-gray-700 mb-1">Ad Soyad *</label>
                                             <input
                                                 type="text" name="fullName" value={formData.fullName}
-                                                className={`w-full border-2 p-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-yellow focus:border-transparent transition-all ${errors.fullName ? 'border-red-500' : 'border-gray-200'}`}
+                                                className={`w-full border-2 p-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all ${errors.fullName ? 'border-red-500' : 'border-gray-200'}`}
                                                 onChange={handleInputChange}
                                             />
                                             {errors.fullName && <p className="text-red-500 text-xs mt-1">{errors.fullName}</p>}
@@ -384,7 +384,7 @@ export function CheckoutPage() {
                                             <label className="block text-sm font-medium text-gray-700 mb-1">E-posta *</label>
                                             <input
                                                 type="email" name="email" value={formData.email}
-                                                className={`w-full border-2 p-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-yellow focus:border-transparent transition-all ${errors.email ? 'border-red-500' : 'border-gray-200'}`}
+                                                className={`w-full border-2 p-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all ${errors.email ? 'border-red-500' : 'border-gray-200'}`}
                                                 onChange={handleInputChange}
                                             />
                                             {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email}</p>}
@@ -395,7 +395,7 @@ export function CheckoutPage() {
                                             <input
                                                 type="tel" name="phone" value={formData.phone}
                                                 placeholder="05XX XXX XX XX"
-                                                className={`w-full border-2 p-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-yellow focus:border-transparent transition-all ${errors.phone ? 'border-red-500' : 'border-gray-200'}`}
+                                                className={`w-full border-2 p-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all ${errors.phone ? 'border-red-500' : 'border-gray-200'}`}
                                                 onChange={handlePhoneChange}
                                             />
                                             {errors.phone && <p className="text-red-500 text-xs mt-1">{errors.phone}</p>}
@@ -405,7 +405,7 @@ export function CheckoutPage() {
                                             <label className="block text-sm font-medium text-gray-700 mb-1">Adres *</label>
                                             <textarea
                                                 name="address" value={formData.address} rows={3}
-                                                className={`w-full border-2 p-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-yellow focus:border-transparent transition-all resize-none ${errors.address ? 'border-red-500' : 'border-gray-200'}`}
+                                                className={`w-full border-2 p-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all resize-none ${errors.address ? 'border-red-500' : 'border-gray-200'}`}
                                                 onChange={handleInputChange}
                                             />
                                             {errors.address && <p className="text-red-500 text-xs mt-1">{errors.address}</p>}
@@ -415,7 +415,7 @@ export function CheckoutPage() {
                                             <label className="block text-sm font-medium text-gray-700 mb-1">İl *</label>
                                             <select
                                                 name="city" value={formData.city}
-                                                className={`w-full border-2 p-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-yellow focus:border-transparent transition-all ${errors.city ? 'border-red-500' : 'border-gray-200'}`}
+                                                className={`w-full border-2 p-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all ${errors.city ? 'border-red-500' : 'border-gray-200'}`}
                                                 onChange={handleCityChange}
                                             >
                                                 <option value="">İl Seçiniz</option>
@@ -430,7 +430,7 @@ export function CheckoutPage() {
                                             <label className="block text-sm font-medium text-gray-700 mb-1">İlçe *</label>
                                             <select
                                                 name="district" value={formData.district}
-                                                className={`w-full border-2 p-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-yellow focus:border-transparent transition-all ${errors.district ? 'border-red-500' : 'border-gray-200'}`}
+                                                className={`w-full border-2 p-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all ${errors.district ? 'border-red-500' : 'border-gray-200'}`}
                                                 onChange={handleInputChange}
                                                 disabled={!formData.city}
                                             >
@@ -446,7 +446,7 @@ export function CheckoutPage() {
                                             <label className="block text-sm font-medium text-gray-700 mb-1">Posta Kodu *</label>
                                             <input
                                                 type="text" name="zipCode" value={formData.zipCode}
-                                                className={`w-full border-2 p-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-yellow focus:border-transparent transition-all ${errors.zipCode ? 'border-red-500' : 'border-gray-200'}`}
+                                                className={`w-full border-2 p-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all ${errors.zipCode ? 'border-red-500' : 'border-gray-200'}`}
                                                 onChange={handleInputChange}
                                             />
                                             {errors.zipCode && <p className="text-red-500 text-xs mt-1">{errors.zipCode}</p>}
@@ -460,7 +460,7 @@ export function CheckoutPage() {
                                                 type="checkbox"
                                                 checked={formData.isCorporate}
                                                 onChange={(e) => setFormData({ ...formData, isCorporate: e.target.checked })}
-                                                className="w-5 h-5 rounded border-gray-300 text-brand-yellow focus:ring-brand-yellow"
+                                                className="w-5 h-5 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
                                             />
                                             <span className="font-medium">Kurumsal Fatura İstiyorum</span>
                                         </label>
@@ -502,7 +502,7 @@ export function CheckoutPage() {
                             {currentStep === 2 && (
                                 <div className="space-y-6 animate-in fade-in duration-300">
                                     <h2 className="text-xl font-bold text-corporate-black flex items-center gap-2">
-                                        <CreditCard size={24} className="text-brand-yellow" />
+                                        <CreditCard size={24} className="text-indigo-600" />
                                         Sipariş Onayı
                                     </h2>
 
@@ -559,7 +559,7 @@ export function CheckoutPage() {
                                             </button>'ni okuduğunuzu ve verilerinizin işlenmesini kabul etmiş sayılırsınız.
                                         </p>
 
-                                        <label className={`flex items-start gap-3 cursor-pointer p-4 rounded-xl border-2 transition-all ${agreements.salesAgreement ? 'border-brand-yellow bg-brand-yellow/5' : 'border-gray-200'
+                                        <label className={`flex items-start gap-3 cursor-pointer p-4 rounded-xl border-2 transition-all ${agreements.salesAgreement ? 'border-indigo-600 bg-indigo-50' : 'border-gray-200'
                                             } ${errors.salesAgreement ? 'border-red-500' : ''}`}>
                                             <input
                                                 type="checkbox"
@@ -570,7 +570,7 @@ export function CheckoutPage() {
                                                         setErrors({ ...errors, salesAgreement: null });
                                                     }
                                                 }}
-                                                className="w-5 h-5 mt-0.5 rounded border-gray-300 text-brand-yellow focus:ring-brand-yellow"
+                                                className="w-5 h-5 mt-0.5 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
                                             />
                                             <span className="text-sm">
                                                 <button onClick={(e) => handleLegalClick(e, '/legal/on-bilgilendirme.html')} className="text-action-red font-medium hover:underline">
@@ -590,13 +590,13 @@ export function CheckoutPage() {
                             {currentStep === 3 && (
                                 <div className="space-y-6 animate-in fade-in duration-300">
                                     <h2 className="text-xl font-bold text-corporate-black flex items-center gap-2">
-                                        <CreditCard size={24} className="text-brand-yellow" />
+                                        <CreditCard size={24} className="text-indigo-600" />
                                         Ödeme Bilgileri
                                     </h2>
 
                                     {loading ? (
                                         <div className="text-center py-12">
-                                            <div className="w-16 h-16 border-4 border-brand-yellow border-t-transparent rounded-full animate-spin mx-auto mb-6" />
+                                            <div className="w-16 h-16 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto mb-6" />
                                             <h2 className="text-xl font-bold text-corporate-black mb-2">Ödeme Başlatılıyor...</h2>
                                             <p className="text-gray-500">Lütfen bekleyin, banka ekranına yönlendiriliyorsunuz.</p>
                                         </div>
@@ -685,14 +685,14 @@ export function CheckoutPage() {
                                                     <label className="block text-sm font-medium text-gray-700 mb-1">Taksit Seçenekleri</label>
                                                     {installmentsLoading ? (
                                                         <div className="flex items-center gap-2 p-3 bg-gray-100 rounded-xl text-sm text-gray-500">
-                                                            <div className="w-4 h-4 border-2 border-brand-yellow border-t-transparent rounded-full animate-spin" />
+                                                            <div className="w-4 h-4 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin" />
                                                             Taksit seçenekleri yükleniyor...
                                                         </div>
                                                     ) : installments.length > 0 ? (
                                                         <select
                                                             value={selectedInstallment}
                                                             onChange={(e) => setSelectedInstallment(Number(e.target.value))}
-                                                            className="w-full border-2 p-3 rounded-xl border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-yellow focus:border-transparent"
+                                                            className="w-full border-2 p-3 rounded-xl border-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                                                         >
                                                             <option value={1}>Tek Çekim - ₺{displayTotal.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}</option>
                                                             {installments.map((inst, idx) => (
@@ -736,7 +736,7 @@ export function CheckoutPage() {
                                     <button
                                         onClick={nextStep}
                                         disabled={loading}
-                                        className="flex items-center gap-2 bg-brand-yellow text-corporate-black px-8 py-3 rounded-xl font-bold hover:bg-yellow-300 transition-all shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
+                                        className="flex items-center gap-2 bg-brand-yellow text-white px-8 py-3 rounded-xl font-bold hover:bg-indigo-700 transition-all shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
                                     >
                                         {currentStep === 2 ? 'Ödemeye Geç' : 'Devam Et'}
                                         <ChevronRight size={18} />

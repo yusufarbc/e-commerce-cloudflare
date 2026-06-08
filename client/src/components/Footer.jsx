@@ -51,7 +51,7 @@ const TroyIcon = () => (
 
 export function Footer() {
     return (
-        <footer className="bg-corporate-black text-white pt-16 pb-8 border-t-2 border-brand-yellow/20">
+        <footer className="bg-corporate-black text-white pt-16 pb-8 border-t-2 border-indigo-600/20">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10 mb-14">
                     {/* 1. Sütun: E-Market (Kimlik) */}
@@ -60,15 +60,14 @@ export function Footer() {
                             <img
                                 src="/images/logo-dark.svg"
                                 alt="E-Market"
-                                className="h-20 w-auto object-cover hover:opacity-90 transition-opacity duration-300"
-                                style={{ aspectRatio: '16/9' }}
+                                className="h-20 w-auto object-contain hover:opacity-90 transition-opacity duration-300"
                             />
                         </Link>
                         <p className="text-gray-400 leading-relaxed text-sm">
                             Güvenilir ve hızlı alışverişin adresi. En kaliteli ürünler, en uygun fiyatlarla burada.
                         </p>
                         <div className="space-y-4 pt-2">
-                            <a href="mailto:bilgi@e-market.com" className="flex items-center gap-3 text-gray-300 hover:text-brand-yellow transition-colors bg-white/5 p-4 rounded-lg border border-white/10 hover:border-brand-yellow/30">
+                            <a href="mailto:bilgi@e-market.com" className="flex items-center gap-3 text-gray-300 hover:text-indigo-600 transition-colors bg-white/5 p-4 rounded-lg border border-white/10 hover:border-indigo-600/30">
                                 <Mail size={22} />
                                 <span className="text-base font-medium">bilgi@e-market.com</span>
                             </a>
@@ -120,9 +119,9 @@ export function Footer() {
                                 <li key={item.name}>
                                     <Link
                                         to={item.href}
-                                        className="text-gray-400 hover:text-brand-yellow transition-colors flex items-center gap-2 text-sm group"
+                                        className="text-gray-400 hover:text-indigo-600 transition-colors flex items-center gap-2 text-sm group"
                                     >
-                                        <ChevronRight size={14} className="text-gray-600 group-hover:text-brand-yellow transition-colors" />
+                                        <ChevronRight size={14} className="text-gray-600 group-hover:text-indigo-600 transition-colors" />
                                         <span>{item.name}</span>
                                     </Link>
                                 </li>
@@ -146,9 +145,9 @@ export function Footer() {
                                 <li key={item.name}>
                                     <Link
                                         to={item.href}
-                                        className="text-gray-400 hover:text-brand-yellow transition-colors flex items-center gap-2 text-sm group"
+                                        className="text-gray-400 hover:text-indigo-600 transition-colors flex items-center gap-2 text-sm group"
                                     >
-                                        <ChevronRight size={14} className="text-gray-600 group-hover:text-brand-yellow transition-colors" />
+                                        <ChevronRight size={14} className="text-gray-600 group-hover:text-indigo-600 transition-colors" />
                                         <span>{item.name}</span>
                                     </Link>
                                 </li>
@@ -172,9 +171,9 @@ export function Footer() {
                                 <li key={item.name}>
                                     <Link
                                         to={item.href}
-                                        className="text-gray-400 hover:text-brand-yellow transition-colors flex items-center gap-2 text-sm group"
+                                        className="text-gray-400 hover:text-indigo-600 transition-colors flex items-center gap-2 text-sm group"
                                     >
-                                        <ChevronRight size={14} className="text-gray-600 group-hover:text-brand-yellow transition-colors" />
+                                        <ChevronRight size={14} className="text-gray-600 group-hover:text-indigo-600 transition-colors" />
                                         <span>{item.name}</span>
                                     </Link>
                                 </li>

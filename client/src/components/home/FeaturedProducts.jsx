@@ -52,7 +52,7 @@ export function FeaturedProducts() {
 
                     <button
                         onClick={() => navigate('/magaza')}
-                        className="hidden md:flex items-center gap-2 text-corporate-black font-bold hover:text-brand-yellow transition-colors group"
+                        className="hidden md:flex items-center gap-2 text-corporate-black font-bold hover:text-indigo-600 transition-colors group"
                     >
                         Tümünü Gör
                         <ChevronRight size={20} className="group-hover:translate-x-1 transition-transform" />
@@ -78,7 +78,7 @@ export function FeaturedProducts() {
                 <div className="mt-8 text-center md:hidden">
                     <button
                         onClick={() => navigate('/magaza')}
-                        className="inline-flex items-center gap-2 bg-brand-yellow text-corporate-black px-6 py-3 rounded-full font-bold hover:bg-yellow-300 transition-colors"
+                        className="inline-flex items-center gap-2 bg-brand-yellow text-white px-6 py-3 rounded-full font-bold hover:bg-indigo-700 transition-colors"
                     >
                         Tümünü Gör
                         <ChevronRight size={18} />

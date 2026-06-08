@@ -62,11 +62,11 @@ export function Header() {
                 </div>
 
                 {/* 3. Main Header Bar */}
-                <nav className="bg-brand-yellow">
+                <nav className="bg-white border-b border-gray-100">
                     <div className="container mx-auto px-4 h-20 md:h-24 flex items-center justify-between gap-4">
                         {/* Mobile Menu Toggle */}
                         <button
-                            className="md:hidden p-2 text-corporate-black hover:bg-black/10 rounded-lg transition-colors"
+                            className="md:hidden p-2 text-corporate-black hover:bg-slate-100 rounded-lg transition-colors"
                             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
                         >
                             {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
@@ -77,8 +77,7 @@ export function Header() {
                             <img
                                 src="/images/logo-yellow.svg"
                                 alt="E-Market"
-                                className="h-12 md:h-16 w-auto object-cover"
-                                style={{ aspectRatio: '16/9' }}
+                                className="h-12 md:h-16 w-auto object-contain"
                             />
                         </Link>
 
@@ -89,9 +88,9 @@ export function Header() {
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
                                 placeholder="Aramak istediğin ürünü yaz, kolayca bul!"
-                                className="w-full bg-white text-corporate-black placeholder-gray-400 px-6 py-3.5 rounded-lg border-2 border-transparent focus:border-corporate-black focus:outline-none shadow-sm transition-all"
+                                className="w-full bg-slate-50 border border-slate-200 text-corporate-black placeholder-gray-400 px-6 py-3.5 rounded-lg focus:border-indigo-600 focus:bg-white focus:outline-none shadow-sm transition-all"
                             />
-                            <button type="submit" className="absolute right-4 top-1/2 -translate-y-1/2 text-corporate-black p-1 hover:scale-110 transition-transform">
+                            <button type="submit" className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 p-1 hover:scale-110 transition-transform">
                                 <Search size={24} />
                             </button>
                         </form>
@@ -138,7 +137,7 @@ export function Header() {
                                     onMouseLeave={() => setActiveDropdown(null)}
                                 >
                                     <button
-                                        className={`px-4 h-full cursor-pointer hover:bg-white/10 transition-all flex items-center gap-1.5 ${activeDropdown === cat.id ? 'bg-white/10 text-brand-yellow' : ''}`}
+                                        className={`px-4 h-full cursor-pointer hover:bg-white/10 transition-all flex items-center gap-1.5 ${activeDropdown === cat.id ? 'bg-white/10 text-indigo-600' : ''}`}
                                         onClick={() => handleCategoryClick(cat)}
                                     >
                                         <span>{cat.ad}</span>
@@ -149,7 +148,7 @@ export function Header() {
 
                                     {/* Dropdown Menu (Full Width Mega Menu Style) */}
                                     {cat.altKategoriler && cat.altKategoriler.length > 0 && activeDropdown === cat.id && (
-                                        <div className="absolute top-full left-0 bg-white text-corporate-black shadow-2xl rounded-b-xl p-10 w-full border-t-4 border-brand-yellow animate-in fade-in slide-in-from-top-4 duration-500 z-50">
+                                        <div className="absolute top-full left-0 bg-white text-corporate-black shadow-2xl rounded-b-xl p-10 w-full border-t-4 border-indigo-600 animate-in fade-in slide-in-from-top-4 duration-500 z-50">
                                             <div className="grid grid-cols-4 gap-8">
                                                 {cat.altKategoriler.map((sub) => (
                                                     <button
@@ -174,12 +173,6 @@ export function Header() {
                                     )}
                                 </div>
                             ))}
-                            <div
-                                className="bg-action-red/20 text-action-red px-6 py-2 rounded-lg font-black text-xs cursor-pointer hover:bg-action-red hover:text-white transition-all ml-auto uppercase tracking-tighter"
-                                onClick={() => navigate('/magaza?filter=deals')}
-                            >
-                                Fırsat Ürünleri
-                            </div>
                         </div>
                     </div>
                 </div>
@@ -204,7 +197,7 @@ export function Header() {
                                     value={searchQuery}
                                     onChange={(e) => setSearchQuery(e.target.value)}
                                     placeholder="Ürün ara..."
-                                    className="w-full bg-gray-100 text-corporate-black placeholder-gray-500 px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-yellow"
+                                    className="w-full bg-gray-100 text-corporate-black placeholder-gray-500 px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
                                 />
                                 <button type="submit" className="absolute right-3 top-1/2 -translate-y-1/2 text-corporate-black p-1">
                                     <Search size={20} />

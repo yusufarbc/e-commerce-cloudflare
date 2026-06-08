@@ -6,7 +6,7 @@ import { useCategories } from '../hooks/useCategories';
 import { fetchBrands } from '../services/apiService';
 import SEO from '../components/SEO';
 import { generateWebsiteSchema, generateProductListSchema, combineSchemas } from '../utils/structuredData';
-import { Hammer, SlidersHorizontal, ChevronRight } from 'lucide-react';
+import { Package, SlidersHorizontal, ChevronRight } from 'lucide-react';
 import { ProductFilters } from '../components/home/ProductFilters';
 
 export function Shop() {
@@ -147,7 +147,7 @@ export function Shop() {
             <SEO
                 title={pageTitle}
                 description={seoDescription}
-                keywords={activeCategory ? `${activeCategory.ad}, hırdavat, inşaat malzemeleri` : undefined}
+                keywords={activeCategory ? `${activeCategory.ad}, alışveriş, e-market` : undefined}
                 structuredData={structuredData}
                 canonical={activeCategory ? `https://e-market.com/magaza?kategori=${activeCategory.slug || activeCategory.id}` : 'https://e-market.com/magaza'}
             />
@@ -156,14 +156,14 @@ export function Shop() {
                 {/* Breadcrumb / Header */}
                 <div className="flex flex-col gap-3 mb-8">
                     <nav className="flex items-center gap-2 text-xs text-gray-400 font-medium">
-                        <span className="cursor-pointer hover:text-brand-yellow transition-colors" onClick={() => navigate('/')}>Anasayfa</span>
+                        <span className="cursor-pointer hover:text-indigo-600 transition-colors" onClick={() => navigate('/')}>Anasayfa</span>
                         <ChevronRight size={14} className="text-gray-300" />
-                        <span className="cursor-pointer hover:text-brand-yellow transition-colors" onClick={() => navigate('/magaza')}>Mağaza</span>
+                        <span className="cursor-pointer hover:text-indigo-600 transition-colors" onClick={() => navigate('/magaza')}>Mağaza</span>
 
                         {activeCategory && (
                             <>
                                 <ChevronRight size={14} className="text-gray-300" />
-                                <span className="font-bold text-brand-yellow">{activeCategory.ad}</span>
+                                <span className="font-bold text-indigo-600">{activeCategory.ad}</span>
                             </>
                         )}
                     </nav>
@@ -181,7 +181,7 @@ export function Shop() {
                         {/* Mobile Filter Toggle */}
                         <button
                             onClick={() => setShowFilters(!showFilters)}
-                            className="md:hidden flex items-center gap-2 bg-white border border-gray-200 px-3 py-2 rounded-lg hover:bg-gray-50 hover:border-brand-yellow/50 transition-all text-sm font-semibold text-gray-700"
+                            className="md:hidden flex items-center gap-2 bg-white border border-gray-200 px-3 py-2 rounded-lg hover:bg-gray-50 hover:border-indigo-600/50 transition-all text-sm font-semibold text-gray-700"
                         >
                             <SlidersHorizontal size={16} />
                             <span>Filtrele</span>
@@ -224,12 +224,12 @@ export function Shop() {
                                 ))}
                             {displayProducts.length === 0 && (
                                     <div className="col-span-full text-center py-20 bg-gray-50 rounded-2xl border border-dashed border-gray-200">
-                                        <Hammer size={56} className="mx-auto text-gray-300 mb-5" />
+                                        <Package size={56} className="mx-auto text-gray-300 mb-5" />
                                         <h3 className="text-lg font-black text-gray-700 mb-2">Ürün Bulunamadı</h3>
                                         <p className="text-gray-400 text-sm mb-6 max-w-xs mx-auto">Seçtiğiniz filtre kombinasyonuna uygun ürün henüz mevcut değil.</p>
                                         <button
                                             onClick={() => navigate('/magaza')}
-                                            className="bg-brand-yellow text-corporate-black px-6 py-2.5 rounded-full font-black text-sm hover:bg-yellow-300 transition-colors shadow-sm"
+                                            className="bg-brand-yellow text-white px-6 py-2.5 rounded-full font-black text-sm hover:bg-indigo-700 transition-colors shadow-sm"
                                         >
                                             Filtreleri Temizle
                                         </button>

@@ -270,7 +270,7 @@ export function ProductDetailPage() {
                             {/* Top-left badges */}
                             <div className="absolute top-4 left-4 flex flex-col gap-2 z-10">
                                 {discountPercentage > 0 && (
-                                    <div className="bg-brand-yellow text-corporate-black px-4 py-2 rounded-sm shadow-xl flex flex-col items-center leading-none">
+                                    <div className="bg-brand-yellow text-white px-4 py-2 rounded-sm shadow-xl flex flex-col items-center leading-none">
                                         <span className="text-[10px] font-black uppercase tracking-widest">FIRSAT</span>
                                         <span className="text-lg font-black tracking-tighter">%{discountPercentage} İndirim</span>
                                     </div>
@@ -326,7 +326,7 @@ export function ProductDetailPage() {
                                         key={index}
                                         onClick={() => setSelectedImageIndex(index)}
                                         className={`flex-shrink-0 w-20 h-20 rounded-xl overflow-hidden border-2 transition-all ${selectedImageIndex === index
-                                            ? 'border-brand-yellow shadow-lg'
+                                            ? 'border-indigo-600 shadow-lg'
                                             : 'border-gray-200 hover:border-gray-300'
                                             }`}
                                     >
@@ -571,23 +571,6 @@ export function ProductDetailPage() {
                         </div>
                     )}
 
-                    {/* Policy Notice (Only show for mixed Palette colors, not manual variants like Grit) */}
-                    {(product.kartelaIcCephe || product.kartelaDisCephe) && (
-                        <div className="mt-12 p-6 bg-amber-50 border border-amber-100 rounded-3xl flex flex-col md:flex-row items-center md:items-start gap-4">
-                            <div className="w-12 h-12 bg-amber-100 rounded-2xl flex items-center justify-center flex-shrink-0">
-                                <AlertCircle className="text-amber-600" size={24} />
-                            </div>
-                            <div className="text-center md:text-left">
-                                <h4 className="text-amber-900 font-black mb-1 uppercase tracking-widest text-sm">Önemli Bilgilendirme (Özel Hazırlanan Renkler)</h4>
-                                <p className="text-amber-800 text-sm leading-relaxed font-medium">
-                                    Kartela üzerinden seçilen ve <span className="font-bold underline">siparişinize istinaden size özel olarak karıştırılan/hazırlanan renkler</span>,
-                                    6502 sayılı Tüketicinin Korunması Hakkında Kanun gereği <span className="font-bold underline">"kişiye özel üretim"</span>
-                                    kapsamında değerlendirildiği için iade ve cayma hakkı dışındadır.
-                                    Lütfen renk seçiminizi yaparken bu hususu dikkate alınız.
-                                </p>
-                            </div>
-                        </div>
-                    )}
                 </div>
 
 

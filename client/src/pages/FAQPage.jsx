@@ -106,7 +106,7 @@ function FAQItem({ question, answer }) {
             >
                 <span className="font-semibold text-corporate-black">{question}</span>
                 {isOpen ? (
-                    <ChevronUp size={20} className="text-brand-yellow flex-shrink-0" />
+                    <ChevronUp size={20} className="text-indigo-600 flex-shrink-0" />
                 ) : (
                     <ChevronDown size={20} className="text-gray-400 flex-shrink-0" />
                 )}
@@ -143,7 +143,7 @@ export function FAQPage() {
                 <div className="space-y-12">
                     {faqs.map((category, idx) => (
                         <div key={idx}>
-                            <h2 className="text-2xl font-bold text-corporate-black mb-6 pb-3 border-b-4 border-brand-yellow inline-block">
+                            <h2 className="text-2xl font-bold text-corporate-black mb-6 pb-3 border-b-4 border-indigo-600 inline-block">
                                 {category.category}
                             </h2>
                             <div className="bg-white rounded-xl shadow-lg overflow-hidden">
@@ -156,7 +156,7 @@ export function FAQPage() {
                 </div>
 
                 {/* Contact CTA */}
-                <div className="mt-16 p-8 bg-gradient-to-r from-brand-yellow/10 to-brand-yellow/5 rounded-xl border-2 border-brand-yellow">
+                <div className="mt-16 p-8 bg-gradient-to-r from-brand-yellow/10 to-brand-yellow/5 rounded-xl border-2 border-indigo-600">
                     <h3 className="text-2xl font-bold text-corporate-black mb-3">Sorunuzu bulamadınız mı?</h3>
                     <p className="text-gray-600 mb-6">
                         Size yardımcı olmaktan mutluluk duyarız. Müşteri hizmetlerimiz ile iletişime geçin.
@@ -176,7 +176,7 @@ export function FAQPage() {
                         </a>
                         <a
                             href="mailto:bilgi@e-market.com"
-                            className="inline-flex items-center gap-2 bg-corporate-black text-brand-yellow px-6 py-3 rounded-lg font-bold hover:bg-gray-800 transition-all hover:scale-105"
+                            className="inline-flex items-center gap-2 bg-corporate-black text-indigo-600 px-6 py-3 rounded-lg font-bold hover:bg-gray-800 transition-all hover:scale-105"
                         >
                             E-posta Gönder
                         </a>

@@ -269,7 +269,7 @@ export function OrderTrackingPage() {
                                             İade / İptal Kısıtlaması
                                         </p>
                                         <p className="text-xs text-orange-700 mt-1">
-                                            Siparişiniz özel yapım veya iade edilemeyen ürün(ler) içeriyor olabilir (Örn: Özel renk karıştırılmış boyalar). İptal talebiniz onaylanırken bu ürünler değerlendirmeye alınacaktır.
+                                            Siparişiniz özel yapım veya iade edilemeyen ürün(ler) içeriyor olabilir (Örn: Kişiye özel hazırlanan/üretilen veya kişiselleştirilen ürünler). İptal talebiniz onaylanırken bu ürünler değerlendirmeye alınacaktır.
                                         </p>
                                     </div>
                                 </div>

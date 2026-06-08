@@ -42,39 +42,6 @@ export function BrandSlider({ brands, selectedBrandId, onSelectBrand }) {
                     WebkitOverflowScrolling: 'touch'
                 }}
             >
-                {/* Special Filter Blocks */}
-                <button
-                    className="flex flex-col items-center gap-4 flex-shrink-0 group focus:outline-none"
-                    onClick={() => navigate('/magaza?filter=deals')}
-                >
-                    <div className="w-20 h-20 md:w-30 md:h-30 rounded-full bg-white shadow-2xl flex items-center justify-center group-hover:scale-105 transition-all duration-700 overflow-hidden">
-                        <img
-                            src="/images/firsat-urunleri.webp"
-                            alt="Fırsat Ürünleri"
-                            className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-                        />
-                    </div>
-                    <span className="text-[12px] font-black uppercase tracking-[0.15em] text-gray-400 group-hover:text-action-red transition-all duration-300">
-                        Fırsat Ürünleri
-                    </span>
-                </button>
-
-                <button
-                    className="flex flex-col items-center gap-4 flex-shrink-0 group focus:outline-none"
-                    onClick={() => navigate('/magaza?filter=bestsellers')}
-                >
-                    <div className="w-20 h-20 md:w-30 md:h-30 rounded-full bg-white shadow-2xl flex items-center justify-center group-hover:scale-105 transition-all duration-700 overflow-hidden">
-                        <img
-                            src="/images/cok-satanlar.webp"
-                            alt="Çok Satanlar"
-                            className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-                        />
-                    </div>
-                    <span className="text-[12px] font-black uppercase tracking-[0.15em] text-gray-400 group-hover:text-brand-yellow transition-all duration-300">
-                        Çok Satanlar
-                    </span>
-                </button>
-
                 {/* Brand Logos */}
                 {brands.map((brand) => (
                     <button
@@ -83,8 +50,8 @@ export function BrandSlider({ brands, selectedBrandId, onSelectBrand }) {
                         onClick={() => onSelectBrand(selectedBrandId === brand.id ? null : brand.id)}
                     >
                         <div className={`w-20 h-20 md:w-30 md:h-30 rounded-full bg-white shadow-2xl flex items-center justify-center p-2 border-[3px] transition-all duration-700 overflow-hidden ${selectedBrandId === brand.id
-                            ? 'border-brand-yellow ring-8 ring-brand-yellow/20 scale-110'
-                            : 'border-transparent group-hover:border-brand-yellow/30 group-hover:scale-105'
+                            ? 'border-indigo-600 ring-8 ring-brand-yellow/20 scale-110'
+                            : 'border-transparent group-hover:border-indigo-600/30 group-hover:scale-105'
                             }`}
                         >
                             {brand.logoUrl ? (
@@ -93,7 +60,7 @@ export function BrandSlider({ brands, selectedBrandId, onSelectBrand }) {
                                 <div className="font-black text-3xl text-corporate-black opacity-10 uppercase">{brand.ad[0]}</div>
                             )}
                         </div>
-                        <span className={`text-[12px] font-black uppercase tracking-[0.15em] transition-all duration-300 ${selectedBrandId === brand.id ? 'text-brand-yellow scale-110' : 'text-gray-400 group-hover:text-corporate-black'}`}>
+                        <span className={`text-[12px] font-black uppercase tracking-[0.15em] transition-all duration-300 ${selectedBrandId === brand.id ? 'text-indigo-600 scale-110' : 'text-gray-400 group-hover:text-corporate-black'}`}>
                             {brand.ad}
                         </span>
                     </button>

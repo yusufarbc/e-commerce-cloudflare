@@ -49,7 +49,7 @@ export function ProductCard({ product }) {
     };
 
     return (
-        <div className={`group bg-white shadow-sm rounded-xl overflow-hidden flex flex-col h-full border border-gray-100 hover:shadow-xl hover:border-brand-yellow/50 transition-all duration-300 hover:-translate-y-1 ${!inStock ? 'opacity-70 grayscale-[30%]' : ''}`}>
+        <div className={`group bg-white shadow-sm rounded-xl overflow-hidden flex flex-col h-full border border-gray-100 hover:shadow-xl hover:border-indigo-600/50 transition-all duration-300 hover:-translate-y-1 ${!inStock ? 'opacity-70 grayscale-[30%]' : ''}`}>
             <Link to={product.slug ? `/urun/${product.slug}` : `/product/${product.id}`} className="block relative aspect-square bg-gradient-to-br from-gray-50 to-gray-100 overflow-hidden">
                 {/* Image Wrap */}
                 <div className="w-full h-full bg-white flex items-center justify-center p-4 pb-2">
@@ -70,7 +70,7 @@ export function ProductCard({ product }) {
                 {/* Badges */}
                 <div className="absolute top-2 left-2 flex flex-col gap-1.5">
                     {discountPercentage > 0 && (
-                        <div className="bg-brand-yellow text-corporate-black px-2 py-0.5 rounded-sm shadow-xl flex flex-col items-center leading-none">
+                        <div className="bg-brand-yellow text-white px-2 py-0.5 rounded-sm shadow-xl flex flex-col items-center leading-none">
                             <span className="text-[9px] font-black tracking-tighter uppercase">FIRSAT</span>
                             <span className="text-xs font-black tracking-tighter">%{discountPercentage} İndirim</span>
                         </div>
@@ -144,7 +144,7 @@ export function ProductCard({ product }) {
                             isAdding
                             ? 'bg-green-600 text-white scale-95 shadow-md'
                             : inStock
-                                ? 'bg-[#dc2a12] text-white hover:bg-corporate-black hover:text-brand-yellow shadow-sm hover:shadow-md active:scale-95'
+                                ? 'bg-[#dc2a12] text-white hover:bg-corporate-black hover:text-indigo-600 shadow-sm hover:shadow-md active:scale-95'
                                 : 'bg-gray-100 text-gray-400 cursor-not-allowed'
                         }`}
                         aria-label="Sepete Ekle"

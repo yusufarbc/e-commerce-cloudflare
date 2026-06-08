@@ -6,25 +6,25 @@ export function HeroSection({ scrollToProducts }) {
 
     const slides = [
         {
-            title: "BOYA & YAPI",
-            subtitle: "KİMYASALLARI",
-            description: "Dulux, Polisan ve daha fazlası. En kaliteli boyalar ve yapı kimyasalları.",
-            image: "/images/hero/paint.webp",
-            badge: "Premium Markalar"
+            title: "YENİ SEZON",
+            subtitle: "KAMPANYALARIMIZ",
+            description: "En popüler ve en yeni ürünler avantajlı fiyatlarla kapınızda.",
+            image: "/images/hero/shopping_hero.png",
+            badge: "Yeni Trendler"
         },
         {
-            title: "EL ALETLERİ &",
-            subtitle: "HIRDAVAT",
-            description: "Profesyonel el aletleri ve hırdavat malzemeleri en uygun fiyatlarla.",
-            image: "/images/hero/tools.webp",
-            badge: "Profesyonel Kalite"
+            title: "ÖZEL VE SEÇKİN",
+            subtitle: "KOLEKSİYONLAR",
+            description: "Başka hiçbir yerde bulamayacağınız en seçkin ürünlerimizi hemen keşfedin.",
+            image: "/images/hero/tech_hero.png",
+            badge: "Sadece Bizde"
         },
         {
-            title: "İNŞAAT",
-            subtitle: "MALZEMELERİ",
-            description: "Projeniz için gereken tüm inşaat malzemeleri tek bir çatı altında.",
-            image: "/images/hero/construction.webp",
-            badge: "Toptan & Perakende"
+            title: "HAFTALIK SÜPER",
+            subtitle: "FIRSATLARIMIZ",
+            description: "Haftalık güncellenen büyük indirimli fırsat ürünlerimizi kaçırmayın.",
+            image: "/images/hero/deals_hero.png",
+            badge: "Büyük Fırsat"
         }
     ];
 
@@ -50,13 +50,13 @@ export function HeroSection({ scrollToProducts }) {
 
                         <div className="relative z-10 h-full flex items-center p-6 md:p-24">
                             <div className="max-w-3xl">
-                                <span className="inline-flex items-center gap-1.5 md:gap-2 px-3 py-1.5 md:px-5 md:py-2.5 bg-brand-yellow text-corporate-black font-black text-[10px] md:text-xs uppercase tracking-[0.2em] rounded-full mb-4 md:mb-8 shadow-xl">
+                                <span className="inline-flex items-center gap-1.5 md:gap-2 px-3 py-1.5 md:px-5 md:py-2.5 bg-brand-yellow text-white font-black text-[10px] md:text-xs uppercase tracking-[0.2em] rounded-full mb-4 md:mb-8 shadow-xl">
                                     <Sparkles size={14} className="md:w-4 md:h-4" />
                                     {slide.badge}
                                 </span>
                                 <h1 className="text-3xl md:text-8xl font-black text-white mb-4 md:mb-8 leading-[0.9] tracking-tighter">
                                     {slide.title} <br />
-                                    <span className="text-brand-yellow italic">{slide.subtitle}</span>
+                                    <span className="text-indigo-600 italic">{slide.subtitle}</span>
                                 </h1>
                                 <p className="text-sm md:text-2xl text-gray-200 mb-6 md:mb-12 font-medium max-w-xl leading-relaxed drop-shadow-md line-clamp-2 md:line-clamp-none">
                                     {slide.description}
@@ -64,7 +64,7 @@ export function HeroSection({ scrollToProducts }) {
                                 <div className="flex flex-col sm:flex-row gap-6">
                                     <button
                                         onClick={scrollToProducts}
-                                        className="group bg-brand-yellow text-corporate-black px-6 py-3 md:px-12 md:py-6 rounded-xl md:rounded-2xl font-black text-sm md:text-xl hover:bg-yellow-300 transition-all duration-500 shadow-2xl flex items-center justify-center gap-2 md:gap-4 transform hover:-translate-y-2"
+                                        className="group bg-brand-yellow text-white px-6 py-3 md:px-12 md:py-6 rounded-xl md:rounded-2xl font-black text-sm md:text-xl hover:bg-indigo-700 transition-all duration-500 shadow-2xl flex items-center justify-center gap-2 md:gap-4 transform hover:-translate-y-2"
                                     >
                                         Ürünleri Keşfet
                                         <ArrowRight size={16} className="md:w-6 md:h-6 group-hover:translate-x-3 transition-transform" />

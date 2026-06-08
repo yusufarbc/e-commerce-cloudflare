@@ -2,12 +2,11 @@
 
 ## Site Hakkında
 E-Market (e-market.com), Türkiye geneline hizmet veren profesyonel bir e-ticaret platformudur. Farklı kategorilerde binlerce ürünü en uygun fiyatlarla kullanıcılara sunmaktadır.
-
 ## Ürün Kategorileri
-- **Elektronik**: Telefonlar, bilgisayarlar, aksesuarlar.
-- **Ev & Yaşam**: Mobilya, dekorasyon, mutfak gereçleri.
-- **Moda & Kozmetik**: Giyim, ayakkabı, kişisel bakım.
-- **Yapı Market**: El aletleri, boya, tadilat malzemeleri.
+- **Elektronik**: Telefonlar, kulaklıklar, akıllı saatler ve teknolojik aksesuarlar.
+- **Giyim & Aksesuar**: T-shirtler, cüzdanlar ve günlük giyim ürünleri.
+- **Ev & Yaşam**: Kupalar, masa lambaları ve dekoratif ev eşyaları.
+- **Spor & Outdoor**: Termoslar, yoga matları ve spor ekipmanları.
 
 ## Teknik Özellikler
 - **Altyapı**: Serverless ve Dağıtık Mimari

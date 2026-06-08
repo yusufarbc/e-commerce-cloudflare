@@ -46,7 +46,7 @@ export function LegalPage({ title, contentKey }) {
 
                 {/* Content Card */}
                 <div className="bg-white rounded-2xl shadow-lg p-6 md:p-10 animate-in fade-in duration-500">
-                    <div className="prose prose-lg max-w-none prose-headings:text-corporate-black prose-a:text-brand-yellow hover:prose-a:text-yellow-600 transition-colors">
+                    <div className="prose prose-lg max-w-none prose-headings:text-corporate-black prose-a:text-indigo-600 hover:prose-a:text-yellow-600 transition-colors">
                         {getContent()}
                     </div>
                 </div>

@@ -5,30 +5,30 @@
 @layer base {
     :root {
         --background: 0 0% 100%;
-        --foreground: 0 0% 10%;
+        --foreground: 222.2 84% 4.9%;
 
         /* E-Market Corporate Colors */
-        --primary: 64 100% 50%;
-        /* Safety Yellow */
-        --primary-foreground: 0 0% 10%;
+        --primary: 243 75% 59%;
+        /* Premium Indigo */
+        --primary-foreground: 0 0% 100%;
 
-        --secondary: 0 0% 56%;
-        /* Concrete Gray */
+        --secondary: 215.4 16.3% 46.9%;
+        /* Slate Gray */
         --secondary-foreground: 0 0% 100%;
 
-        --muted: 0 0% 96%;
-        --muted-foreground: 0 0% 56%;
+        --muted: 210 40% 96.1%;
+        --muted-foreground: 215.4 16.3% 46.9%;
 
-        --accent: 0 100% 45%;
-        /* Logistics Red */
+        --accent: 343 90% 60%;
+        /* Rose Accent */
         --accent-foreground: 0 0% 100%;
 
-        --destructive: 0 100% 45%;
-        --destructive-foreground: 0 0% 100%;
+        --destructive: 0 84.2% 60.2%;
+        --destructive-foreground: 210 40% 98%;
 
-        --border: 0 0% 88%;
-        --input: 0 0% 88%;
-        --ring: 64 100% 50%;
+        --border: 214.3 31.8% 91.4%;
+        --input: 214.3 31.8% 91.4%;
+        --ring: 243 75% 59%;
         --radius: 0.5rem;
     }
 
@@ -62,44 +62,44 @@
 /* ===== CSS Variables & Design System ===== */
 :root {
     /* E-Market Corporate Colors */
-    --color-primary: #deff36;
-    /* Ana Marka Rengi - Neon Yellow */
-    --color-primary-dark: #c6e600;
-    --color-primary-light: #ecff33;
-    --color-secondary: #191919;
-    /* Kurumsal Siyah */
-    --color-accent: #dc2a12;
-    /* Aksiyon Kirmizisi */
-    --color-neutral: #666666;
-    /* Metin Grisi */
+    --color-primary: #4f46e5;
+    /* Ana Marka Rengi - Indigo Blue */
+    --color-primary-dark: #4338ca;
+    --color-primary-light: #818cf8;
+    --color-secondary: #0f172a;
+    /* Kurumsal Koyu Lacivert/Siyah (slate-900) */
+    --color-accent: #f43f5e;
+    /* Aksiyon Pembesi/Kirmizisi (rose-500) */
+    --color-neutral: #64748b;
+    /* Metin Grisi (slate-500) */
 
     /* Neutrals - Light Theme */
     --color-bg: #FFFFFF;
-    --color-bg-secondary: #F4F4F4;
-    --color-bg-tertiary: #e8e8e8;
+    --color-bg-secondary: #F8FAFC;
+    --color-bg-tertiary: #F1F5F9;
     --color-surface: #FFFFFF;
-    --color-text: #191919;
-    /* Corporate Black */
-    --color-text-secondary: #666666;
-    --color-text-muted: #999999;
+    --color-text: #0F172A;
+    /* Corporate Slate-900 */
+    --color-text-secondary: #64748B;
+    --color-text-muted: #94A3B8;
     /* Concrete Gray */
 
-    /* Gradients - Industrial Theme */
-    --gradient-primary: linear-gradient(135deg, #deff36 0%, #c6e600 100%);
-    --gradient-secondary: linear-gradient(135deg, #deff36 0%, #dc2a12 100%);
-    --gradient-accent: linear-gradient(135deg, #191919 0%, #525252 100%);
-    --gradient-hero: linear-gradient(135deg, rgba(222, 255, 54, 0.1) 0%, rgba(220, 42, 18, 0.05) 100%);
+    /* Gradients */
+    --gradient-primary: linear-gradient(135deg, #4f46e5 0%, #312e81 100%);
+    --gradient-secondary: linear-gradient(135deg, #4f46e5 0%, #f43f5e 100%);
+    --gradient-accent: linear-gradient(135deg, #0f172a 0%, #334155 100%);
+    --gradient-hero: linear-gradient(135deg, rgba(79, 70, 229, 0.1) 0%, rgba(244, 63, 94, 0.05) 100%);
 
-    /* Shadows - Industrial Theme */
-    --shadow-sm: 0 1px 2px 0 rgba(25, 25, 25, 0.05);
-    --shadow-md: 0 4px 6px -1px rgba(25, 25, 25, 0.1);
-    --shadow-lg: 0 10px 15px -3px rgba(25, 25, 25, 0.1);
-    --shadow-xl: 0 20px 25px -5px rgba(25, 25, 25, 0.15);
-    --shadow-glow: 0 0 30px rgba(222, 255, 54, 0.3);
+    /* Shadows */
+    --shadow-sm: 0 1px 2px 0 rgba(15, 23, 42, 0.05);
+    --shadow-md: 0 4px 6px -1px rgba(15, 23, 42, 0.1);
+    --shadow-lg: 0 10px 15px -3px rgba(15, 23, 42, 0.1);
+    --shadow-xl: 0 20px 25px -5px rgba(15, 23, 42, 0.15);
+    --shadow-glow: 0 0 30px rgba(79, 70, 229, 0.3);
 
     /* Typography */
-    --font-primary: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-    --font-display: 'Roboto', 'Inter', sans-serif;
+    --font-primary: 'Outfit', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    --font-display: 'Outfit', 'Roboto', 'Inter', sans-serif;
 
     /* Spacing */
     --spacing-xs: 0.5rem;
@@ -1003,7 +1003,7 @@ button, a, [role="button"] {
 }
 
 :focus-visible {
-    outline: 2px solid #deff36;
+    outline: 2px solid #4f46e5;
     outline-offset: 2px;
     border-radius: 4px;
 }

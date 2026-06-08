@@ -4,13 +4,13 @@
   "description": "E-Market Serverless E-Commerce Monorepo",
   "private": true,
   "scripts": {
-    "install:all": "npm install && npm install --prefix client && npm install --prefix admin && npm install --prefix server/api",
-    "dev": "npx concurrently -n \"API,CLIENT,ADMIN\" -c \"blue,green,magenta\" \"npm run dev --prefix server/api\" \"npm run dev --prefix client\" \"npm run dev --prefix admin\"",
-    "dev:api": "npm run dev --prefix server/api",
+    "install:all": "npm install && npm install --prefix client && npm install --prefix admin && npm install --prefix api",
+    "dev": "npx concurrently -n \"API,CLIENT,ADMIN\" -c \"blue,green,magenta\" \"npm run dev --prefix api\" \"npm run dev --prefix client\" \"npm run dev --prefix admin\"",
+    "dev:api": "npm run dev --prefix api",
     "dev:client": "npm run dev --prefix client",
     "dev:admin": "npm run dev --prefix admin",
-    "db:seed": "npm run seed --prefix server/api",
-    "db:migrate": "npx wrangler d1 migrations apply DB --local --cwd server/api",
+    "db:seed": "npm run seed --prefix api",
+    "db:migrate": "npx wrangler d1 migrations apply DB --local --cwd api",
     "deploy": "node scripts/deploy.js"
   },
   "devDependencies": {

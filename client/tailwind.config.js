@@ -9,62 +9,62 @@ export default {
             colors: {
                 // E-Market Corporate Colors
                 brand: {
-                    yellow: '#deff36', // Ana Marka Rengi - Logo, Icons, Banners
+                    yellow: '#4f46e5', // Ana Marka Rengi - Indigo Blue
                 },
                 corporate: {
-                    black: '#191919', // Kurumsal Siyah - Main Text, Header/Footer BG
+                    black: '#0f172a', // Kurumsal Koyu Lacivert/Siyah (slate-900)
                 },
                 action: {
                     red: '#dc2a12', // Aksiyon Kirmizisi - Cart Button, Discount
                 },
                 bg: {
                     white: '#FFFFFF', // Zemin Beyazi
-                    soft: '#F4F4F4', // Yumusak Gri - Search Bar, Tables
+                    soft: '#F8FAFC', // Yumusak Gri/Mavi - Search Bar, Tables
                 },
                 text: {
-                    gray: '#666666', // Metin Grisi - Secondary Info
-                    main: '#191919',
+                    gray: '#64748B', // Metin Grisi - slate-500
+                    main: '#0F172A', // Slate-900
                 },
                 // Aliases for compatibility
                 primary: {
-                    DEFAULT: '#deff36',
-                    foreground: '#191919',
-                    50: '#feffcc',
-                    100: '#feff99',
-                    200: '#fdff66',
-                    300: '#ecff33',
-                    400: '#e5ff1a',
-                    500: '#deff36',
-                    600: '#c6e600',
-                    700: '#a3bf00',
-                    800: '#7a8f00',
-                    900: '#515f00',
+                    DEFAULT: '#4f46e5',
+                    foreground: '#ffffff',
+                    50: '#f5f3ff',
+                    100: '#ede9fe',
+                    200: '#ddd6fe',
+                    300: '#c4b5fd',
+                    400: '#a78bfa',
+                    500: '#8b5cf6',
+                    600: '#7c3aed',
+                    700: '#6d28d9',
+                    800: '#5b21b6',
+                    900: '#4c1d95',
                 },
                 secondary: {
-                    DEFAULT: '#191919',
-                    foreground: '#deff36',
-                    50: '#f5f5f5',
-                    100: '#e0e0e0',
-                    200: '#cccccc',
-                    300: '#b3b3b3',
-                    400: '#999999',
-                    500: '#8E8E8E',
-                    600: '#707070',
-                    700: '#525252',
-                    800: '#333333',
-                    900: '#191919',
+                    DEFAULT: '#0f172a',
+                    foreground: '#4f46e5',
+                    50: '#f8fafc',
+                    100: '#f1f5f9',
+                    200: '#e2e8f0',
+                    300: '#cbd5e1',
+                    400: '#94a3b8',
+                    500: '#64748b',
+                    600: '#475569',
+                    700: '#334155',
+                    800: '#1e293b',
+                    900: '#0f172a',
                 },
                 neutral: {
-                    50: '#FFFFFF',
-                    100: '#f7f7f7',
-                    200: '#e8e8e8',
-                    300: '#d4d4d4',
-                    400: '#a3a3a3',
-                    500: '#8E8E8E',
-                    600: '#737373',
-                    700: '#525252',
-                    800: '#404040',
-                    900: '#191919',
+                    50: '#ffffff',
+                    100: '#f8fafc',
+                    200: '#f1f5f9',
+                    300: '#e2e8f0',
+                    400: '#cbd5e1',
+                    500: '#94a3b8',
+                    600: '#64748b',
+                    700: '#475569',
+                    800: '#334155',
+                    900: '#0f172a',
                 },
             },
             fontFamily: {

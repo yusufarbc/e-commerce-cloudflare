@@ -124,7 +124,7 @@ export const generateBreadcrumbSchema = (breadcrumbs) => ({
 /**
  * Generate ItemList schema for product listings
  * @param {Array} products - Array of products
- * @param {string} listName - Name of the list (e.g., "Search Results", "Category: Boyalar")
+ * @param {string} listName - Name of the list (e.g., "Search Results", "Category: Electronics")
  * @returns {Object} JSON-LD item list schema
  */
 export const generateProductListSchema = (products, listName) => ({

@@ -27,12 +27,12 @@ export function ContactPage() {
                         {/* Phone */}
                         <div className="bg-white rounded-2xl shadow-lg p-6 hover:shadow-xl transition-shadow group">
                             <div className="flex items-start gap-4">
-                                <div className="w-12 h-12 bg-brand-yellow/10 rounded-full flex items-center justify-center flex-shrink-0 group-hover:bg-brand-yellow/20 transition-colors">
+                                <div className="w-12 h-12 bg-indigo-50 rounded-full flex items-center justify-center flex-shrink-0 group-hover:bg-indigo-100 transition-colors">
                                     <Phone size={24} className="text-corporate-black" />
                                 </div>
                                 <div>
                                     <h3 className="font-bold text-corporate-black mb-1 text-lg">Telefon</h3>
-                                    <a href="tel:+908500000000" className="text-gray-600 hover:text-brand-yellow transition-colors block text-lg font-medium">
+                                    <a href="tel:+908500000000" className="text-gray-600 hover:text-indigo-600 transition-colors block text-lg font-medium">
                                         0850 000 00 00
                                     </a>
                                     <p className="text-sm text-gray-500 mt-1">Pazartesi - Cumartesi: 09:00 - 18:00</p>
@@ -43,12 +43,12 @@ export function ContactPage() {
                         {/* Email */}
                         <div className="bg-white rounded-2xl shadow-lg p-6 hover:shadow-xl transition-shadow group">
                             <div className="flex items-start gap-4">
-                                <div className="w-12 h-12 bg-brand-yellow/10 rounded-full flex items-center justify-center flex-shrink-0 group-hover:bg-brand-yellow/20 transition-colors">
+                                <div className="w-12 h-12 bg-indigo-50 rounded-full flex items-center justify-center flex-shrink-0 group-hover:bg-indigo-100 transition-colors">
                                     <Mail size={24} className="text-corporate-black" />
                                 </div>
                                 <div>
                                     <h3 className="font-bold text-corporate-black mb-1 text-lg">E-posta</h3>
-                                    <a href="mailto:bilgi@e-market.com" className="text-gray-600 hover:text-brand-yellow transition-colors block text-lg font-medium">
+                                    <a href="mailto:bilgi@e-market.com" className="text-gray-600 hover:text-indigo-600 transition-colors block text-lg font-medium">
                                         bilgi@e-market.com
                                     </a>
                                     <p className="text-sm text-gray-500 mt-1">24 saat içinde yanıt veriyoruz</p>
@@ -59,7 +59,7 @@ export function ContactPage() {
                         {/* Address */}
                         <div className="bg-white rounded-2xl shadow-lg p-6 hover:shadow-xl transition-shadow group">
                             <div className="flex items-start gap-4">
-                                <div className="w-12 h-12 bg-brand-yellow/10 rounded-full flex items-center justify-center flex-shrink-0 group-hover:bg-brand-yellow/20 transition-colors">
+                                <div className="w-12 h-12 bg-indigo-50 rounded-full flex items-center justify-center flex-shrink-0 group-hover:bg-indigo-100 transition-colors">
                                     <MapPin size={24} className="text-corporate-black" />
                                 </div>
                                 <div>
@@ -73,7 +73,7 @@ export function ContactPage() {
                         {/* Hours */}
                         <div className="bg-white rounded-2xl shadow-lg p-6 hover:shadow-xl transition-shadow group">
                             <div className="flex items-start gap-4">
-                                <div className="w-12 h-12 bg-brand-yellow/10 rounded-full flex items-center justify-center flex-shrink-0 group-hover:bg-brand-yellow/20 transition-colors">
+                                <div className="w-12 h-12 bg-indigo-50 rounded-full flex items-center justify-center flex-shrink-0 group-hover:bg-indigo-100 transition-colors">
                                     <Clock size={24} className="text-corporate-black" />
                                 </div>
                                 <div>

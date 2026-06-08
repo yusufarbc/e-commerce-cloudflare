@@ -39,18 +39,17 @@ export function RefundPolicy() {
                 <section className="bg-amber-50 p-6 rounded-xl border border-amber-100 mt-8 shadow-sm">
                     <h2 className="text-lg font-bold text-amber-900 uppercase mb-3 flex items-center gap-2">
                         <AlertCircle size={20} className="text-amber-600" />
-                        4. Önemli Bilgilendirme (Özel Hazırlanan Renkler)
+                        4. Önemli Bilgilendirme (Kişiye Özel Hazırlanan Ürünler)
                     </h2>
                     <p className="text-amber-800 font-medium text-sm leading-relaxed mb-2">
                         6502 sayılı Tüketicinin Korunması Hakkında Kanun'un "Cayma Hakkının İstisnaları" başlıklı maddesi gereğince; 
-                        <strong className="underline decoration-amber-300"> kartela üzerinden seçilen ve siparişinize istinaden size özel olarak karıştırılan/hazırlanan renkler, "kişiye özel üretim" kapsamında değerlendirilmektedir.</strong>
+                        <strong className="underline decoration-amber-300"> alıcının istekleri veya kişisel ihtiyaçları doğrultusunda hazırlanan, üzerinde değişiklik veya ilaveler yapılarak kişiye özel hale getirilen ürünler "kişiye özel üretim" kapsamında değerlendirilmektedir.</strong>
                     </p>
                     <p className="text-amber-700 text-sm italic">
-                        Bu sebeple, özel karıştırılan boyalarda cayma hakkı kullanılamaz ve iade kabul edilmemektedir. 
-                        Lütfen siparişiniz öncesinde renk tercihinizi kesinleştiriniz.
+                        Bu sebeple, kişiye özel olarak üretilen, hazırlanan veya kişiselleştirilen ürünlerde cayma hakkı kullanılamaz ve iade kabul edilmemektedir. 
+                        Lütfen siparişiniz öncesinde ürün seçeneklerinizi kesinleştiriniz.
                     </p>
                 </section>
-
             </div>
         </div>
     );

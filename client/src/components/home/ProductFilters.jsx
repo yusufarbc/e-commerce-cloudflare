@@ -47,7 +47,7 @@ export function ProductFilters({
                                     value={minPrice}
                                     onChange={(e) => setMinPrice(e.target.value)}
                                     placeholder="0"
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-brand-yellow transition-colors"
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-indigo-600 transition-colors"
                                 />
                             </div>
                             <div>
@@ -57,13 +57,13 @@ export function ProductFilters({
                                     value={maxPrice}
                                     onChange={(e) => setMaxPrice(e.target.value)}
                                     placeholder="10000"
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-brand-yellow transition-colors"
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-indigo-600 transition-colors"
                                 />
                             </div>
                             <div className="flex gap-2">
                                 <button
                                     onClick={applyPriceFilter}
-                                    className="flex-1 bg-brand-yellow text-corporate-black px-4 py-2 rounded-lg font-bold hover:bg-yellow-300 transition-colors"
+                                    className="flex-1 bg-brand-yellow text-white px-4 py-2 rounded-lg font-bold hover:bg-indigo-700 transition-colors"
                                 >
                                     Uygula
                                 </button>
@@ -97,7 +97,7 @@ export function ProductFilters({
                                     name="brand"
                                     checked={!selectedMarkaId}
                                     onChange={() => applyBrandFilter('')}
-                                    className="w-4 h-4 text-brand-yellow focus:ring-brand-yellow"
+                                    className="w-4 h-4 text-indigo-600 focus:ring-indigo-500"
                                 />
                                 <span className="text-sm font-medium">Tüm Markalar</span>
                             </label>
@@ -108,7 +108,7 @@ export function ProductFilters({
                                         name="brand"
                                         checked={selectedMarkaId === brand.id}
                                         onChange={() => applyBrandFilter(brand.id)}
-                                        className="w-4 h-4 text-brand-yellow focus:ring-brand-yellow"
+                                        className="w-4 h-4 text-indigo-600 focus:ring-indigo-500"
                                     />
                                     <span className="text-sm">{brand.ad}</span>
                                 </label>
@@ -125,7 +125,7 @@ export function ProductFilters({
                         <select
                             value={sortBy}
                             onChange={(e) => applySorting(e.target.value)}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-brand-yellow transition-colors font-medium text-sm"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-indigo-600 transition-colors font-medium text-sm"
                         >
                             <option value="newest">En Yeni</option>
                             <option value="price-asc">Fiyat (Düşükten Yükseğe)</option>
