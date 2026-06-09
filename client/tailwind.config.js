@@ -9,7 +9,8 @@ export default {
             colors: {
                 // E-Market Corporate Colors
                 brand: {
-                    yellow: '#4f46e5', // Ana Marka Rengi - Indigo Blue
+                    yellow: '#4f46e5', // Kept for compatibility
+                    primary: '#4f46e5', // Ana Marka Rengi - Indigo Blue
                 },
                 corporate: {
                     black: '#0f172a', // Kurumsal Koyu Lacivert/Siyah (slate-900)

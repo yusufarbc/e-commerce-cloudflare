@@ -270,8 +270,8 @@ export function ProductDetailPage() {
                             {/* Top-left badges */}
                             <div className="absolute top-4 left-4 flex flex-col gap-2 z-10">
                                 {discountPercentage > 0 && (
-                                    <div className="bg-brand-yellow text-white px-4 py-2 rounded-sm shadow-xl flex flex-col items-center leading-none">
-                                        <span className="text-[10px] font-black uppercase tracking-widest">FIRSAT</span>
+                                    <div className="bg-brand-primary text-white px-4 py-2 rounded-sm shadow-xl flex flex-col items-center leading-none">
+                                        <span className="text-[10px] font-black uppercase tracking-widest">İNDİRİM</span>
                                         <span className="text-lg font-black tracking-tighter">%{discountPercentage} İndirim</span>
                                     </div>
                                 )}

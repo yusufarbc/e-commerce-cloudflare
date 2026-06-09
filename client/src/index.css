@@ -171,7 +171,7 @@ ul {
     left: 0;
     right: 0;
     z-index: 1000;
-    /* User Requested: Safety Yellow Background */
+    /* Corporate Background */
     background: var(--color-primary);
     border-bottom: 1px solid rgba(0, 0, 0, 0.1);
     transition: var(--transition-base);
@@ -189,7 +189,7 @@ ul {
     display: flex;
     align-items: center;
     gap: var(--spacing-xs);
-    /* Logo directly on yellow background */
+    /* Logo transparent background */
     background: transparent;
     padding: 8px 0;
 }
@@ -211,7 +211,7 @@ ul {
 .nav-link {
     position: relative;
     font-weight: 700;
-    /* Bolder for black on yellow */
+    /* Bolder navigation links */
     color: var(--color-secondary);
     /* Coal Black */
     text-transform: uppercase;
@@ -270,7 +270,6 @@ ul {
 .icon-btn:hover {
     background: var(--color-secondary);
     color: var(--color-primary);
-    /* Yellow icon on Black bg */
     transform: translateY(-2px);
     box-shadow: var(--shadow-md);
 }
@@ -385,16 +384,14 @@ ul {
 
 .btn-primary {
     background: var(--color-primary);
-    /* Safety Yellow */
-    color: var(--color-secondary);
-    /* Coal Black */
+    color: #FFFFFF;
     box-shadow: var(--shadow-glow);
 }
 
 .btn-primary:hover {
     transform: translateY(-2px);
     background: var(--color-primary-dark);
-    box-shadow: 0 0 40px rgba(223, 255, 0, 0.6);
+    box-shadow: 0 0 40px rgba(79, 70, 229, 0.4);
 }
 
 .btn-secondary {
@@ -597,10 +594,8 @@ ul {
     left: var(--spacing-sm);
     padding: var(--spacing-xs) var(--spacing-md);
     background: var(--color-primary);
-    /* Safety Yellow */
     border-radius: var(--radius-md);
-    color: var(--color-secondary);
-    /* Coal Black */
+    color: #FFFFFF;
     font-size: 0.75rem;
     font-weight: 700;
     text-transform: uppercase;

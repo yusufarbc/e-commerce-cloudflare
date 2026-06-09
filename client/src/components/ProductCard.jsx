@@ -70,8 +70,8 @@ export function ProductCard({ product }) {
                 {/* Badges */}
                 <div className="absolute top-2 left-2 flex flex-col gap-1.5">
                     {discountPercentage > 0 && (
-                        <div className="bg-brand-yellow text-white px-2 py-0.5 rounded-sm shadow-xl flex flex-col items-center leading-none">
-                            <span className="text-[9px] font-black tracking-tighter uppercase">FIRSAT</span>
+                        <div className="bg-brand-primary text-white px-2 py-0.5 rounded-sm shadow-xl flex flex-col items-center leading-none">
+                            <span className="text-[9px] font-black tracking-tighter uppercase">İNDİRİM</span>
                             <span className="text-xs font-black tracking-tighter">%{discountPercentage} İndirim</span>
                         </div>
                     )}

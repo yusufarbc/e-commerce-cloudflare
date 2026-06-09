@@ -3,7 +3,7 @@
   E-Market Admin Panel - Premium CSS System
   =========================================
   Author: Antigravity
-  Theme: Obsidian Glassmorphism with Yellow Brand Accents
+  Theme: Obsidian Glassmorphism with Indigo Brand Accents
 */
 
 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;900&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
@@ -12,17 +12,17 @@
   --font-title: 'Outfit', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   --font-body: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 
-  /* Colors */
+  /* Colors - Dark Theme (Default) */
   --bg-obsidian: #090a0f;
   --bg-deep: #10121a;
   --bg-card: rgba(20, 24, 35, 0.65);
   --bg-card-hover: rgba(28, 33, 48, 0.85);
   --border-glass: rgba(255, 255, 255, 0.06);
-  --border-glass-focus: rgba(210, 255, 0, 0.3);
+  --border-glass-focus: rgba(99, 102, 241, 0.3);
   
-  --color-primary: #d2ff00; /* Brand Yellow/Lime */
-  --color-primary-hover: #e2ff54;
-  --color-primary-glow: rgba(210, 255, 0, 0.15);
+  --color-primary: #6366f1; /* Premium Indigo Accent */
+  --color-primary-hover: #818cf8;
+  --color-primary-glow: rgba(99, 102, 241, 0.15);
   
   --color-text-main: #f3f4f6;
   --color-text-muted: #9ca3af;
@@ -44,10 +44,51 @@
   --radius-lg: 20px;
   --radius-circle: 50%;
   
-  --shadow-glow: 0 0 20px rgba(210, 255, 0, 0.08);
+  --shadow-glow: 0 0 20px rgba(99, 102, 241, 0.12);
   --shadow-card: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
   --transition-smooth: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   --blur-glass: blur(12px);
+
+  /* Element Specific Themes */
+  --bg-nav-hover: rgba(255, 255, 255, 0.03);
+  --bg-input: rgba(0, 0, 0, 0.3);
+  --bg-table-th: rgba(0, 0, 0, 0.2);
+  --bg-table-hover: rgba(255, 255, 255, 0.02);
+}
+
+:root[data-theme="light"] {
+  --bg-obsidian: #f1f5f9; /* Slate 100 */
+  --bg-deep: #ffffff; /* Pure white sidebar */
+  --bg-card: #ffffff; /* Pure white cards */
+  --bg-card-hover: #e2e8f0; /* Slate 200 */
+  --border-glass: rgba(15, 23, 42, 0.08);
+  --border-glass-focus: rgba(99, 102, 241, 0.4);
+  
+  --color-primary: #4f46e5; /* Slightly darker indigo for light background readability */
+  --color-primary-hover: #4338ca;
+  --color-primary-glow: rgba(79, 70, 229, 0.1);
+  
+  --color-text-main: #0f172a; /* Slate 900 */
+  --color-text-muted: #475569; /* Slate 600 */
+  --color-text-dimmed: #64748b; /* Slate 500 */
+  
+  /* Status Colors */
+  --status-pending: #d97706;
+  --status-pending-bg: rgba(217, 119, 6, 0.08);
+  --status-success: #059669;
+  --status-success-bg: rgba(5, 150, 105, 0.08);
+  --status-shipped: #2563eb;
+  --status-shipped-bg: rgba(37, 99, 235, 0.08);
+  --status-error: #dc2626;
+  --status-error-bg: rgba(220, 38, 38, 0.08);
+  
+  --shadow-glow: 0 0 20px rgba(79, 70, 229, 0.06);
+  --shadow-card: 0 4px 18px 0 rgba(15, 23, 42, 0.05);
+
+  --bg-nav-hover: rgba(15, 23, 42, 0.04);
+  --bg-input: #ffffff;
+  --bg-table-th: rgba(15, 23, 42, 0.03);
+  --bg-table-hover: rgba(15, 23, 42, 0.02);
 }
 
 /* Reset */
@@ -66,7 +107,7 @@ body {
   overflow-x: hidden;
   -webkit-font-smoothing: antialiased;
   background-image: 
-    radial-gradient(at 0% 0%, rgba(210, 255, 0, 0.03) 0px, transparent 50%),
+    radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.03) 0px, transparent 50%),
     radial-gradient(at 100% 100%, rgba(59, 130, 246, 0.02) 0px, transparent 50%);
   background-attachment: fixed;
 }
@@ -149,15 +190,15 @@ a:hover {
   align-items: center;
   justify-content: center;
   font-weight: 900;
-  color: var(--bg-obsidian);
+  color: #ffffff;
   font-family: var(--font-title);
-  box-shadow: 0 0 15px rgba(210, 255, 0, 0.3);
+  box-shadow: 0 0 15px rgba(99, 102, 241, 0.3);
 }
 
 .sidebar-title {
   font-size: 20px;
   font-weight: 800;
-  color: #fff;
+  color: var(--color-text-main);
   letter-spacing: -0.5px;
 }
 
@@ -189,8 +230,8 @@ a:hover {
 }
 
 .nav-item button:hover, .nav-item a:hover {
-  background: rgba(255, 255, 255, 0.03);
-  color: #fff;
+  background: var(--bg-nav-hover);
+  color: var(--color-text-main);
   transform: translateX(4px);
 }
 
@@ -247,7 +288,7 @@ a:hover {
   font-size: 32px;
   font-weight: 800;
   font-family: var(--font-title);
-  color: #fff;
+  color: var(--color-text-main);
   margin-bottom: 4px;
 }
 
@@ -278,7 +319,7 @@ a:hover {
 .content-title {
   font-size: 28px;
   font-weight: 800;
-  color: #fff;
+  color: var(--color-text-main);
 }
 
 /* Tables */
@@ -296,7 +337,7 @@ a:hover {
 }
 
 .admin-table th {
-  background: rgba(0, 0, 0, 0.2);
+  background: var(--bg-table-th);
   padding: 16px 20px;
   font-weight: 600;
   font-size: 13px;
@@ -323,7 +364,7 @@ a:hover {
 }
 
 .admin-table tr:hover td {
-  background: rgba(255, 255, 255, 0.02);
+  background: var(--bg-table-hover);
 }
 
 /* Buttons */
@@ -344,18 +385,18 @@ a:hover {
 
 .btn-primary {
   background: var(--color-primary);
-  color: var(--bg-obsidian);
+  color: #ffffff;
 }
 
 .btn-primary:hover {
   background: var(--color-primary-hover);
-  box-shadow: 0 0 15px rgba(210, 255, 0, 0.25);
+  box-shadow: 0 0 15px var(--color-primary-glow);
   transform: translateY(-1px);
 }
 
 .btn-secondary {
   background: rgba(255, 255, 255, 0.05);
-  color: #fff;
+  color: var(--color-text-main);
   border-color: var(--border-glass);
 }
 
@@ -429,10 +470,10 @@ a:hover {
 .form-control {
   width: 100%;
   padding: 12px 16px;
-  background: rgba(0, 0, 0, 0.3);
+  background: var(--bg-input);
   border: 1px solid var(--border-glass);
   border-radius: var(--radius-md);
-  color: #fff;
+  color: var(--color-text-main);
   font-family: var(--font-body);
   font-size: 14px;
   transition: var(--transition-smooth);
@@ -441,7 +482,7 @@ a:hover {
 .form-control:focus {
   outline: none;
   border-color: var(--color-primary);
-  box-shadow: 0 0 0 3px rgba(210, 255, 0, 0.1);
+  box-shadow: 0 0 0 3px var(--color-primary-glow);
 }
 
 textarea.form-control {
@@ -556,7 +597,7 @@ textarea.form-control {
 
 .image-upload-box:hover {
   border-color: var(--color-primary);
-  background: rgba(210, 255, 0, 0.02);
+  background: rgba(99, 102, 241, 0.02);
 }
 
 .image-preview {
@@ -585,7 +626,7 @@ textarea.form-control {
   align-items: center;
   justify-content: center;
   padding: 20px;
-  background-image: radial-gradient(circle at center, rgba(210, 255, 0, 0.05) 0%, transparent 60%);
+  background-image: radial-gradient(circle at center, rgba(99, 102, 241, 0.05) 0%, transparent 60%);
 }
 
 .login-card {
@@ -608,9 +649,9 @@ textarea.form-control {
   align-items: center;
   justify-content: center;
   font-weight: 900;
-  color: var(--bg-obsidian);
+  color: #ffffff;
   font-family: var(--font-title);
   font-size: 20px;
   margin-bottom: 16px;
-  box-shadow: 0 0 20px rgba(210, 255, 0, 0.4);
+  box-shadow: 0 0 20px rgba(99, 102, 241, 0.4);
 }

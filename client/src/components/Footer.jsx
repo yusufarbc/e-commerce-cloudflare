@@ -106,15 +106,13 @@ export function Footer() {
                     {/* 2. Sütun: Alışveriş */}
                     <div>
                         <h3 className="text-lg font-bold text-white mb-6 flex items-center gap-3">
-                            <span className="w-1.5 h-6 bg-brand-yellow rounded-full"></span>
+                            <span className="w-1.5 h-6 bg-brand-primary rounded-full"></span>
                             Alışveriş
                         </h3>
                         <ul className="space-y-3">
                             {[
                                 { name: 'Öne Çıkanlar', href: '/magaza?ozellik=one-cikan' },
-                                { name: 'Fırsat Ürünleri', href: '/magaza?ozellik=firsat' },
-                                { name: 'Yeni Ürünler', href: '/magaza?ozellik=yeni' },
-                                { name: 'Çok Satanlar', href: '/magaza?ozellik=cok-satan' }
+                                { name: 'Yeni Ürünler', href: '/magaza?ozellik=yeni' }
                             ].map((item) => (
                                 <li key={item.name}>
                                     <Link
@@ -132,7 +130,7 @@ export function Footer() {
                     {/* 3. Sütun: Müşteri */}
                     <div>
                         <h3 className="text-lg font-bold text-white mb-6 flex items-center gap-3">
-                            <span className="w-1.5 h-6 bg-brand-yellow rounded-full"></span>
+                            <span className="w-1.5 h-6 bg-brand-primary rounded-full"></span>
                             Müşteri
                         </h3>
                         <ul className="space-y-3">
@@ -158,7 +156,7 @@ export function Footer() {
                     {/* 4. Sütun: Kurumsal */}
                     <div>
                         <h3 className="text-lg font-bold text-white mb-6 flex items-center gap-3">
-                            <span className="w-1.5 h-6 bg-brand-yellow rounded-full"></span>
+                            <span className="w-1.5 h-6 bg-brand-primary rounded-full"></span>
                             Kurumsal
                         </h3>
                         <ul className="space-y-3">

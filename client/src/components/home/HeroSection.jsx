@@ -20,11 +20,11 @@ export function HeroSection({ scrollToProducts }) {
             badge: "Sadece Bizde"
         },
         {
-            title: "HAFTALIK SÜPER",
-            subtitle: "FIRSATLARIMIZ",
-            description: "Haftalık güncellenen büyük indirimli fırsat ürünlerimizi kaçırmayın.",
+            title: "GÜVENLİ VE HIZLI",
+            subtitle: "ALIŞVERİŞ",
+            description: "En kaliteli ürünler, güvenli ödeme ve hızlı teslimat seçenekleriyle kapınızda.",
             image: "/images/hero/deals_hero.png",
-            badge: "Büyük Fırsat"
+            badge: "Kolay Ödeme"
         }
     ];
 
@@ -80,7 +80,7 @@ export function HeroSection({ scrollToProducts }) {
                         <button
                             key={i}
                             onClick={() => setCurrentSlide(i)}
-                            className={`h-3 transition-all duration-700 rounded-full ${i === currentSlide ? 'w-20 bg-brand-yellow shadow-[0_0_20px_rgba(222,255,54,0.5)]' : 'w-3 bg-white/40 hover:bg-white/60'}`}
+                            className={`h-3 transition-all duration-700 rounded-full ${i === currentSlide ? 'w-20 bg-brand-yellow shadow-[0_0_20px_rgba(79,70,229,0.5)]' : 'w-3 bg-white/40 hover:bg-white/60'}`}
                         />
                     ))}
                 </div>

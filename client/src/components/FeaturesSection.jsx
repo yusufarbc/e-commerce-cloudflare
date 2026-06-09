@@ -1,5 +1,5 @@
 import React from 'react';
-import { Truck, ShieldCheck, CreditCard, Percent } from 'lucide-react';
+import { Truck, ShieldCheck, CreditCard, RotateCcw } from 'lucide-react';
 
 export function FeaturesSection() {
     return (
@@ -42,15 +42,15 @@ export function FeaturesSection() {
                         </div>
                     </div>
 
-                    {/* Toptan Fiyat */}
+                    {/* Kolay İade */}
                     <div className="group relative bg-white p-8 rounded-3xl shadow-lg hover:shadow-2xl transition-all duration-500 border border-gray-100 hover:border-brand-yellow/50 hover:-translate-y-2">
 
                         <div className="relative">
                             <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-action-red to-red-600 flex items-center justify-center mb-6 shadow-lg shadow-action-red/30 group-hover:scale-110 group-hover:rotate-3 transition-all duration-500">
-                                <Percent size={36} className="text-white" />
+                                <RotateCcw size={36} className="text-white" />
                             </div>
-                            <h3 className="text-xl font-black mb-3 text-corporate-black group-hover:text-brand-yellow transition-colors">Toptan Fiyat</h3>
-                            <p className="text-gray-600 text-sm leading-relaxed">Proje bazlı alımlarda özel iskonto.</p>
+                            <h3 className="text-xl font-black mb-3 text-corporate-black group-hover:text-brand-yellow transition-colors">Kolay İade</h3>
+                            <p className="text-gray-600 text-sm leading-relaxed">14 gün içinde koşulsuz şartsız kolay iade.</p>
                         </div>
                     </div>
                 </div>

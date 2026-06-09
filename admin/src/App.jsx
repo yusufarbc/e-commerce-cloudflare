@@ -20,10 +20,12 @@ import {
   Check, 
   X,
   Lock,
-  ChevronRight
+  ChevronRight,
+  Sun,
+  Moon
 } from 'lucide-react';
 
-const API_URL = window.location.hostname === 'localhost' ? 'http://localhost:8787' : '';
+const API_URL = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') ? 'http://localhost:8787' : '';
 
 export default function App() {
   const [token, setToken] = useState(localStorage.getItem('admin_token') || '');
@@ -31,6 +33,16 @@ export default function App() {
   const [password, setPassword] = useState('');
   const [loginError, setLoginError] = useState('');
   const [activeTab, setActiveTab] = useState('dashboard');
+  const [theme, setTheme] = useState(localStorage.getItem('admin_theme') || 'dark');
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('admin_theme', theme);
+  }, [theme]);
+
+  const toggleTheme = () => {
+    setTheme(prev => prev === 'dark' ? 'light' : 'dark');
+  };
   
   // Data States
   const [products, setProducts] = useState([]);
@@ -433,6 +445,14 @@ export default function App() {
   if (!token) {
     return (
       <div className="login-container">
+        <button 
+          onClick={toggleTheme}
+          className="btn btn-secondary" 
+          style={{ position: 'absolute', top: '20px', right: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}
+        >
+          {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
+          <span>{theme === 'dark' ? 'Açık Tema' : 'Koyu Tema'}</span>
+        </button>
         <div className="card login-card">
           <div className="login-header">
             <div className="login-logo">E</div>
@@ -525,7 +545,11 @@ export default function App() {
           </li>
         </nav>
         <div className="sidebar-footer">
-          <button className="btn btn-secondary" onClick={handleLogout} style={{ width: '100%', gap: '8px' }}>
+          <button className="btn btn-secondary" onClick={toggleTheme} style={{ width: '100%', gap: '8px', marginBottom: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
+            <span>{theme === 'dark' ? 'Açık Tema' : 'Koyu Tema'}</span>
+          </button>
+          <button className="btn btn-secondary" onClick={handleLogout} style={{ width: '100%', gap: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <LogOut size={16} /> Oturumu Kapat
           </button>
         </div>
