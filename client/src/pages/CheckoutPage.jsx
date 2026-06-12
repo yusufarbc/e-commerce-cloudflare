@@ -7,6 +7,7 @@ import { MapPin, CreditCard, CheckCircle, ChevronRight, Truck, ShieldCheck, Lock
 import { FeaturesSection } from '../components/FeaturesSection';
 import { useSettings } from '../context/SettingsContext';
 import { calculateShippingFee } from '../utils/shippingCalculator';
+import { trackBeginCheckout } from '../utils/analytics';
 
 // Step indicator component
 function StepIndicator({ currentStep }) {
@@ -77,6 +78,12 @@ export function CheckoutPage() {
     const [installments, setInstallments] = useState([]);
     const [selectedInstallment, setSelectedInstallment] = useState(1);
     const [installmentsLoading, setInstallmentsLoading] = useState(false);
+
+    useEffect(() => {
+        if (cartItems && cartItems.length > 0) {
+            trackBeginCheckout(cartItems, cartTotal);
+        }
+    }, []);
 
     // Removed local useEffect for settings fetching
 

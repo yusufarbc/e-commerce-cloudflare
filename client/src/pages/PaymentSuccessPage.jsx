@@ -3,19 +3,22 @@ import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { CheckCircle } from 'lucide-react';
 import { FeaturesSection } from '../components/FeaturesSection';
-
 import { useTranslation } from 'react-i18next';
+import { trackPurchase } from '../utils/analytics';
 
 export function PaymentSuccessPage() {
     const { t } = useTranslation();
     const [searchParams] = useSearchParams();
     const navigate = useNavigate();
-    const { clearCart } = useCart();
+    const { cartItems, cartTotal, clearCart } = useCart();
     const orderNumber = searchParams.get('orderNumber');
 
     useEffect(() => {
+        if (orderNumber && cartItems && cartItems.length > 0) {
+            trackPurchase(orderNumber, cartItems, cartTotal);
+        }
         clearCart();
-    }, [clearCart]);
+    }, [orderNumber, clearCart]);
 
     return (
         <div className="bg-gray-50 min-h-[calc(100vh-400px)] flex flex-col justify-between">

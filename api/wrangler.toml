@@ -38,3 +38,7 @@ preview_bucket_name = "ecommerce-r2"
 
 [[send_email]]
 name = "EMAIL"
+
+[triggers]
+crons = [ "0 2 * * *" ] # Everyday at 02:00 AM UTC
+

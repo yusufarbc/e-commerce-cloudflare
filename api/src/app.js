@@ -16,6 +16,9 @@ import settingsRoutes from './routes/settingsRoutes.js';
 import feedRoutes from './routes/feedRoutes.js';
 import seoRoutes from './routes/seoRoutes.js';
 import adminRoutes from './routes/adminRoutes.js';
+import metricsRoutes from './routes/metricsRoutes.js';
+import { feedController } from './container.js';
+import { adapt } from './utils/honoAdapter.js';
 
 // Hono App Instance
 const app = new Hono();
@@ -98,9 +101,35 @@ app.route('/api/v1', seoRoutes);
 // Mount modular protected admin sub-router
 app.route('/api/v1/admin', adminRoutes);
 
+// Mount metrics telemetry routes
+app.route('/api/v1/metrics', metricsRoutes);
+
+// Direct Merchant Center Catalog Feed mapping
+app.get('/api/v1/catalog/google-feed', adapt(feedController.getGoogleShoppingFeed));
+
 /**
  * Global Error Handler
  */
 app.onError(errorHandler);
 
-export default app;
+// Export Hono App for Fetch, and custom Scheduled handler for Cloudflare Cron Triggers
+export default {
+    fetch: app.fetch,
+    async scheduled(event, env, ctx) {
+        console.log(`[Cron Trigger] Active: executing scheduled task for cron: ${event.cron}`);
+        try {
+            const clientUrl = env.CLIENT_URL || 'https://e-market.com';
+            const sitemapUrl = `${clientUrl}/sitemap.xml`;
+            // Trigger a warm-up call to the sitemap endpoint to build cache
+            const apiFetchUrl = `${env.API_URL || 'http://localhost:8787'}/sitemap.xml`;
+            const response = await fetch(apiFetchUrl);
+            if (response.ok) {
+                console.log(`[Cron Trigger] Sitemap cache warmed successfully: ${sitemapUrl}`);
+            } else {
+                console.warn(`[Cron Trigger] Sitemap warm up returned status: ${response.status}`);
+            }
+        } catch (error) {
+            console.error('[Cron Trigger] Failed to run sitemap cron updates:', error);
+        }
+    }
+};

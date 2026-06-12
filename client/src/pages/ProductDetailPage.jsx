@@ -9,6 +9,7 @@ import SEO from '../components/SEO';
 import { generateProductSchema, generateBreadcrumbSchema, combineSchemas } from '../utils/structuredData';
 import { formatPrice, calculateDiscountPercentage } from '../utils/formatters';
 import DOMPurify from 'dompurify';
+import { trackViewItem, trackAddToCart } from '../utils/analytics';
 
 const COLOR_HEX_MAP = {
     beyaz: '#f8fafc',
@@ -74,6 +75,11 @@ export function ProductDetailPage() {
     const [isAdding, setIsAdding] = useState(false);
     const [selectedColor, setSelectedColor] = useState('');
 
+    useEffect(() => {
+        if (product) {
+            trackViewItem(product);
+        }
+    }, [product]);
 
     // Reset state when product ID/Slug changes
     useEffect(() => {
@@ -134,6 +140,7 @@ export function ProductDetailPage() {
         for (let i = 0; i < quantity; i++) {
             addToCart(cartProduct);
         }
+        trackAddToCart(product, quantity, selectedColor || null);
         setTimeout(() => setIsAdding(false), 1500);
     };
 
