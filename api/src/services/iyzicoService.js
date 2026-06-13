@@ -280,6 +280,7 @@ export class IyzicoService {
             }
 
             const verificationResult = await this._request('/payment/3dsecure/auth', 'POST', detailPayload);
+            console.log('[iyzico] Verification API response:', verificationResult);
             
             if (verificationResult.status === 'success') {
                 return {

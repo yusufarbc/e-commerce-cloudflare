@@ -131,7 +131,7 @@ export class PaymentController {
             return res.redirect(redirectUrl);
         } catch (error) {
             console.error('[Payment] iyzico callback error:', error);
-            return res.redirect(`${config.clientUrl}/payment/failure?errorMessage=${encodeURIComponent('iyzico ödeme doğrulama hatası oluştu.')}`);
+            return res.redirect(`${config.clientUrl}/payment/failure?errorMessage=${encodeURIComponent(error.message || 'iyzico ödeme doğrulama hatası oluştu.')}`);
         }
     });
 
