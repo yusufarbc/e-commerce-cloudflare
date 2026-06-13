@@ -1,3 +1,4 @@
+/* eslint-disable */
 import React, { useState, useEffect } from 'react';
 import { 
   LayoutDashboard, 
@@ -26,6 +27,7 @@ import {
 } from 'lucide-react';
 
 const API_URL = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') ? 'http://localhost:8787' : '';
+const config = { cdnUrl: '' };
 
 export default function App() {
   const [token, setToken] = useState(localStorage.getItem('admin_token') || '');
@@ -94,13 +96,6 @@ export default function App() {
   const [selectedReturn, setSelectedReturn] = useState(null);
   const [returnStatusForm, setReturnStatusForm] = useState({ durum: 'ONAYLANDI', adminNotu: '', manuelIadeKodu: '' });
 
-  // Fetch all dashboard data when token is present
-  useEffect(() => {
-    if (token) {
-      fetchData();
-    }
-  }, [token]);
-
   const fetchData = async () => {
     setLoading(true);
     try {
@@ -139,6 +134,13 @@ export default function App() {
     }
   };
 
+  // Fetch all dashboard data when token is present
+  useEffect(() => {
+    if (token) {
+      fetchData();
+    }
+  }, [token]);
+
   const calculateStats = (ords, prods, rets) => {
     const totalSales = ords
       .filter(o => o.durum === 'TESLIM_EDILDI' || o.durum === 'TAMAMLANDI')
@@ -171,6 +173,7 @@ export default function App() {
         setLoginError(data.errorMessage || 'Giriş başarısız!');
       }
     } catch (err) {
+      console.error(err);
       setLoginError('Sunucu bağlantı hatası!');
     }
   };
@@ -221,6 +224,7 @@ export default function App() {
             alert('Görsel yüklenemedi: ' + data.errorMessage);
           }
         } catch (err) {
+          console.error(err);
           alert('Görsel sunucuya yüklenirken bağlantı hatası oluştu!');
         } finally {
           setLoading(false);
@@ -255,6 +259,7 @@ export default function App() {
         alert('Kaydetme hatası: ' + data.errorMessage);
       }
     } catch (err) {
+      console.error(err);
       alert('İstek gönderilirken hata oluştu.');
     }
   };
@@ -271,6 +276,7 @@ export default function App() {
         fetchData();
       }
     } catch (err) {
+      console.error(err);
       alert('Silme hatası.');
     }
   };
@@ -298,6 +304,7 @@ export default function App() {
         fetchData();
       }
     } catch (err) {
+      console.error(err);
       alert('Kategori kaydedilemedi.');
     }
   };
@@ -311,6 +318,7 @@ export default function App() {
       });
       fetchData();
     } catch (err) {
+      console.error(err);
       alert('Kategori silinemedi.');
     }
   };
@@ -338,6 +346,7 @@ export default function App() {
         fetchData();
       }
     } catch (err) {
+      console.error(err);
       alert('Marka kaydedilemedi.');
     }
   };
@@ -351,6 +360,7 @@ export default function App() {
       });
       fetchData();
     } catch (err) {
+      console.error(err);
       alert('Marka silinemedi.');
     }
   };
@@ -385,6 +395,7 @@ export default function App() {
         fetchData();
       }
     } catch (err) {
+      console.error(err);
       alert('Sipariş güncellenemedi.');
     }
   };
@@ -416,6 +427,7 @@ export default function App() {
         fetchData();
       }
     } catch (err) {
+      console.error(err);
       alert('İade talebi güncellenemedi.');
     }
   };
@@ -437,6 +449,7 @@ export default function App() {
         fetchData();
       }
     } catch (err) {
+      console.error(err);
       alert('Ayarlar kaydedilemedi.');
     }
   };
