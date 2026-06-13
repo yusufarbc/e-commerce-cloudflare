@@ -101,7 +101,7 @@ export function CheckoutPage() {
         const bin = cardNumber.replace(/\s/g, '').slice(0, 6);
         setInstallmentsLoading(true);
         try {
-            const response = await api.get(`/api/v1/payment/param/installments?bin=${bin}&amount=${displayTotal}`);
+            const response = await api.get(`/api/v1/payment/installments?bin=${bin}&amount=${displayTotal}`);
             if (response.data.status === 'success' && response.data.installments) {
                 setInstallments(response.data.installments);
             } else {
@@ -211,7 +211,7 @@ export function CheckoutPage() {
                 if (cardInfo.cardNumber.replace(/\s/g, '').slice(0, 6) !== bin) {
                     setInstallmentsLoading(true);
                     try {
-                        const response = await api.get(`/api/v1/payment/param/installments?bin=${bin}&amount=${displayTotal}`);
+                        const response = await api.get(`/api/v1/payment/installments?bin=${bin}&amount=${displayTotal}`);
                         if (response.data.status === 'success' && response.data.installments) {
                             setInstallments(response.data.installments);
                         } else {
@@ -318,8 +318,8 @@ export function CheckoutPage() {
 
             const { orderId } = orderResponse.data;
 
-            // 2. Initiate Param Payment
-            const paymentResponse = await api.post('/api/v1/payment/param/initiate', {
+            // 2. Initiate payment via active provider
+            const paymentResponse = await api.post('/api/v1/payment/initiate', {
                 orderId,
                 cardInfo: {
                     cardNumber: cardInfo.cardNumber.replace(/\s/g, ''),

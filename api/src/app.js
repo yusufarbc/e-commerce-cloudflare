@@ -90,7 +90,9 @@ app.route('/api/v1/categories', categoryRoutes);
 app.route('/api/v1/brands', brandRoutes);
 app.route('/api/v1/orders', orderRoutes);
 app.route('/api/v1/returns', returnRoutes);
-app.route('/api/v1/payment/param', paymentRoutes);
+// Mount payment routes under a provider-agnostic path (Dependency Inversion Principle:
+// the router does not depend on which concrete payment provider is active at runtime).
+app.route('/api/v1/payment', paymentRoutes);
 app.route('/api/v1/settings', settingsRoutes);
 app.route('/api/v1/feeds', feedRoutes);
 

@@ -199,11 +199,17 @@ export class OrderService {
     }
 
     /**
-     * Initiates payment gateway session with card details using the active strategy.
-     * @param {string} orderId - Order UUID.
-     * @param {Object} cardInfo - Card details (cardNumber, cardExpMonth, cardExpYear, cardCvc).
-     * @param {Object} buyerInfo - Buyer details (IP address, etc.).
-     * @returns {Promise<Object>} 3D secure redirect HTML or error object.
+     * Initiates a payment gateway session using the active provider strategy.
+     *
+     * Retrieves the pending order, validates its state, builds the buyer payload,
+     * and delegates to PaymentService (which dispatches to iyzico / Param / PayTR).
+     * Stores the provider's transaction reference token on the order record.
+     *
+     * @param {string} orderId     - UUID of the pending order.
+     * @param {Object} cardInfo    - Card details: { cardNumber, cardExpMonth, cardExpYear, cardCvc, cardHolderName }.
+     * @param {Object} buyerInfo   - Supplementary buyer data (e.g. { ip }).
+     * @returns {Promise<Object>}  { status: 'success', ucdHtml: string, orderId } on success,
+     *                             { status: 'failure', errorMessage: string } on error.
      */
     async initiatePayment(orderId, cardInfo, buyerInfo) {
         const siparis = await this.orderRepository.getOrderById(orderId);
@@ -255,10 +261,16 @@ export class OrderService {
     }
 
     /**
-     * Completes and finalizes payment after successful 3D secure callback.
-     * @param {Object} callbackData - Callback parameters sent from gateway.
-     * @param {string} [provider] - Specific provider callback identifier.
-     * @returns {Promise<Object>} Payment completion results.
+     * Completes and finalises a payment after a successful 3D Secure gateway callback.
+     *
+     * Verifies the callback with the active provider, finalises the order status,
+     * releases stock holds, and dispatches order confirmation emails.
+     *
+     * @param {Object} callbackData - Raw callback payload from the payment gateway.
+     * @param {string} [provider]   - Explicit provider identifier ('iyzico', 'param', 'paytr').
+     *                               Falls back to the active PAYMENT_PROVIDER config if omitted.
+     * @returns {Promise<Object>}   { status, orderId, orderNumber, trackingToken } on success,
+     *                             { status: 'failure', errorMessage, orderNumber } on error.
      */
     async completePayment(callbackData, provider) {
         try {

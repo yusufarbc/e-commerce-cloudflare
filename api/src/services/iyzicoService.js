@@ -1,3 +1,15 @@
+/**
+ * IyzicoService — iyzico Payment Gateway Integration
+ *
+ * Implements the IPaymentProvider interface for the iyzico (iyzipay) payment gateway.
+ * Communicates with iyzico's REST JSON API, computing IYZWS authorization headers
+ * using a custom SHA-1 implementation (required by iyzico's API specification).
+ *
+ * Sandbox base URL: https://sandbox-api.iyzipay.com
+ * Production base URL: https://api.iyzipay.com
+ *
+ * @implements {IPaymentProvider}
+ */
 export class IyzicoService {
     /**
      * Creates an instance of IyzicoService.
@@ -94,7 +106,18 @@ export class IyzicoService {
     }
 
     /**
-     * Helper to compute iyzico HTTP authorization header.
+     * Builds the iyzico IYZWS authorization header for a given request.
+     *
+     * The authorization scheme requires:
+     *   1. A random nonce string (`x-iyzi-rnd`) included in both the header and hash.
+     *   2. A SHA-1 hash of (apiKey + rnd + secretKey + requestBodyString), base64-encoded.
+     *
+     * SHA-1 is mandated by iyzico's API specification and cannot be substituted.
+     * The hash signs only API credentials and the request nonce — not user PII.
+     *
+     * @param {string} rnd         - Random nonce string for this request.
+     * @param {string} bodyString  - JSON-serialised request body (empty string for GET).
+     * @returns {Object} HTTP headers object including Authorization and iyzico-specific fields.
      * @private
      */
     _getHeaders(rnd, bodyString = '') {
@@ -118,7 +141,16 @@ export class IyzicoService {
     }
 
     /**
-     * Sends a request to iyzico API.
+     * Sends an authenticated HTTP request to the iyzico REST API.
+     *
+     * Serialises the body to JSON if provided, computes the IYZWS authorization header,
+     * and throws a descriptive error on non-2xx HTTP responses.
+     *
+     * @param {string}  path        - API path (e.g. '/payment/3dsec/initialize').
+     * @param {string}  method      - HTTP method ('POST' or 'GET').
+     * @param {Object|null} bodyObject - Request payload, or null for GET requests.
+     * @returns {Promise<Object>}   Parsed JSON response from iyzico.
+     * @throws {Error}              If the HTTP response status is not 2xx.
      * @private
      */
     async _request(path, method, bodyObject = null) {
@@ -146,8 +178,24 @@ export class IyzicoService {
     }
 
     /**
-     * Initiates a 3D Secure payment process.
-     * Returns HTML form containing the 3D redirect frame/script.
+     * Initiates a 3D Secure payment session via iyzico's initialize endpoint.
+     *
+     * Submits card details, buyer info, basket items, and callback URL to iyzico.
+     * On success, iyzico returns a base64-encoded HTML page (`threeDSHtmlContent`)
+     * that must be rendered in the browser to trigger the bank's 3D Secure step.
+     *
+     * @param {Object} order             - Order record (id, siparisNumarasi, toplamTutar, eposta, adres, etc.)
+     * @param {Array}  basketItems       - Order line items used to populate iyzico's basketItems array.
+     * @param {Object} buyer             - Buyer and card details.
+     * @param {string} buyer.name        - First name.
+     * @param {string} buyer.surname     - Last name.
+     * @param {string} buyer.cardNumber  - 16-digit card number.
+     * @param {string} buyer.cardExpMonth - Expiry month (1–12).
+     * @param {string} buyer.cardExpYear  - Expiry year (2 or 4 digits).
+     * @param {string} buyer.cardCvc     - 3-digit CVC.
+     * @param {string} buyer.ip          - Cardholder IP address.
+     * @returns {Promise<Object>} { status: 'success', ucdHtml: string, siparisId, conversationId }
+     * @throws {Error} If iyzico returns a non-success status.
      */
     async startPaymentProcess(order, basketItems, buyer) {
         const orderNumber = order.siparisNumarasi;
@@ -248,8 +296,16 @@ export class IyzicoService {
     }
 
     /**
-     * Verifies payment callback details.
-     * Checks status from callback payload and retrieves auth details.
+     * Verifies an iyzico 3D Secure callback and confirms the payment with iyzico's auth endpoint.
+     *
+     * iyzico POSTs a callback containing `paymentId`, `conversationId`, and `status`.
+     * We re-confirm with iyzico's `/payment/3dsec/auth` endpoint to prevent tampering.
+     *
+     * @param {Object} callbackData                - POST body from iyzico's 3D callback.
+     * @param {string} callbackData.paymentId      - iyzico payment transaction ID.
+     * @param {string} callbackData.conversationId - Our order number (siparisNumarasi).
+     * @param {string} callbackData.status         - 'success' or 'failure'.
+     * @returns {Promise<Object>} { status, paymentId?, siparisNumarasi, amount?, rawResult? }
      */
     async verifyCallback(callbackData) {
         console.log('[iyzico] Verifying callback:', callbackData);
@@ -302,7 +358,15 @@ export class IyzicoService {
     }
 
     /**
-     * Cancels/Refunds a paid transaction.
+     * Refunds a paid iyzico transaction via the /payment/refund endpoint.
+     *
+     * Performs a full refund by paymentId. iyzico issues a unique refund conversationId
+     * to correlate the refund request.
+     *
+     * @param {string} paymentId - iyzico payment transaction ID to refund.
+     * @param {string} reason    - Human-readable refund reason (logged only; not sent to iyzico).
+     * @returns {Promise<Object>} { status: 'success', paymentId, message }
+     * @throws {Error} If iyzico returns a non-success status.
      */
     async cancelPayment(paymentId, reason) {
         console.log('[iyzico] Refunding payment %s, Reason: %s', paymentId, reason);
@@ -329,7 +393,15 @@ export class IyzicoService {
     }
 
     /**
-     * Inquires installment prices.
+     * Queries available installment plans for a card BIN via iyzico's installment check endpoint.
+     *
+     * Maps iyzico's `installmentPrices` response into the shared { Taksit, Komi_Oran } format
+     * used across all provider implementations. Single-draw (1 instalment) entries are excluded
+     * since they are always available and shown separately in the UI.
+     *
+     * @param {string} bin    - First 6 digits of the card number (BIN/IIN).
+     * @param {number} amount - Total transaction amount in TRY.
+     * @returns {Promise<Array<{Taksit: number, Komi_Oran: number}>>} Installment plan list, or [] on error.
      */
     async getInstallmentOptions(bin, amount) {
         const payload = {

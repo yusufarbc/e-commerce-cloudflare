@@ -1,16 +1,42 @@
 import crypto from 'node:crypto';
 
+/**
+ * PaytrService — PayTR Payment Gateway Integration
+ *
+ * Implements the IPaymentProvider interface for the PayTR payment gateway.
+ * PayTR uses a token-based checkout flow: we first request a checkout token,
+ * then redirect the user to PayTR's hosted payment page.
+ * Payment confirmation arrives via an HMAC-signed server-to-server IPN (Instant Payment Notification).
+ *
+ * PayTR amounts are expressed in kuruş (1/100 of a Turkish Lira) as integers.
+ * HMAC-SHA256 is used for all signature computations.
+ *
+ * @implements {IPaymentProvider}
+ */
 export class PaytrService {
     /**
      * Creates an instance of PaytrService.
-     * @param {Object} config - Configuration object.
+     *
+     * @param {Object} config                  - Application configuration object.
+     * @param {string} config.merchantId        - PayTR merchant ID.
+     * @param {string} config.merchantKey       - PayTR merchant key (used as HMAC key).
+     * @param {string} config.merchantSalt      - PayTR merchant salt (appended to hash inputs).
+     * @param {string} config.baseUrl           - PayTR API base URL (default: https://www.paytr.com).
+     * @param {string} config.callbackUrl       - Base URL for success/failure redirects.
      */
     constructor(config) {
         this.config = config;
     }
 
     /**
-     * Helper to compute PayTR HMAC-SHA256 tokens.
+     * Computes an HMAC-SHA256 signature and returns it as a base64 string.
+     *
+     * Used for both token generation (checkout request) and IPN verification.
+     * The `key` parameter is always `merchantKey`.
+     *
+     * @param {string} data - The plaintext string to sign.
+     * @param {string} key  - The HMAC secret key.
+     * @returns {string}    Base64-encoded HMAC-SHA256 digest.
      * @private
      */
     _computeHmac(data, key) {
@@ -20,8 +46,16 @@ export class PaytrService {
     }
 
     /**
-     * Formats user basket items for PayTR schema.
-     * PayTR expects: [[name, price, quantity], [name, price, quantity]] JSON string, then base64 encoded.
+     * Formats the order's basket items into PayTR's expected base64-encoded JSON format.
+     *
+     * PayTR requires: [[name, unitPrice, quantity], ...] JSON string, then base64-encoded.
+     * Unit prices must be decimal strings (e.g. '149.99').
+     * Falls back to a single order-level item if no line items are provided.
+     *
+     * @param {Array}  basketItems  - Order line items (urunAdSnapshot, fiyat, adet).
+     * @param {number} orderTotal   - Total order amount (used for fallback single-item basket).
+     * @param {string} orderNumber  - Order reference number (used for fallback item name).
+     * @returns {string}            Base64-encoded JSON basket string.
      * @private
      */
     _formatBasket(basketItems, orderTotal, orderNumber) {
@@ -42,8 +76,21 @@ export class PaytrService {
     }
 
     /**
-     * Initiates a 3D payment by retrieving a checkout token.
-     * Returns an HTML redirection script to load PayTR's checkout frame.
+     * Initiates a PayTR checkout session by requesting a payment token.
+     *
+     * Computes a HMAC-SHA256 token from key order and merchant fields, posts it to
+     * PayTR's token API, then returns an HTML redirect page that sends the user
+     * to PayTR's hosted secure checkout.
+     *
+     * @param {Object} order            - Order record (siparisNumarasi, toplamTutar, eposta, adres, etc.)
+     * @param {Array}  basketItems      - Order line items for the basket display.
+     * @param {Object} buyer            - Buyer details.
+     * @param {string} buyer.name       - First name.
+     * @param {string} buyer.surname    - Last name.
+     * @param {string} buyer.ip         - Buyer IP address.
+     * @param {string} buyer.phone      - Buyer phone number.
+     * @returns {Promise<Object>} { status: 'success', ucdHtml: string, siparisId }
+     * @throws {Error} If PayTR returns a non-success status or HTTP error.
      */
     async startPaymentProcess(order, basketItems, buyer) {
         const merchantId = this.config.merchantId;
@@ -142,7 +189,19 @@ export class PaytrService {
     }
 
     /**
-     * Verifies server-to-server callback POST signatures from PayTR.
+     * Verifies a PayTR IPN (Instant Payment Notification) server-to-server callback.
+     *
+     * PayTR signs the notification with HMAC-SHA256 using the pattern:
+     *   merchant_oid + merchantSalt + status + total_amount
+     * We recompute this hash and compare it against the posted `hash` field to
+     * prevent replay attacks and tampered callbacks.
+     *
+     * @param {Object} callbackData                 - POST body from PayTR IPN.
+     * @param {string} callbackData.merchant_oid    - Order reference number.
+     * @param {string} callbackData.status          - 'success' or 'failed'.
+     * @param {string} callbackData.total_amount    - Transaction amount in kuruş.
+     * @param {string} callbackData.hash            - HMAC-SHA256 signature to verify.
+     * @returns {Object} { status, paymentId?, siparisNumarasi, amount?, rawResult? }
      */
     verifyCallback(callbackData) {
         console.log('[PayTR] Verifying server-to-server callback:', callbackData);
@@ -189,7 +248,15 @@ export class PaytrService {
     }
 
     /**
-     * Refunds/Cancels a paid order.
+     * Initiates a full refund for a PayTR transaction via /odeme/api/iade.
+     *
+     * PayTR payment IDs are stored with a 'paytr-' prefix; this prefix is stripped
+     * before sending to the API. Refund amount is set to '0.00' to indicate a full refund.
+     *
+     * @param {string} paymentId - Payment ID (prefixed with 'paytr-').
+     * @param {string} reason    - Human-readable refund reason (logged only).
+     * @returns {Promise<Object>} { status: 'success', paymentId, message }
+     * @throws {Error} If PayTR API returns a non-success response.
      */
     async cancelPayment(paymentId, reason) {
         console.log('[PayTR] Refunding payment %s, Reason: %s', paymentId, reason);
@@ -242,9 +309,15 @@ export class PaytrService {
     }
 
     /**
-     * PayTR installment fetch.
-     * PayTR rates are usually configured inside their dashboard.
-     * Returns empty array if not fetched programmatically.
+     * Returns installment options for a card BIN.
+     *
+     * PayTR manages installment display natively within its hosted checkout iframe.
+     * There is no programmatic API to query rates per BIN, so we return an empty array
+     * and let PayTR's UI handle the installment selection.
+     *
+     * @param {string} bin    - First 6 digits of the card (unused).
+     * @param {number} amount - Transaction amount (unused).
+     * @returns {Promise<Array>} Always resolves to an empty array.
      */
     async getInstallmentOptions(bin, amount) {
         // PayTR handles installments natively inside their secure checkout frame.
