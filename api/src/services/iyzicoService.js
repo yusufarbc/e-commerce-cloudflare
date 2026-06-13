@@ -275,6 +275,10 @@ export class IyzicoService {
                 paymentId: paymentId
             };
 
+            if (callbackData.conversationData) {
+                detailPayload.conversationData = callbackData.conversationData;
+            }
+
             const verificationResult = await this._request('/payment/3dsecure/auth', 'POST', detailPayload);
             
             if (verificationResult.status === 'success' && verificationResult.paymentStatus === 'SUCCESS') {
