@@ -208,7 +208,7 @@ export class IyzicoService {
             items = basketItems.map(item => ({
                 id: item.urunId || 'item-id',
                 name: item.urunAdSnapshot || 'Urun',
-                category: 'Genel',
+                category1: 'Genel',
                 itemType: 'PHYSICAL',
                 price: Number(item.toplamFiyat || item.fiyat).toFixed(2)
             }));
@@ -217,7 +217,7 @@ export class IyzicoService {
             items = [{
                 id: `order-${orderNumber}`,
                 name: `Siparis #${orderNumber}`,
-                category: 'Genel',
+                category1: 'Genel',
                 itemType: 'PHYSICAL',
                 price: totalAmount.toFixed(2)
             }];
@@ -229,7 +229,9 @@ export class IyzicoService {
             price: totalAmount.toFixed(2),
             paidPrice: totalAmount.toFixed(2),
             currency: 'TRY',
-            installment: '1',
+            installment: 1, // Must be an integer per iyzico specifications
+            paymentChannel: 'WEB', // Required parameter
+            paymentGroup: 'PRODUCT', // Required parameter
             basketId: orderNumber,
             paymentCard: {
                 cardHolderName: `${buyer.name} ${buyer.surname}`.toUpperCase(),
@@ -281,9 +283,13 @@ export class IyzicoService {
         if (htmlContent && !htmlContent.trim().startsWith('<')) {
             // If it is base64 encoded
             try {
-                htmlContent = Buffer.from(htmlContent, 'base64').toString('utf-8');
+                if (typeof Buffer !== 'undefined') {
+                    htmlContent = Buffer.from(htmlContent, 'base64').toString('utf-8');
+                } else if (typeof atob === 'function') {
+                    htmlContent = decodeURIComponent(escape(atob(htmlContent)));
+                }
             } catch (e) {
-                // Not base64
+                // Not base64 or decode failed
             }
         }
 
