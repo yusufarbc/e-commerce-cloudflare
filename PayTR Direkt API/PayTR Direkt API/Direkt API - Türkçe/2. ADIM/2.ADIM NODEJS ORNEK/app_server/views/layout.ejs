@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PayTR Direkt API</title>
+</head>
+<body>
+
+  <form action="https://www.paytr.com/odeme" method="post">
+    Kart Sahibi Adı: <input type="text" name="cc_owner" value="PAYTR TEST"><br>
+    Kart Numarası: <input type="text" name="card_number" value="9792030394440796"><br>
+    Kart Son Kullanma Ay: <input type="text" name="expiry_month" value="12"><br>
+    Kart Son Kullanma Yıl: <input type="text" name="expiry_year" value="24"><br>
+    Kart Güvenlik Kodu: <input type="text" name="cvv" value="000"><br>
+ 
+    <input type="hidden" name="merchant_id" value="<%= context.merchant_id %>">
+    <input type="hidden" name="user_ip" value="<%= context.user_ip %>">
+    <input type="hidden" name="merchant_oid" value="<%= context.merchant_oid %>">
+    <input type="hidden" name="email" value="<%= context.email %>">
+    <input type="hidden" name="payment_type" value="<%= context.payment_type %>">
+    <input type="hidden" name="payment_amount" value="<%= context.payment_amount %>">
+    <input type="hidden" name="currency" value="<%= context.currency %>">
+    <input type="hidden" name="test_mode" value="<%= context.test_mode %>">
+    <input type="hidden" name="non_3d" value="<%= context.non_3d %>">
+    <input type="hidden" name="merchant_ok_url" value="<%= context.merchant_ok_url %>">
+    <input type="hidden" name="merchant_fail_url" value="<%= context.merchant_fail_url %>">
+    <input type="hidden" name="user_name" value="<%= context.user_name %>">
+    <input type="hidden" name="user_address" value="<%= context.user_address %>">
+    <input type="hidden" name="user_phone" value="<%= context.user_phone %>">
+    <input type="hidden" name="user_basket" value="<%= context.user_basket %>">
+    <input type="hidden" name="debug_on" value="<%= context.debug_on %>">
+    <input type="hidden" name="client_lang" value="<%= context.client_lang %>">
+    <input type="hidden" name="paytr_token" value="<%= context.token %>">
+    <input type="hidden" name="non3d_test_failed" value="<%= context.non3d_test_failed %>">
+    <input type="hidden" name="installment_count" value="<%= context.installment_count %>">
+    <input type="hidden" name="card_type" value="<%= context.card_type %>">
+    <input type="submit" value="Ödeme Yap">
+  </form>
+  
+</body>
+</html>

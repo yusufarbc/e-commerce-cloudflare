@@ -231,6 +231,7 @@ export class OrderService {
                 cardExpMonth: cardInfo.cardExpMonth,
                 cardExpYear: cardInfo.cardExpYear,
                 cardCvc: cardInfo.cardCvc,
+                cardHolderName: cardInfo.cardHolderName,
                 ip: buyerInfo.ip || '127.0.0.1'
             };
 

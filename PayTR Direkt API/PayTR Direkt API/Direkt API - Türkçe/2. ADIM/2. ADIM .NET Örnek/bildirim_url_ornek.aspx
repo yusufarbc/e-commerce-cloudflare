@@ -1,0 +1,1 @@
+﻿<%@ Page Language="C#" AutoEventWireup="true" CodeFile="bildirim_url_ornek.aspx.cs" Inherits="bildirim_url_ornek" %>

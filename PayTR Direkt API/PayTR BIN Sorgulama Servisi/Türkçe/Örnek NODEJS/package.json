@@ -1,0 +1,17 @@
+{
+  "name": "paytr_bin_sorgulama",
+  "version": "1.0.0",
+  "description": "PayTR Bin Sorgulama",
+  "main": "app.js",
+  "scripts": {
+    "test": "node app.js"
+  },
+  "author": "PayTR Ödeme ve Elektronik Para Kuruluşu A.Ş.",
+  "license": "ISC",
+  "dependencies": {
+    "crypto": "^1.0.1",
+    "express": "^4.17.1",
+    "microtime": "^3.0.0",
+    "request": "^2.88.2"
+  }
+}

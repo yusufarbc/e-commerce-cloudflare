@@ -1,0 +1,16 @@
+{
+  "name": "paytr_islem_dokumu",
+  "version": "1.0.0",
+  "description": "PayTR Islem Dokumu",
+  "main": "app.js",
+  "scripts": {
+    "test": "node app.js"
+  },
+  "author": "PayTR Ödeme ve Elektronik Para Kuruluşu A.Ş.",
+  "license": "ISC",
+  "dependencies": {
+    "crypto": "^1.0.1",
+    "express": "^4.17.1",
+    "request": "^2.88.2"
+  }
+}

@@ -102,84 +102,82 @@ export class PaytrService {
         const email = order.eposta || 'bilgi@e-market.com';
         const userIp = buyer.ip || '127.0.0.1';
         
-        // PayTR expects total_amount in kuruş (i.e. amount * 100) as an integer
-        const paymentAmount = Math.round(Number(order.toplamTutar) * 100);
+        // PayTR Direct API expects payment_amount as a decimal string
+        const paymentAmount = Number(order.toplamTutar).toFixed(2);
         
         const userBasket = this._formatBasket(basketItems, order.toplamTutar, orderNumber);
         
         const successUrl = `${this.config.callbackUrl}/payment/success?orderNumber=${orderNumber}&trackingToken=${order.takipTokeni}`;
         const failUrl = `${this.config.callbackUrl}/payment/failure?orderNumber=${orderNumber}`;
 
-        const noInstallment = 0; // 0: Enable installments, 1: Single çekim
-        const maxInstallment = 12;
+        const paymentType = 'card';
+        const installmentCount = '0'; // default single payment
         const currency = 'TL';
         const testMode = this.config.testMode !== undefined ? this.config.testMode : (process.env.NODE_ENV === 'development' ? 1 : 0);
+        const non3d = '0'; // 0 to enforce 3D Secure
+        const debugOn = '1';
+        const clientLang = 'tr';
+        const non3dTestFailed = '0';
+        const cardType = '';
 
         // Generate token hash
-        // hashString = merchant_id + user_ip + merchant_oid + email + payment_amount + user_basket + no_installment + max_installment + currency + test_mode + merchant_salt
-        const hashString = merchantId + userIp + orderNumber + email + paymentAmount + userBasket + noInstallment + maxInstallment + currency + testMode + merchantSalt;
-        const paytrToken = this._computeHmac(hashString, merchantKey);
+        // hashSTR = merchant_id + user_ip + merchant_oid + email + payment_amount + payment_type + installment_count + currency + test_mode + non_3d
+        const hashString = merchantId + userIp + orderNumber + email + paymentAmount + paymentType + installmentCount + currency + testMode + non3d;
+        const paytrToken = this._computeHmac(hashString + merchantSalt, merchantKey);
 
-        const payload = new URLSearchParams({
-            merchant_id: merchantId,
-            user_ip: userIp,
-            merchant_oid: orderNumber,
-            email: email,
-            payment_amount: String(paymentAmount),
-            paytr_token: paytrToken,
-            user_basket: userBasket,
-            user_name: `${buyer.name} ${buyer.surname}`,
-            user_address: order.adres || 'Turkiye',
-            user_phone: buyer.phone || '05555555555',
-            merchant_ok_url: successUrl,
-            merchant_fail_url: failUrl,
-            no_installment: String(noInstallment),
-            max_installment: String(maxInstallment),
-            currency: currency,
-            test_mode: String(testMode)
-        });
+        // Cardholder details formatting
+        const ccOwner = buyer.cardHolderName || `${buyer.name} ${buyer.surname}`.toUpperCase();
+        const cardNumber = String(buyer.cardNumber).replace(/\s/g, '');
+        const expiryMonth = String(buyer.cardExpMonth).padStart(2, '0');
+        const expiryYear = String(buyer.cardExpYear).slice(-2);
+        const cvv = buyer.cardCvc;
 
-        console.log('[PayTR Token Request] Ordering number: %s', orderNumber);
+        const actionUrl = `${baseUrl.replace(/\/$/, '')}/odeme`;
 
-        const response = await fetch(`${baseUrl.replace(/\/$/, '')}/odeme/api/get-token`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/x-www-form-urlencoded'
-            },
-            body: payload.toString()
-        });
-
-        if (!response.ok) {
-            const errText = await response.text();
-            throw new Error(`PayTR API returned status ${response.status}: ${errText}`);
-        }
-
-        const result = await response.json();
-
-        if (result.status !== 'success') {
-            console.error('[PayTR] Error message:', result.reason);
-            throw new Error(result.reason || 'PayTR ödeme tokenı oluşturulamadı.');
-        }
-
-        // Return client redirect script
-        const redirectUrl = `${baseUrl.replace(/\/$/, '')}/odeme/guvenli/${result.token}`;
+        // Render direct POST form that auto-submits to PayTR
         const ucdHtml = `
 <!DOCTYPE html>
 <html>
 <head>
     <meta charset="UTF-8">
     <title>PayTR Yönlendiriliyor...</title>
-    <script type="text/javascript">
-        window.location.href = "${redirectUrl}";
-    </script>
 </head>
 <body>
-    <div style="text-align: center; margin-top: 100px; font-family: sans-serif;">
-        <h2>Ödeme Sayfasına Yönlendiriliyorsunuz...</h2>
-        <p>Lütfen bekleyin, otomatik yönlendirme çalışmazsa <a href="${redirectUrl}">buraya tıklayın</a>.</p>
-    </div>
+    <form id="paytr-form" action="${actionUrl}" method="post">
+        <input type="hidden" name="cc_owner" value="${ccOwner}">
+        <input type="hidden" name="card_number" value="${cardNumber}">
+        <input type="hidden" name="expiry_month" value="${expiryMonth}">
+        <input type="hidden" name="expiry_year" value="${expiryYear}">
+        <input type="hidden" name="cvv" value="${cvv}">
+        <input type="hidden" name="merchant_id" value="${merchantId}">
+        <input type="hidden" name="user_ip" value="${userIp}">
+        <input type="hidden" name="merchant_oid" value="${orderNumber}">
+        <input type="hidden" name="email" value="${email}">
+        <input type="hidden" name="payment_type" value="${paymentType}">
+        <input type="hidden" name="payment_amount" value="${paymentAmount}">
+        <input type="hidden" name="currency" value="${currency}">
+        <input type="hidden" name="test_mode" value="${testMode}">
+        <input type="hidden" name="non_3d" value="${non3d}">
+        <input type="hidden" name="merchant_ok_url" value="${successUrl}">
+        <input type="hidden" name="merchant_fail_url" value="${failUrl}">
+        <input type="hidden" name="user_name" value="${`${buyer.name} ${buyer.surname}`.toUpperCase()}">
+        <input type="hidden" name="user_address" value="${order.adres || 'Turkiye'}">
+        <input type="hidden" name="user_phone" value="${buyer.phone || '05555555555'}">
+        <input type="hidden" name="user_basket" value="${userBasket}">
+        <input type="hidden" name="debug_on" value="${debugOn}">
+        <input type="hidden" name="client_lang" value="${clientLang}">
+        <input type="hidden" name="paytr_token" value="${paytrToken}">
+        <input type="hidden" name="non3d_test_failed" value="${non3dTestFailed}">
+        <input type="hidden" name="installment_count" value="${installmentCount}">
+        <input type="hidden" name="card_type" value="${cardType}">
+    </form>
+    <script type="text/javascript">
+        document.getElementById("paytr-form").submit();
+    </script>
 </body>
 </html>`;
+
+        console.log('[PayTR Direct API] Initiating direct 3D Secure POST for order: %s', orderNumber);
 
         return {
             status: 'success',
