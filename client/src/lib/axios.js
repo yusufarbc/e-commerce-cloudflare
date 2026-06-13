@@ -4,12 +4,15 @@ import axios from 'axios';
  * API Base URL Configuration
  * Uses proxy in development to avoid CORS, and direct URL in production.
  */
-const getApiUrl = () => {
-    if (import.meta.env.VITE_API_URL) return import.meta.env.VITE_API_URL;
+export const getApiUrl = () => {
+    const envUrl = import.meta.env.VITE_API_URL;
+    if (envUrl && !envUrl.includes('ecommerce-api.yusuftalhaarabaci-91d.workers.dev') && !envUrl.includes('ecommerce-api-staging.yusuftalhaarabaci-91d.workers.dev')) {
+        return envUrl;
+    }
     if (import.meta.env.DEV) return '';
     
     const hostname = typeof window !== 'undefined' ? window.location.hostname : '';
-    if (hostname.includes('test') || hostname.includes('staging')) {
+    if (hostname.includes('test') || hostname.includes('staging') || hostname.includes('ecommerce-admin-v4s') || hostname.includes('ecommerce-storefront-dm5')) {
         return 'https://e-commerce-cloudflare-staging.yusuftalhaarabaci-91d.workers.dev';
     }
     return 'https://e-commerce-cloudflare.yusuftalhaarabaci-91d.workers.dev';

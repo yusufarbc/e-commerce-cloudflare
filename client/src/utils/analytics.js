@@ -1,3 +1,5 @@
+import { getApiUrl } from '../lib/axios';
+
 /**
  * Storefront Telemetry & Analytics Utility (GTM / GA4)
  * 
@@ -32,7 +34,7 @@ export function initGTM(gtmId = DEFAULT_GTM_ID) {
     try {
         // Resolve metrics API endpoint origin
         // If api is running on localhost:8787 (development) or same-origin production
-        const apiOrigin = import.meta.env.VITE_API_URL || '';
+        const apiOrigin = getApiUrl();
         const scriptUrl = `${apiOrigin}/api/v1/metrics/gtm.js?id=${gtmId}`;
 
         // Create script element
