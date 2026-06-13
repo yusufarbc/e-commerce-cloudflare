@@ -10,6 +10,14 @@ dist/
 .git/
 **/.git/**
 
-# Ignore scratch folder/scripts
+# Ignore agents skills templates and scripts
+.agents/
+**/.agents/**
+scripts/
+**/scripts/**
 api/scratch/**
 scratch/**
+
+# Ignore Dockerfile
+api/Dockerfile
+**/Dockerfile

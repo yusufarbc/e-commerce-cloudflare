@@ -26,9 +26,14 @@ export class ParamService {
      * @private
      */
     _extractTag(xml, tagName) {
-        const regex = new RegExp(`<${tagName}>(.*?)</${tagName}>`, 's');
-        const match = xml.match(regex);
-        return match ? match[1].trim() : null;
+        if (!xml || !tagName) return null;
+        const startTag = `<${tagName}>`;
+        const endTag = `</${tagName}>`;
+        const startIndex = xml.indexOf(startTag);
+        if (startIndex === -1) return null;
+        const endIndex = xml.indexOf(endTag, startIndex + startTag.length);
+        if (endIndex === -1) return null;
+        return xml.substring(startIndex + startTag.length, endIndex).trim();
     }
 
     /**

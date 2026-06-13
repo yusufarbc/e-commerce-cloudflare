@@ -31,11 +31,16 @@ jobs:
 
       - name: Determine Target Environment
         id: env-setup
+        env:
+          GITHUB_REF: ${{ github.ref }}
+          GITHUB_BASE_REF: ${{ github.base_ref }}
+          STAGING_API_URL: ${{ secrets.STAGING_API_URL }}
+          PRODUCTION_API_URL: ${{ secrets.PRODUCTION_API_URL }}
         run: |
-          if [ "${{ github.ref }}" = "refs/heads/test" ] || [ "${{ github.base_ref }}" = "test" ]; then
-            echo "VITE_API_URL=${{ secrets.STAGING_API_URL }}" >> $GITHUB_ENV
+          if [ "$GITHUB_REF" = "refs/heads/test" ] || [ "$GITHUB_BASE_REF" = "test" ]; then
+            echo "VITE_API_URL=$STAGING_API_URL" >> $GITHUB_ENV
           else
-            echo "VITE_API_URL=${{ secrets.PRODUCTION_API_URL }}" >> $GITHUB_ENV
+            echo "VITE_API_URL=$PRODUCTION_API_URL" >> $GITHUB_ENV
           fi
         shell: bash
 
@@ -106,8 +111,10 @@ jobs:
 
       - name: Determine Deploy Environment
         id: deploy-env-setup
+        env:
+          GITHUB_REF: ${{ github.ref }}
         run: |
-          if [ "${{ github.ref }}" = "refs/heads/test" ]; then
+          if [ "$GITHUB_REF" = "refs/heads/test" ]; then
             echo "DEPLOY_ENV=staging" >> $GITHUB_ENV
           else
             echo "DEPLOY_ENV=production" >> $GITHUB_ENV
@@ -156,8 +163,10 @@ jobs:
 
       - name: Determine Pages Branch Target
         id: pages-target
+        env:
+          GITHUB_REF: ${{ github.ref }}
         run: |
-          if [ "${{ github.ref }}" = "refs/heads/test" ]; then
+          if [ "$GITHUB_REF" = "refs/heads/test" ]; then
             echo "PAGES_BRANCH=test" >> $GITHUB_ENV
           else
             echo "PAGES_BRANCH=main" >> $GITHUB_ENV
