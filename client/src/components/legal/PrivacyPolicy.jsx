@@ -8,7 +8,7 @@ export function PrivacyPolicy() {
     return (
         <div className="max-w-4xl mx-auto px-4 py-8">
             <h1 className="text-3xl font-black mb-6 flex items-center gap-3">
-                <Shield className="text-brand-yellow" size={32} />
+                <Shield className="text-brand-primary" size={32} />
                 KVKK Aydınlatma Metni
             </h1>
 

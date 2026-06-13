@@ -75,7 +75,7 @@ export function Header() {
                         {/* Logo (Left) */}
                         <Link to="/" className="flex-shrink-0">
                             <img
-                                src="/images/logo-yellow.svg"
+                                src="/images/logo-light.svg"
                                 alt="E-Market"
                                 className="h-12 md:h-16 w-auto object-contain"
                             />

@@ -133,7 +133,7 @@ export function FAQPage() {
                 {/* Header */}
                 <div className="text-center mb-12">
                     <h1 className="text-3xl font-black text-corporate-black mb-2">Sıkça Sorulan Sorular</h1>
-                    <div className="w-24 h-1 bg-brand-yellow mx-auto rounded-full" />
+                    <div className="w-24 h-1 bg-brand-primary mx-auto rounded-full" />
                     <p className="text-lg text-gray-600 max-w-2xl mx-auto mt-4">
                         Merak ettiklerinizin yanıtlarını burada bulabilirsiniz. Aradığınız cevabı bulamadıysanız bizimle iletişime geçin.
                     </p>
@@ -156,7 +156,7 @@ export function FAQPage() {
                 </div>
 
                 {/* Contact CTA */}
-                <div className="mt-16 p-8 bg-gradient-to-r from-brand-yellow/10 to-brand-yellow/5 rounded-xl border-2 border-indigo-600">
+                <div className="mt-16 p-8 bg-gradient-to-r from-brand-primary/10 to-brand-primary/5 rounded-xl border-2 border-indigo-600">
                     <h3 className="text-2xl font-bold text-corporate-black mb-3">Sorunuzu bulamadınız mı?</h3>
                     <p className="text-gray-600 mb-6">
                         Size yardımcı olmaktan mutluluk duyarız. Müşteri hizmetlerimiz ile iletişime geçin.

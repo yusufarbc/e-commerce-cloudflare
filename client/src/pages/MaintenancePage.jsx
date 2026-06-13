@@ -15,7 +15,7 @@ export function MaintenancePage() {
             </div>
 
             <div className="z-10 max-w-2xl w-full bg-white/5 backdrop-blur-lg rounded-3xl p-8 md:p-12 border border-white/10 shadow-2xl">
-                <div className="w-24 h-24 bg-brand-yellow rounded-full flex items-center justify-center mx-auto mb-8 shadow-lg shadow-indigo-500/20 animate-pulse">
+                <div className="w-24 h-24 bg-brand-primary rounded-full flex items-center justify-center mx-auto mb-8 shadow-lg shadow-indigo-500/20 animate-pulse">
                     <Settings size={48} className="text-corporate-black animate-spin-slow" />
                 </div>
 

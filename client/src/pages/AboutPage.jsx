@@ -15,7 +15,7 @@ export function AboutPage() {
                 {/* Header */}
                 <div className="text-center mb-10">
                     <h1 className="text-3xl font-black text-corporate-black mb-2">Hakkımızda</h1>
-                    <div className="w-24 h-1 bg-brand-yellow mx-auto rounded-full" />
+                    <div className="w-24 h-1 bg-brand-primary mx-auto rounded-full" />
                 </div>
 
                 <div className="space-y-8">
@@ -64,7 +64,7 @@ export function AboutPage() {
                         <h2 className="text-2xl font-bold text-corporate-black mb-8 text-center">Değerlerimiz</h2>
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
                             <div className="text-center group">
-                                <div className="w-16 h-16 bg-indigo-50 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:bg-brand-yellow transition-colors duration-300">
+                                <div className="w-16 h-16 bg-indigo-50 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:bg-brand-primary transition-colors duration-300">
                                     <Shield size={32} className="text-indigo-600 group-hover:text-corporate-black transition-colors duration-300" />
                                 </div>
                                 <h3 className="font-bold text-corporate-black mb-2">Güven</h3>
@@ -73,7 +73,7 @@ export function AboutPage() {
                                 </p>
                             </div>
                             <div className="text-center group">
-                                <div className="w-16 h-16 bg-indigo-50 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:bg-brand-yellow transition-colors duration-300">
+                                <div className="w-16 h-16 bg-indigo-50 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:bg-brand-primary transition-colors duration-300">
                                     <Award size={32} className="text-indigo-600 group-hover:text-corporate-black transition-colors duration-300" />
                                 </div>
                                 <h3 className="font-bold text-corporate-black mb-2">Kalite</h3>
@@ -82,7 +82,7 @@ export function AboutPage() {
                                 </p>
                             </div>
                             <div className="text-center group">
-                                <div className="w-16 h-16 bg-indigo-50 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:bg-brand-yellow transition-colors duration-300">
+                                <div className="w-16 h-16 bg-indigo-50 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:bg-brand-primary transition-colors duration-300">
                                     <Truck size={32} className="text-indigo-600 group-hover:text-corporate-black transition-colors duration-300" />
                                 </div>
                                 <h3 className="font-bold text-corporate-black mb-2">Hız</h3>
@@ -91,7 +91,7 @@ export function AboutPage() {
                                 </p>
                             </div>
                             <div className="text-center group">
-                                <div className="w-16 h-16 bg-indigo-50 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:bg-brand-yellow transition-colors duration-300">
+                                <div className="w-16 h-16 bg-indigo-50 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:bg-brand-primary transition-colors duration-300">
                                     <Users size={32} className="text-indigo-600 group-hover:text-corporate-black transition-colors duration-300" />
                                 </div>
                                 <h3 className="font-bold text-corporate-black mb-2">Müşteri Odaklılık</h3>
@@ -131,7 +131,7 @@ export function AboutPage() {
                             Size yardımcı olmak için buradayız. Ürünler, siparişler veya projeleriniz hakkında bizimle iletişime geçin.
                         </p>
                         <div className="flex flex-wrap gap-4 justify-center">
-                            <a href="/iletisim" className="bg-brand-yellow text-white px-8 py-3 rounded-xl font-bold hover:bg-indigo-700 transition-all hover:shadow-lg hover:shadow-yellow-500/20">
+                            <a href="/iletisim" className="bg-brand-primary text-white px-8 py-3 rounded-xl font-bold hover:bg-indigo-700 transition-all hover:shadow-lg hover:shadow-yellow-500/20">
                                 İletişim Sayfası
                             </a>
                             <a href="https://wa.me/908500000000?text=Merhaba%2C%20e-market.com%20%C3%BCzerinden%20size%20ula%C5%9F%C4%B1yorum." target="_blank" rel="noopener noreferrer" className="bg-green-600 text-white px-8 py-3 rounded-xl font-bold hover:bg-green-500 transition-all hover:shadow-lg hover:shadow-green-500/20">

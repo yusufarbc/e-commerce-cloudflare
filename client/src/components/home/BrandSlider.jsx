@@ -11,7 +11,7 @@ export function BrandSlider({ brands, selectedBrandId, onSelectBrand }) {
                     const container = document.getElementById('brand-carousel');
                     container.scrollBy({ left: -200, behavior: 'smooth' });
                 }}
-                className="hidden md:flex absolute left-0 top-1/2 -translate-y-1/2 z-10 w-12 h-12 items-center justify-center bg-white shadow-xl rounded-full text-corporate-black hover:bg-brand-yellow hover:scale-110 transition-all duration-300"
+                className="hidden md:flex absolute left-0 top-1/2 -translate-y-1/2 z-10 w-12 h-12 items-center justify-center bg-white shadow-xl rounded-full text-corporate-black hover:bg-brand-primary hover:scale-110 transition-all duration-300"
                 aria-label="Scroll Left"
             >
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -25,7 +25,7 @@ export function BrandSlider({ brands, selectedBrandId, onSelectBrand }) {
                     const container = document.getElementById('brand-carousel');
                     container.scrollBy({ left: 200, behavior: 'smooth' });
                 }}
-                className="hidden md:flex absolute right-0 top-1/2 -translate-y-1/2 z-10 w-12 h-12 items-center justify-center bg-white shadow-xl rounded-full text-corporate-black hover:bg-brand-yellow hover:scale-110 transition-all duration-300"
+                className="hidden md:flex absolute right-0 top-1/2 -translate-y-1/2 z-10 w-12 h-12 items-center justify-center bg-white shadow-xl rounded-full text-corporate-black hover:bg-brand-primary hover:scale-110 transition-all duration-300"
                 aria-label="Scroll Right"
             >
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -50,7 +50,7 @@ export function BrandSlider({ brands, selectedBrandId, onSelectBrand }) {
                         onClick={() => onSelectBrand(selectedBrandId === brand.id ? null : brand.id)}
                     >
                         <div className={`w-20 h-20 md:w-30 md:h-30 rounded-full bg-white shadow-2xl flex items-center justify-center p-2 border-[3px] transition-all duration-700 overflow-hidden ${selectedBrandId === brand.id
-                            ? 'border-indigo-600 ring-8 ring-brand-yellow/20 scale-110'
+                            ? 'border-indigo-600 ring-8 ring-brand-primary/20 scale-110'
                             : 'border-transparent group-hover:border-indigo-600/30 group-hover:scale-105'
                             }`}
                         >

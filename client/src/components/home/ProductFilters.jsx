@@ -36,7 +36,7 @@ export function ProductFilters({
                     {/* Price Filter */}
                     <div>
                         <h3 className="font-bold text-corporate-black mb-4 flex items-center gap-2">
-                            <span className="w-1 h-5 bg-brand-yellow rounded-full"></span>
+                            <span className="w-1 h-5 bg-brand-primary rounded-full"></span>
                             Fiyat Aralığı
                         </h3>
                         <div className="space-y-3">
@@ -63,7 +63,7 @@ export function ProductFilters({
                             <div className="flex gap-2">
                                 <button
                                     onClick={applyPriceFilter}
-                                    className="flex-1 bg-brand-yellow text-white px-4 py-2 rounded-lg font-bold hover:bg-indigo-700 transition-colors"
+                                    className="flex-1 bg-brand-primary text-white px-4 py-2 rounded-lg font-bold hover:bg-indigo-700 transition-colors"
                                 >
                                     Uygula
                                 </button>
@@ -87,7 +87,7 @@ export function ProductFilters({
                     {/* Brand Filter */}
                     <div className="border-t border-gray-200 pt-6">
                         <h3 className="font-bold text-corporate-black mb-4 flex items-center gap-2">
-                            <span className="w-1 h-5 bg-brand-yellow rounded-full"></span>
+                            <span className="w-1 h-5 bg-brand-primary rounded-full"></span>
                             Marka
                         </h3>
                         <div className="space-y-2 max-h-60 overflow-y-auto">
@@ -119,7 +119,7 @@ export function ProductFilters({
                     {/* Sort Options */}
                     <div className="border-t border-gray-200 pt-6">
                         <h3 className="font-bold text-corporate-black mb-4 flex items-center gap-2">
-                            <span className="w-1 h-5 bg-brand-yellow rounded-full"></span>
+                            <span className="w-1 h-5 bg-brand-primary rounded-full"></span>
                             Sıralama
                         </h3>
                         <select

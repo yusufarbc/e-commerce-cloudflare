@@ -21,7 +21,7 @@ export function CategoryGrid({ activeCategory }) {
             </nav>
 
             <h2 className="text-3xl md:text-4xl font-black text-corporate-black mb-10 flex items-center gap-4">
-                <span className="w-2 h-12 bg-brand-yellow rounded-full"></span>
+                <span className="w-2 h-12 bg-brand-primary rounded-full"></span>
                 {activeCategory.ad} Kategorileri
             </h2>
 

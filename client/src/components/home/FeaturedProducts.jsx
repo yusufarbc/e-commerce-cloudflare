@@ -39,7 +39,7 @@ export function FeaturedProducts() {
                 {/* Section Header */}
                 <div className="flex items-center justify-between mb-8">
                     <div className="flex items-center gap-3">
-                        <div className="w-12 h-12 bg-brand-yellow rounded-xl flex items-center justify-center">
+                        <div className="w-12 h-12 bg-brand-primary rounded-xl flex items-center justify-center">
                             <Star className="text-corporate-black" size={24} />
                         </div>
                         <div>
@@ -78,7 +78,7 @@ export function FeaturedProducts() {
                 <div className="mt-8 text-center md:hidden">
                     <button
                         onClick={() => navigate('/magaza')}
-                        className="inline-flex items-center gap-2 bg-brand-yellow text-white px-6 py-3 rounded-full font-bold hover:bg-indigo-700 transition-colors"
+                        className="inline-flex items-center gap-2 bg-brand-primary text-white px-6 py-3 rounded-full font-bold hover:bg-indigo-700 transition-colors"
                     >
                         Tümünü Gör
                         <ChevronRight size={18} />

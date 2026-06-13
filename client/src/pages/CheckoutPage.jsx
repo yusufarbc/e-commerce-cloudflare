@@ -23,7 +23,7 @@ function StepIndicator({ currentStep }) {
                 {steps.map((step, index) => (
                     <div key={step.id} className="flex items-center">
                         <div className={`flex items-center justify-center w-10 h-10 rounded-full border-2 transition-all duration-300 ${currentStep >= step.id
-                            ? 'bg-brand-yellow border-indigo-600 text-corporate-black'
+                            ? 'bg-brand-primary border-indigo-600 text-corporate-black'
                             : 'bg-white border-gray-300 text-gray-400'
                             }`}>
                             <step.icon size={20} />
@@ -33,7 +33,7 @@ function StepIndicator({ currentStep }) {
                             {step.label}
                         </span>
                         {index < steps.length - 1 && (
-                            <div className={`w-12 sm:w-24 h-1 mx-2 sm:mx-4 rounded transition-all duration-300 ${currentStep > step.id ? 'bg-brand-yellow' : 'bg-gray-200'
+                            <div className={`w-12 sm:w-24 h-1 mx-2 sm:mx-4 rounded transition-all duration-300 ${currentStep > step.id ? 'bg-brand-primary' : 'bg-gray-200'
                                 }`} />
                         )}
                     </div>
@@ -376,7 +376,7 @@ export function CheckoutPage() {
                 <CreditCard size={64} className="mx-auto text-gray-300 mb-4" />
                 <h2 className="text-2xl font-bold text-gray-700 mb-2">Sepetiniz Boş</h2>
                 <p className="text-gray-500 mb-6">Ödeme yapabilmek için sepetinize ürün ekleyin.</p>
-                <a href="/" className="inline-flex items-center gap-2 bg-brand-yellow text-white px-6 py-3 rounded-full font-bold hover:bg-indigo-700 transition-colors">
+                <a href="/" className="inline-flex items-center gap-2 bg-brand-primary text-white px-6 py-3 rounded-full font-bold hover:bg-indigo-700 transition-colors">
                     <ArrowLeft size={18} />
                     Alışverişe Devam Et
                 </a>
@@ -789,7 +789,7 @@ export function CheckoutPage() {
                                     <button
                                         onClick={nextStep}
                                         disabled={loading}
-                                        className="flex items-center gap-2 bg-brand-yellow text-white px-8 py-3 rounded-xl font-bold hover:bg-indigo-700 transition-all shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
+                                        className="flex items-center gap-2 bg-brand-primary text-white px-8 py-3 rounded-xl font-bold hover:bg-indigo-700 transition-all shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
                                     >
                                         {currentStep === 2 ? 'Ödemeye Geç' : 'Devam Et'}
                                         <ChevronRight size={18} />
