@@ -42,10 +42,10 @@ export class OrderService {
                 const productColors = Array.isArray(product.renkSecenekleri)
                     ? product.renkSecenekleri.filter(Boolean)
                     : [];
-                const selectedColor = typeof item.selectedColor === 'string' ? item.selectedColor.trim() : '';
+                let selectedColor = typeof item.selectedColor === 'string' ? item.selectedColor.trim() : '';
 
                 if (productColors.length > 0 && !selectedColor) {
-                    throw new Error(`Color selection is required for ${product.ad}.`);
+                    selectedColor = productColors[0];
                 }
 
                 if (selectedColor && !productColors.includes(selectedColor)) {

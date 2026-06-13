@@ -997,6 +997,17 @@ export function CheckoutPage() {
                     </div>
                 </div>
             )}
+            {isTestEnv && (
+                <div className="fixed bottom-6 right-6 z-40">
+                    <button
+                        type="button"
+                        onClick={() => setShowTestCards(true)}
+                        className="bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold px-5 py-3.5 rounded-full shadow-2xl active:scale-95 transition-all flex items-center gap-2 border-2 border-indigo-200"
+                    >
+                        <span>🧪 Test Kartları</span>
+                    </button>
+                </div>
+            )}
         </div >
     );
 }
