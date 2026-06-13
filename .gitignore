@@ -96,3 +96,8 @@ bower_components/
 # ── Agent / AI Tooling ───────────────────────────────────────
 skills-lock.json
 .agents/
+
+# ── Payment Gateway Integration Samples ──────────────────────
+IyzipaySamples.js
+PARAM-API-Kullanim-Ornekleri/
+PayTR Direkt API/
