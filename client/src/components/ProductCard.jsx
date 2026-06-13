@@ -38,7 +38,16 @@ export function ProductCard({ product }) {
         e.preventDefault();
         e.stopPropagation();
         setIsAdding(true);
-        addToCart(product);
+        
+        // Auto-assign first color variant if available
+        const paletteOptions = Array.isArray(product.renkKartelasi) ? product.renkKartelasi : [];
+        const colorOptions = Array.isArray(product.renkSecenekleri) ? product.renkSecenekleri : [];
+        const firstColor = paletteOptions[0]?.name || colorOptions[0] || null;
+
+        addToCart({
+            ...product,
+            selectedColor: firstColor
+        });
         setTimeout(() => setIsAdding(false), 1500);
     };
 

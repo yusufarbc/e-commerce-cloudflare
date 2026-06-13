@@ -195,7 +195,10 @@ export function Footer() {
                         <VisaIcon />
                         <MastercardIcon />
                         <TroyIcon />
-                        <span className="text-white font-bold tracking-widest text-xs ml-1 opacity-70">Param</span>
+                        <div className="h-4 w-px bg-white/20 mx-1" />
+                        <span className="text-white font-black tracking-widest text-[10px] uppercase bg-white/10 px-2.5 py-1 rounded-sm border border-white/10">iyzico</span>
+                        <span className="text-white font-black tracking-widest text-[10px] uppercase bg-white/10 px-2.5 py-1 rounded-sm border border-white/10">PayTR</span>
+                        <span className="text-white font-black tracking-widest text-[10px] uppercase bg-white/10 px-2.5 py-1 rounded-sm border border-white/10">Param</span>
                     </div>
                 </div>
             </div>
