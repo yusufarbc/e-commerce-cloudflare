@@ -145,11 +145,28 @@ export class IyzicoService {
             }];
         }
 
+        // Calculate sum of item prices
+        let itemsPriceSum = items.reduce((sum, item) => sum + Number(item.price), 0);
+
+        // Account for shipping costs or any other price gaps where totalAmount is higher
+        const difference = totalAmount - itemsPriceSum;
+        if (difference > 0.01) {
+            items.push({
+                id: `shipping-${orderNumber}`,
+                name: 'Kargo Ucreti',
+                category1: 'Kargo',
+                itemType: 'VIRTUAL',
+                price: difference.toFixed(2)
+            });
+            // Recalculate sum of item prices
+            itemsPriceSum = items.reduce((sum, item) => sum + Number(item.price), 0);
+        }
+
         const payload = {
             locale: 'tr',
             conversationId: orderNumber,
-            price: totalAmount.toFixed(2),
-            paidPrice: totalAmount.toFixed(2),
+            price: itemsPriceSum.toFixed(2), // Total sum of all items in the basket
+            paidPrice: totalAmount.toFixed(2), // Actual amount charged to the card
             currency: 'TRY',
             installment: 1, // Must be an integer per iyzico specifications
             paymentChannel: 'WEB', // Required parameter
