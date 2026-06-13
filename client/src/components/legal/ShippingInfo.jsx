@@ -7,7 +7,7 @@ export const ShippingInfo = () => {
 
             <h2 className="text-xl font-bold text-corporate-black mt-6 mb-3">1. Kargo Kapsamı</h2>
             <p className="mb-4">
-                E-Market olarak <span className="bg-brand-yellow/30 px-1 rounded">Türkiye genelinde</span> tüm illere kargo ile teslimat yapıyoruz.
+                E-Market olarak <span className="bg-brand-primary/30 px-1 rounded">Türkiye genelinde</span> tüm illere kargo ile teslimat yapıyoruz.
             </p>
             <div className="bg-blue-50 border-l-4 border-blue-500 p-4 my-4 rounded-r">
                 <strong>📍 Not:</strong> Yurtdışına teslimat hizmetimiz bulunmamaktadır.

@@ -41,7 +41,7 @@ export function LegalPage({ title, contentKey }) {
                 {/* Header */}
                 <div className="text-center mb-8">
                     <h1 className="text-3xl font-black text-corporate-black mb-2">{title}</h1>
-                    <div className="w-24 h-1 bg-brand-yellow mx-auto rounded-full" />
+                    <div className="w-24 h-1 bg-brand-primary mx-auto rounded-full" />
                 </div>
 
                 {/* Content Card */}

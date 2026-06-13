@@ -38,9 +38,9 @@ export function CartSidebar() {
             <div className={`fixed inset-y-0 right-0 w-full max-w-md bg-white shadow-2xl z-50 flex flex-col transition-transform duration-300 ease-out ${isSidebarOpen ? 'translate-x-0' : 'translate-x-full'
                 }`}>
                 {/* Header */}
-                <div className="flex items-center justify-between px-6 py-4 border-b bg-gradient-to-r from-brand-yellow/10 to-transparent">
+                <div className="flex items-center justify-between px-6 py-4 border-b bg-gradient-to-r from-brand-primary/10 to-transparent">
                     <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-brand-yellow flex items-center justify-center">
+                        <div className="w-10 h-10 rounded-full bg-brand-primary flex items-center justify-center">
                             <ShoppingBag size={20} className="text-corporate-black" />
                         </div>
                         <div>
@@ -67,7 +67,7 @@ export function CartSidebar() {
                             <p className="text-gray-500 mb-6">Henüz sepetinize ürün eklemediniz.</p>
                             <button
                                 onClick={closeSidebar}
-                                className="bg-brand-yellow text-white px-6 py-3 rounded-full font-bold hover:bg-indigo-700 transition-colors flex items-center gap-2"
+                                className="bg-brand-primary text-white px-6 py-3 rounded-full font-bold hover:bg-indigo-700 transition-colors flex items-center gap-2"
                             >
                                 Alışverişe Başla
                                 <ArrowRight size={18} />
@@ -168,7 +168,7 @@ export function CartSidebar() {
                         {/* Checkout Button */}
                         <button
                             onClick={handleCheckout}
-                            className="w-full bg-brand-yellow text-white py-4 rounded-xl font-bold text-lg hover:bg-corporate-black hover:text-indigo-600 transition-all shadow-lg hover:shadow-xl flex items-center justify-center gap-2 transform active:scale-95"
+                            className="w-full bg-brand-primary text-white py-4 rounded-xl font-bold text-lg hover:bg-corporate-black hover:text-indigo-600 transition-all shadow-lg hover:shadow-xl flex items-center justify-center gap-2 transform active:scale-95"
                         >
                             Ödemeye Geç
                             <ArrowRight size={20} />

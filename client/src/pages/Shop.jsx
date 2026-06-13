@@ -229,7 +229,7 @@ export function Shop() {
                                         <p className="text-gray-400 text-sm mb-6 max-w-xs mx-auto">Seçtiğiniz filtre kombinasyonuna uygun ürün henüz mevcut değil.</p>
                                         <button
                                             onClick={() => navigate('/magaza')}
-                                            className="bg-brand-yellow text-white px-6 py-2.5 rounded-full font-black text-sm hover:bg-indigo-700 transition-colors shadow-sm"
+                                            className="bg-brand-primary text-white px-6 py-2.5 rounded-full font-black text-sm hover:bg-indigo-700 transition-colors shadow-sm"
                                         >
                                             Filtreleri Temizle
                                         </button>

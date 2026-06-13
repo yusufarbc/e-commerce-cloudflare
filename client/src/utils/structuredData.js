@@ -7,7 +7,7 @@ import DOMPurify from 'dompurify';
 
 const SITE_URL = 'https://e-market.com';
 const SITE_NAME = 'E-Market';
-const LOGO_URL = `${SITE_URL}/images/logo-yellow.svg`;
+const LOGO_URL = `${SITE_URL}/images/logo-light.svg`;
 
 /**
  * Sanitize product descriptions for safe use in JSON-LD.

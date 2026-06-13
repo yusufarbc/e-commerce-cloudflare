@@ -15,7 +15,7 @@ export function ContactPage() {
                 {/* Header */}
                 <div className="text-center mb-10">
                     <h1 className="text-3xl font-black text-corporate-black mb-2">İletişim</h1>
-                    <div className="w-24 h-1 bg-brand-yellow mx-auto rounded-full" />
+                    <div className="w-24 h-1 bg-brand-primary mx-auto rounded-full" />
                     <p className="text-lg text-gray-600 max-w-2xl mx-auto mt-4">
                         Size nasıl yardımcı olabiliriz? Bize ulaşın, en kısa sürede yanıt verelim.
                     </p>
