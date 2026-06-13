@@ -1,5 +1,4 @@
-/* eslint-disable */
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { 
   LayoutDashboard, 
   Package, 
@@ -14,14 +13,10 @@ import {
   Trash2, 
   Upload, 
   TrendingUp, 
-  DollarSign, 
   ShoppingBag as OrdersIcon, 
-  Activity, 
   Eye, 
-  Check, 
   X,
   Lock,
-  ChevronRight,
   Sun,
   Moon
 } from 'lucide-react';
@@ -96,6 +91,21 @@ export default function App() {
   const [selectedReturn, setSelectedReturn] = useState(null);
   const [returnStatusForm, setReturnStatusForm] = useState({ durum: 'ONAYLANDI', adminNotu: '', manuelIadeKodu: '' });
 
+  const calculateStats = (ords, prods, rets) => {
+    const totalSales = ords
+      .filter(o => o.durum === 'TESLIM_EDILDI' || o.durum === 'TAMAMLANDI')
+      .reduce((sum, o) => sum + parseFloat(o.toplamTutar || 0), 0);
+    const activeProducts = prods.filter(p => p.aktif).length;
+    const pendingReturns = rets.filter(r => r.durum === 'ONAY_BEKLENIYOR').length;
+
+    setStats({
+      totalSales,
+      totalOrders: ords.length,
+      activeProducts,
+      pendingReturns
+    });
+  };
+
   const fetchData = async () => {
     setLoading(true);
     try {
@@ -137,24 +147,11 @@ export default function App() {
   // Fetch all dashboard data when token is present
   useEffect(() => {
     if (token) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       fetchData();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
-
-  const calculateStats = (ords, prods, rets) => {
-    const totalSales = ords
-      .filter(o => o.durum === 'TESLIM_EDILDI' || o.durum === 'TAMAMLANDI')
-      .reduce((sum, o) => sum + parseFloat(o.toplamTutar || 0), 0);
-    const activeProducts = prods.filter(p => p.aktif).length;
-    const pendingReturns = rets.filter(r => r.durum === 'ONAY_BEKLENIYOR').length;
-
-    setStats({
-      totalSales,
-      totalOrders: ords.length,
-      activeProducts,
-      pendingReturns
-    });
-  };
 
   const handleLogin = async (e) => {
     e.preventDefault();
