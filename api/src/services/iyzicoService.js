@@ -21,10 +21,9 @@ export class IyzicoService {
         // This algorithm is required by the payment provider's API specification and cannot
         // be changed on our side. The hash signs only the API key, a random nonce, and the
         // secret key — it does not hash passwords or sensitive PII.
-        // codeql[js/weak-cryptographic-algorithm] iyzico IYZWS protocol mandates SHA-1
-        // codeql[js/insufficient-password-hash] not a password hash — API request signature
         const payload = apiKey + rnd + secretKey + bodyString;
-        // lgtm[js/weak-cryptographic-algorithm]
+        // codeql[js/weak-cryptographic-algorithm]
+        // codeql[js/insufficient-password-hash]
         const signature = crypto.createHash('sha1') // nosemgrep: java.lang.security.audit.crypto.weak-hash.use-of-sha1
             .update(payload, 'utf-8')
             .digest('base64');
