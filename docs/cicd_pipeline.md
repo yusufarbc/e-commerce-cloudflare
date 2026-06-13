@@ -1,14 +1,14 @@
-# 🚀 CI/CD Dağıtım Boru Hattı (Pipeline) Dokümantasyonu
+# 🚀 CI/CD Deployment Pipeline Documentation
 
-E-Market projesi, her kod değişikliğinin güvenliğini, kalitesini ve sürekliliğini garanti altına almak amacıyla tam otomatik bir **CI/CD Dağıtım Boru Hattı** (Pipeline) kullanmaktadır. Bu boru hattı GitHub Actions entegrasyonu ile çalışır ve Cloudflare altyapısına otomatik dağıtımı yönetir.
+The e-commerce project uses a fully automated **CI/CD Deployment Pipeline** to ensure the safety, quality, and continuity of every code change. The pipeline is powered by GitHub Actions and manages automated deployments to the Cloudflare infrastructure.
 
-Boru hattı tanımları [.github/workflows/deploy.yml](file:///C:/Users/yusuf/Github/e-commerce-cloudflare/.github/workflows/deploy.yml) dosyasında yer almaktadır.
+Pipeline definitions are located in [.github/workflows/deploy.yml](file:///C:/Users/yusuf/Github/e-commerce-cloudflare/.github/workflows/deploy.yml).
 
 ---
 
-## 📐 Pipeline Akış Diyagramı
+## 📐 Pipeline Flow Diagram
 
-Aşağıdaki Mermaid diyagramı, pipeline'ın tetiklenme aşamalarını, iş (job) bağımlılıklarını ve veri akışını göstermektedir:
+The Mermaid diagram below illustrates the pipeline trigger stages, job dependencies, and data flow:
 
 ```mermaid
 graph TD
@@ -16,9 +16,9 @@ graph TD
     classDef deploy fill:#10b981,stroke:#fff,stroke-width:2px,color:#fff
     classDef artifact fill:#f59e0b,stroke:#fff,stroke-width:2px,color:#fff
 
-    Start([Kod Push veya PR: test/main]) --> Job1[Test & Build Projects]:::test
-    
-    subgraph Job1_Steps [Test & Build Aşamaları]
+    Start([Code Push or PR: test/main]) --> Job1[Test & Build Projects]:::test
+
+    subgraph Job1_Steps [Test & Build Stages]
         direction TB
         Install[Dependencies: npm run ci:all]
         PrismaVal[Prisma Schema Validation]
@@ -26,28 +26,28 @@ graph TD
         LintAdmin[Linter: Admin ESLint]
         Semgrep[Security: Semgrep SAST Scan]
         Build[Vite Build: Client & Admin]
-        
+
         Install --> PrismaVal --> LintClient --> LintAdmin --> Semgrep --> Build
     end
-    
+
     Job1 -->|Upload Artifacts| ArtClient[client-dist]:::artifact
     Job1 -->|Upload Artifacts| ArtAdmin[admin-dist]:::artifact
-    
-    Job1 -->|Sadece Push durumunda| Job2[Deploy API to Cloudflare Workers]:::deploy
-    
-    subgraph Job2_Steps [Backend Dağıtım Aşamaları]
+
+    Job1 -->|Push events only| Job2[Deploy API to Cloudflare Workers]:::deploy
+
+    subgraph Job2_Steps [Backend Deployment Stages]
         direction TB
         PrismaGen[Prisma Client Generation]
         WranglerDeploy[Wrangler Deploy: env Staging/Production]
         PrismaGen --> WranglerDeploy
     end
-    
+
     Job2 --> Job3[Deploy Frontends to Cloudflare Pages]:::deploy
-    
+
     ArtClient --> Job3
     ArtAdmin --> Job3
-    
-    subgraph Job3_Steps [Frontend Dağıtım Aşamaları]
+
+    subgraph Job3_Steps [Frontend Deployment Stages]
         direction TB
         DeployStorefront[Wrangler Pages Deploy: storefront]
         DeployAdmin[Wrangler Pages Deploy: admin-dashboard]
@@ -56,61 +56,64 @@ graph TD
 
 ---
 
-## ⚙️ Boru Hattı İşleri (Jobs) ve Detayları
+## ⚙️ Pipeline Jobs & Details
 
-Pipeline üç ana işten (job) oluşur:
+The pipeline consists of three main jobs:
 
 ### 1. Test and Build Projects (`test-and-build`)
-Bu iş, hem **Pull Request (PR)** hem de **Push** tetikleyicilerinde çalışır. Amacı kod kalitesini doğrulamak ve statik kod analizi yapmaktır.
 
-*   **Bağımlılıklar:** Yok. İlk çalışan adımdır.
-*   **Aşamalar:**
-    1.  **Node.js Kurulumu:** Node.js v20 çalışma zamanı yüklenir.
-    2.  **Bağımlılık Yükleme:** `npm run ci:all` komutu ile monorepo içerisindeki tüm alt projelerin (`client`, `admin`, `api`) bağımlılıkları temiz bir şekilde kurulur.
-    3.  **Veritabanı Doğrulama:** Backend şemasını doğrulamak için `prisma validate` çalıştırılır.
-    4.  **Kod Linter Kontrolü (ESLint):** `client` ve `admin` klasörlerindeki linter kuralları denetlenir. Hata varsa pipeline durdurulur.
-    5.  **Güvenlik Taraması (SAST):** Semgrep aracı ile ReDoS, Format String ve Shell Injection gibi zafiyetler taranır.
-    6.  **Vite Derleme (Build):** Frontend uygulamaları hedeflenen API URL'leri ile derlenir:
-        *   `test` dalı hedef alındıysa `STAGING_API_URL` kullanılır.
-        *   `main` dalı hedef alındıysa `PRODUCTION_API_URL` kullanılır.
-    7.  **Artifakt Yükleme:** Derlenen `client/dist` ve `admin/dist` klasörleri sonraki adımlarda kullanılmak üzere GitHub Actions sunucularına geçici olarak yüklenir.
+This job runs on both **Pull Request (PR)** and **Push** triggers. Its purpose is to validate code quality and perform static code analysis.
+
+- **Dependencies:** None. This is the first job to run.
+- **Stages:**
+  1. **Node.js Setup:** Node.js v20 runtime is installed.
+  2. **Dependency Installation:** `npm run ci:all` installs all sub-project dependencies (`client`, `admin`, `api`) across the monorepo with a clean install.
+  3. **Database Validation:** `prisma validate` is run to validate the backend schema.
+  4. **Lint Check (ESLint):** Linting rules are enforced across `client` and `admin` directories. The pipeline halts on any errors.
+  5. **Security Scan (SAST):** Semgrep scans for vulnerabilities such as ReDoS, Format String, and Shell Injection.
+  6. **Vite Build:** Frontend applications are compiled against the targeted API URLs:
+     - If targeting the `test` branch → `STAGING_API_URL` is used.
+     - If targeting the `main` branch → `PRODUCTION_API_URL` is used.
+  7. **Artifact Upload:** The compiled `client/dist` and `admin/dist` directories are temporarily uploaded to GitHub Actions servers for use in subsequent jobs.
 
 ---
 
 ### 2. Deploy API to Cloudflare Workers (`deploy-backend`)
-Bu iş, sadece kod **Doğrudan Push** (PR onaylanıp birleştirildikten sonra) edildiğinde çalışır.
 
-*   **Bağımlılıklar:** `test-and-build` işinin başarıyla tamamlanmış olması gerekir.
-*   **Aşamalar:**
-    1.  **Dağıtım Ortamı Belirleme:**
-        *   `test` dalına push yapıldıysa ortam `staging` olarak seçilir.
-        *   `main` dalına push yapıldıysa ortam `production` olarak seçilir.
-    2.  **Prisma İstemci Oluşturma:** Cloudflare D1 için Prisma istemcisi üretilir (`npx prisma generate`).
-    3.  **Wrangler Dağıtımı:** `npx wrangler deploy --env <ortam>` komutu ile API, hedeflenen ortama deploy edilir.
-    4.  **Kullanılan Gizli Anahtarlar (Secrets):** `CLOUDFLARE_API_TOKEN` ve `CLOUDFLARE_ACCOUNT_ID`.
+This job runs only on **direct Push** events (i.e., after a PR is approved and merged).
+
+- **Dependencies:** Requires `test-and-build` to have completed successfully.
+- **Stages:**
+  1. **Environment Selection:**
+     - Push to `test` branch → environment is set to `staging`.
+     - Push to `main` branch → environment is set to `production`.
+  2. **Prisma Client Generation:** The Prisma client is generated for Cloudflare D1 (`npx prisma generate`).
+  3. **Wrangler Deployment:** `npx wrangler deploy --env <environment>` deploys the API to the target environment.
+  4. **Required Secrets:** `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`.
 
 ---
 
 ### 3. Deploy Frontends to Cloudflare Pages (`deploy-frontend`)
-Bu iş, backend API başarıyla dağıtıldıktan sonra frontend arayüzlerini yayına almak için çalışır.
 
-*   **Bağımlılıklar:** `test-and-build` ve `deploy-backend` işlerinin başarıyla tamamlanmış olması gerekir.
-*   **Aşamalar:**
-    1.  **Artifakt İndirme:** İlk adımda derlenen `client-dist` ve `admin-dist` dosyaları indirilir.
-    2.  **Sayfaları Dağıtma:**
-        *   **Storefront:** `ecommerce-storefront` Pages projesine hedeflenen dala göre dağıtılır.
-        *   **Admin Dashboard:** `ecommerce-admin` Pages projesine hedeflenen dala göre dağıtılır.
-    3.  **Kullanılan Gizli Anahtarlar (Secrets):** `CLOUDFLARE_API_TOKEN` ve `CLOUDFLARE_ACCOUNT_ID`.
+This job runs after the backend API has been successfully deployed, publishing the frontend interfaces.
+
+- **Dependencies:** Requires both `test-and-build` and `deploy-backend` to have completed successfully.
+- **Stages:**
+  1. **Artifact Download:** The `client-dist` and `admin-dist` artifacts built in the first job are downloaded.
+  2. **Pages Deployment:**
+     - **Storefront:** Deployed to the `ecommerce-storefront` Pages project targeting the appropriate branch.
+     - **Admin Dashboard:** Deployed to the `ecommerce-admin` Pages project targeting the appropriate branch.
+  3. **Required Secrets:** `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`.
 
 ---
 
-## 🔒 Güvenlik ve Secrets Yapılandırması
+## 🔒 Security & Secrets Configuration
 
-Pipeline'ın çalışabilmesi için GitHub deposunda aşağıdaki repository sırlarının (secrets) tanımlı olması gerekir:
+The following repository secrets must be configured in your GitHub repository for the pipeline to function:
 
-| Gizli Anahtar Adı | Açıklama |
+| Secret Name | Description |
 | :--- | :--- |
-| `CLOUDFLARE_ACCOUNT_ID` | Cloudflare Hesap Kimliği (Account ID) |
-| `CLOUDFLARE_API_TOKEN` | Workers, D1, R2 ve Pages yetkilerine sahip Cloudflare API Anahtarı |
-| `STAGING_API_URL` | Test ortamındaki backend API adresi (Örn: `https://e-commerce-cloudflare-staging.yusuftalhaarabaci-91d.workers.dev`) |
-| `PRODUCTION_API_URL` | Üretim ortamındaki backend API adresi (Örn: `https://api.e-market-domain.com`) |
+| `CLOUDFLARE_ACCOUNT_ID` | Cloudflare Account ID |
+| `CLOUDFLARE_API_TOKEN` | Cloudflare API Token with permissions for Workers, D1, R2, and Pages |
+| `STAGING_API_URL` | Backend API address for the staging environment (e.g. `https://e-commerce-cloudflare-staging.yusuftalhaarabaci-91d.workers.dev`) |
+| `PRODUCTION_API_URL` | Backend API address for the production environment (e.g. `https://api.e-market-domain.com`) |

@@ -1,49 +1,49 @@
-name: 🐛 Hata Bildirimi (Bug Report)
-description: E-Market üzerinde bulduğunuz hataları ayrıntılı bildirmek için bu şablonu kullanın.
+name: 🐛 Bug Report
+description: Report a bug or unexpected behavior found in E-Market.
 labels: ["bug"]
 body:
   - type: markdown
     attributes:
       value: |
-        E-Market projesine hata bildirerek katkıda bulunduğunuz için teşekkür ederiz! Lütfen hatanın en kısa sürede çözülebilmesi için aşağıdaki formu olabildiğince detaylı doldurunuz.
+        Thank you for taking the time to report an issue! Please fill out the form below as thoroughly as possible so we can reproduce and fix the bug quickly.
 
   - type: textarea
     id: description
     attributes:
-      label: Hata Açıklaması
-      description: Karşılaştığınız hatayı kısaca açıklayın.
-      placeholder: Hata ne zaman, hangi sayfada ve ne şekilde gerçekleşiyor?
+      label: Bug Description
+      description: Briefly describe the bug you encountered.
+      placeholder: What happened, on which page, and under what conditions?
     validations:
       required: true
 
   - type: textarea
     id: reproduction_steps
     attributes:
-      label: Hatayı Yeniden Oluşturma Adımları
-      description: Hatayı kendi bilgisayarımızda görebilmemiz için yapılması gereken adımları listeleyin.
+      label: Steps to Reproduce
+      description: List the exact steps needed to reproduce the issue on our end.
       placeholder: |
-        1. '...' sayfasına gidin.
-        2. '...' butonuna tıklayın.
-        3. '...' hatasını görün.
+        1. Go to '...' page.
+        2. Click the '...' button.
+        3. See the '...' error.
     validations:
       required: true
 
   - type: textarea
     id: expected_behavior
     attributes:
-      label: Beklenen Davranış
-      description: Olması gereken davranış neydi?
-      placeholder: Hata yerine ne gerçekleşmeliydi?
+      label: Expected Behavior
+      description: What should have happened instead of the bug?
+      placeholder: Describe the correct behavior you expected.
     validations:
       required: true
 
   - type: dropdown
     id: active_payment_gateway
     attributes:
-      label: Aktif Ödeme Altyapısı
-      description: Hata ödeme adımlarında gerçekleştiyse hangi altyapı aktifti?
+      label: Active Payment Gateway
+      description: If the issue occurred during a payment step, which gateway was active?
       options:
-        - Belirtilmemiş / Ödeme Dışı
+        - Not applicable / Not payment-related
         - Param POS (SOAP)
         - iyzico (REST)
         - PayTR (HMAC Direct)
@@ -53,35 +53,35 @@ body:
   - type: input
     id: node_version
     attributes:
-      label: Node.js Versiyonu
-      placeholder: Örn: v20.11.0 (node -v komutu çıktısı)
+      label: Node.js Version
+      placeholder: "e.g. v20.11.0 (output of: node -v)"
     validations:
       required: false
 
   - type: input
     id: wrangler_version
     attributes:
-      label: Cloudflare Wrangler Versiyonu
-      placeholder: Örn: wrangler 3.30.0 (npx wrangler --version çıktısı)
+      label: Cloudflare Wrangler Version
+      placeholder: "e.g. wrangler 3.30.0 (output of: npx wrangler --version)"
     validations:
       required: false
 
   - type: textarea
     id: error_logs
     attributes:
-      label: Hata Logları & Konsol Çıktıları
-      description: Tarayıcı konsolundaki veya Wrangler terminalindeki hata çıktılarını buraya yapıştırın.
+      label: Error Logs & Console Output
+      description: Paste any browser console errors or Wrangler terminal output here.
       render: bash
-      placeholder: Hata logu veya stack trace buraya gelecek...
+      placeholder: Stack trace or error log goes here...
     validations:
       required: false
 
   - type: checkboxes
     id: checks
     attributes:
-      label: Ön Kontroller
+      label: Pre-submission Checklist
       options:
-        - label: Benzer bir hata kaydının (issue) daha önce açılmadığını kontrol ettim.
+        - label: I have searched existing issues and confirmed this is not a duplicate.
           required: true
-        - label: Proje bağımlılıklarını temiz şekilde kurup (npm run install:all) yerel ortamı yeniden başlattım.
+        - label: I have reinstalled dependencies cleanly (`npm run install:all`) and restarted the local environment.
           required: true

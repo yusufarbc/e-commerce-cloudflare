@@ -1,44 +1,44 @@
-name: 💡 Özellik Önerisi (Feature Request)
-description: E-Market'e eklenmesini istediğiniz yeni özellikleri ve geliştirmeleri önerin.
+name: 💡 Feature Request
+description: Suggest a new feature or improvement for E-Market.
 labels: ["enhancement"]
 body:
   - type: markdown
     attributes:
       value: |
-        E-Market projesini geliştirmek için sunduğunuz fikirler için teşekkür ederiz! Lütfen eklenmesini istediğiniz özelliğe ait detayları form üzerinden bizimle paylaşın.
+        Thank you for helping improve E-Market! Please share the details of your feature idea using the form below. Well-scoped proposals are much more likely to be implemented quickly.
 
   - type: textarea
     id: problem
     attributes:
-      label: Önerinin Çözdüğü Sorun (Problem Statement)
-      description: Bu özellik hangi sorunu veya eksikliği gideriyor?
-      placeholder: Kısaca bu özelliğe neden ihtiyaç duyulduğunu açıklayın.
+      label: Problem Statement
+      description: What problem or gap does this feature address?
+      placeholder: Briefly explain why this feature is needed and what pain point it solves.
     validations:
       required: true
 
   - type: textarea
     id: solution
     attributes:
-      label: Önerilen Çözüm / Geliştirme (Proposed Solution)
-      description: Özelliğin nasıl çalışmasını veya nasıl görünmesini öneriyorsunuz?
-      placeholder: Eklemek istediğiniz özelliğin işlevini ve akışını detaylandırın.
+      label: Proposed Solution
+      description: How do you envision this feature working or looking?
+      placeholder: Describe the feature's behavior, UI, or API in as much detail as possible.
     validations:
       required: true
 
   - type: textarea
     id: alternatives
     attributes:
-      label: Değerlendirilen Alternatifler
-      description: Düşündüğünüz ama elediğiniz alternatif çözümler varsa belirtin.
-      placeholder: Diğer olası yaklaşımlar nelerdir?
+      label: Alternatives Considered
+      description: Have you considered other approaches? If so, why did you rule them out?
+      placeholder: List any alternative solutions or workarounds you evaluated.
     validations:
       required: false
 
   - type: textarea
     id: context
     attributes:
-      label: Ek Bağlam ve Görseller
-      description: Bu özelliğin yer aldığı mock-up'lar, ekran görüntüleri veya başka bir proje örneği varsa ekleyin.
-      placeholder: Buraya link veya görseller ekleyebilirsiniz.
+      label: Additional Context & Visuals
+      description: Include mockups, screenshots, links to similar implementations, or any other supporting material.
+      placeholder: Paste links or drag & drop images here.
     validations:
       required: false
