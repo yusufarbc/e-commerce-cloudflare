@@ -632,21 +632,10 @@ export function CheckoutPage() {
                             {/* Step 3: Payment Info */}
                             {currentStep === 3 && (
                                 <div className="space-y-6 animate-in fade-in duration-300">
-                                    <div className="flex items-center justify-between">
-                                        <h2 className="text-xl font-bold text-corporate-black flex items-center gap-2">
-                                            <CreditCard size={24} className="text-indigo-600" />
-                                            Ödeme Bilgileri
-                                        </h2>
-                                        {isTestEnv && (
-                                            <button 
-                                                type="button"
-                                                onClick={() => setShowTestCards(true)}
-                                                className="text-xs bg-indigo-50 text-indigo-600 hover:bg-indigo-100 font-bold px-3 py-1.5 rounded-lg border border-indigo-200 transition-colors"
-                                            >
-                                                🧪 Test Kartları
-                                            </button>
-                                        )}
-                                    </div>
+                                    <h2 className="text-xl font-bold text-corporate-black flex items-center gap-2">
+                                        <CreditCard size={24} className="text-indigo-600" />
+                                        Ödeme Bilgileri
+                                    </h2>
 
                                     {loading ? (
                                         <div className="text-center py-12">

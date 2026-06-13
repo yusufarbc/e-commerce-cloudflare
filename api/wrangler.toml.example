@@ -1,0 +1,129 @@
+name = "e-commerce-cloudflare"
+main = "src/app.js"
+compatibility_date = "2024-04-03"
+compatibility_flags = [ "nodejs_compat" ]
+
+[vars]
+NODE_ENV = "development"
+CORS_ORIGIN = "*"
+CLIENT_URL = "http://localhost:3000"
+API_URL = "http://localhost:8787"
+ORDER_NOTIFICATION_EMAIL = "bilgi@e-market-domain.com"
+CDN_URL = "https://cdn.e-market-domain.com"
+GOOGLE_MERCHANT_TOKEN = "your-merchant-token-here"
+ADMIN_JWT_SECRET = "your-admin-jwt-secret-here"
+
+# ── Active Payment Provider ─────────────────────────────────────────────────
+# Options: "iyzico" | "param" | "paytr"
+PAYMENT_PROVIDER = "iyzico"
+
+# ── iyzico (sandbox) ─────────────────────────────────────────────────────────
+# Secrets → run: wrangler secret put IYZICO_API_KEY
+#           run: wrangler secret put IYZICO_SECRET_KEY
+IYZICO_BASE_URL = "https://sandbox-api.iyzipay.com"
+
+# ── Param POS (disabled by default) ──────────────────────────────────────────
+# To activate: set PAYMENT_PROVIDER = "param" and uncomment below
+# Secrets → run: wrangler secret put PARAM_CLIENT_CODE
+#           run: wrangler secret put PARAM_CLIENT_USERNAME
+#           run: wrangler secret put PARAM_CLIENT_PASSWORD
+#           run: wrangler secret put PARAM_GUID
+# PARAM_BASE_URL = "https://testposws.param.com.tr/turkpos.ws/service_turkpos_prod.asmx?wsdl"
+
+# ── PayTR (disabled by default) ───────────────────────────────────────────────
+# To activate: set PAYMENT_PROVIDER = "paytr" and uncomment below
+# Secrets → run: wrangler secret put PAYTR_MERCHANT_ID
+#           run: wrangler secret put PAYTR_MERCHANT_KEY
+#           run: wrangler secret put PAYTR_MERCHANT_SALT
+
+# ── E-posta (SMTP) ────────────────────────────────────────────────────────────
+# Secrets → run: wrangler secret put SMTP_HOST
+#           run: wrangler secret put SMTP_USER
+#           run: wrangler secret put SMTP_PASS
+SMTP_SENDER = "E-Market <siparis@example.com>"
+SMTP_REPLY_TO = "bilgi@example.com"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "your-d1-database-name"
+database_id = "your-d1-database-id"
+migrations_dir = "migrations"
+
+[[r2_buckets]]
+binding = "IMAGES_BUCKET"
+bucket_name = "your-r2-bucket-name"
+preview_bucket_name = "your-r2-bucket-name-preview"
+
+[[send_email]]
+name = "EMAIL"
+
+[triggers]
+crons = [ "0 2 * * *" ] # Everyday at 02:00 AM UTC
+
+# ========================================================
+# ⚙️ Cloudflare Environments Configuration
+# ========================================================
+
+# 🧪 Staging
+[env.staging]
+name = "your-worker-name-staging"
+
+[env.staging.vars]
+NODE_ENV = "staging"
+CORS_ORIGIN = "*"
+CLIENT_URL = "https://your-staging-pages-domain.pages.dev"
+API_URL = "https://your-worker-name-staging.your-subdomain.workers.dev"
+ORDER_NOTIFICATION_EMAIL = "bilgi@example.com"
+CDN_URL = "https://cdn.example.com"
+GOOGLE_MERCHANT_TOKEN = "your-merchant-token-here"
+ADMIN_JWT_SECRET = "your-admin-jwt-secret-here"
+PAYMENT_PROVIDER = "iyzico"
+IYZICO_BASE_URL = "https://sandbox-api.iyzipay.com"
+SMTP_SENDER = "E-Market <siparis@example.com>"
+SMTP_REPLY_TO = "bilgi@example.com"
+
+[[env.staging.d1_databases]]
+binding = "DB"
+database_name = "your-d1-staging-name"
+database_id = "your-d1-staging-id"
+migrations_dir = "migrations"
+
+[[env.staging.r2_buckets]]
+binding = "IMAGES_BUCKET"
+bucket_name = "your-r2-staging-bucket"
+preview_bucket_name = "your-r2-staging-bucket"
+
+[[env.staging.send_email]]
+name = "EMAIL"
+
+# 🚀 Production
+[env.production]
+name = "your-worker-name"
+
+[env.production.vars]
+NODE_ENV = "production"
+CORS_ORIGIN = "*"
+CLIENT_URL = "https://your-storefront.pages.dev"
+API_URL = "https://api.example.com"
+ORDER_NOTIFICATION_EMAIL = "bilgi@example.com"
+CDN_URL = "https://cdn.example.com"
+GOOGLE_MERCHANT_TOKEN = "your-merchant-token-here"
+ADMIN_JWT_SECRET = "your-admin-jwt-secret-here"
+PAYMENT_PROVIDER = "iyzico"
+IYZICO_BASE_URL = "https://api.iyzipay.com"
+SMTP_SENDER = "E-Market <siparis@example.com>"
+SMTP_REPLY_TO = "bilgi@example.com"
+
+[[env.production.d1_databases]]
+binding = "DB"
+database_name = "your-d1-database-name"
+database_id = "your-d1-database-id"
+migrations_dir = "migrations"
+
+[[env.production.r2_buckets]]
+binding = "IMAGES_BUCKET"
+bucket_name = "your-r2-bucket-name"
+preview_bucket_name = "your-r2-bucket-name"
+
+[[env.production.send_email]]
+name = "EMAIL"
