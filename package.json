@@ -16,6 +16,6 @@
     "deploy": "node scripts/deploy.js"
   },
   "devDependencies": {
-    "concurrently": "^8.2.0"
+    "concurrently": "^10.0.3"
   }
 }
