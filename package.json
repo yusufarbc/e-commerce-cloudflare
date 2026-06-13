@@ -13,9 +13,11 @@
     "dev:admin": "npm run dev --prefix admin",
     "db:seed": "npm run seed --prefix api",
     "db:migrate": "npx wrangler d1 migrations apply DB --local --cwd api",
-    "deploy": "node scripts/deploy.js"
+    "deploy": "wrangler deploy",
+    "preview": "wrangler dev"
   },
   "devDependencies": {
-    "concurrently": "^8.2.0"
+    "concurrently": "^8.2.0",
+    "wrangler": "^4.100.0"
   }
 }
