@@ -68,27 +68,14 @@ export class OrderRepository extends BaseRepository {
      * @returns {Promise<Object>} The finalized order.
      */
     async finalizeOrder(id) {
-        return this.prisma.$transaction(async (tx) => {
-            // 1. Fetch order lines and snapshot product info
-            const siparis = await tx.siparis.findUnique({
-                where: { id },
-                include: { kalemler: true }
-            });
-
-            if (!siparis) throw new Error('Sipariş bulunamadı');
-
-            // 2. Inventory tracking is disabled so stock deduction is skipped.
-            // (Previously, quantity was deducted from product stock here)
-
-            // 3. Update Order Status
-            return tx.siparis.update({
-                where: { id },
-                data: {
-                    durum: 'HAZIRLANIYOR',
-                    odemeDurumu: 'SUCCESS',
-                    faturaDurumu: 'DUZENLENMEDI' // Invoice to be issued later
-                }
-            });
+        // Mark status as 'HAZIRLANIYOR', payment as 'SUCCESS' and update faturaDurumu
+        return this.model.update({
+            where: { id },
+            data: {
+                durum: 'HAZIRLANIYOR',
+                odemeDurumu: 'SUCCESS',
+                faturaDurumu: 'DUZENLENMEDI' // Invoice to be issued later
+            }
         });
     }
 
