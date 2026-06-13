@@ -6,12 +6,26 @@ export const config = {
   port: 8787,
   corsOrigin: '*',
   nodeEnv: 'development',
+  paymentProvider: 'param',
   param: {
     clientCode: '',
     clientUsername: '',
     clientPassword: '',
     guid: '',
     baseUrl: 'https://testposws.param.com.tr/turkpos.ws/service_turkpos_prod.asmx?wsdl',
+    callbackUrl: 'http://localhost:8787'
+  },
+  iyzico: {
+    apiKey: '',
+    secretKey: '',
+    baseUrl: 'https://sandbox-api.iyzipay.com',
+    callbackUrl: 'http://localhost:8787'
+  },
+  paytr: {
+    merchantId: '',
+    merchantKey: '',
+    merchantSalt: '',
+    baseUrl: 'https://www.paytr.com',
     callbackUrl: 'http://localhost:8787'
   },
   brevo: {
@@ -49,6 +63,7 @@ export function initConfig(env) {
   config.cdnUrl = env.CDN_URL || 'https://cdn.e-market-domain.com';
   config.googleMerchantToken = env.GOOGLE_MERCHANT_TOKEN || '';
   config.adminJwtSecret = env.ADMIN_JWT_SECRET || 'secure-admin-token-secret-12345';
+  config.paymentProvider = env.PAYMENT_PROVIDER || 'param';
 
   // In-place update for Param POS parameters to preserve references
   Object.assign(config.param, {
@@ -57,6 +72,23 @@ export function initConfig(env) {
     clientPassword: env.PARAM_CLIENT_PASSWORD || '',
     guid: env.PARAM_GUID || '',
     baseUrl: env.PARAM_BASE_URL || 'https://testposws.param.com.tr/turkpos.ws/service_turkpos_prod.asmx?wsdl',
+    callbackUrl: env.API_URL || 'http://localhost:8787'
+  });
+
+  // In-place update for iyzico parameters
+  Object.assign(config.iyzico, {
+    apiKey: env.IYZICO_API_KEY || '',
+    secretKey: env.IYZICO_SECRET_KEY || '',
+    baseUrl: env.IYZICO_BASE_URL || 'https://sandbox-api.iyzipay.com',
+    callbackUrl: env.API_URL || 'http://localhost:8787'
+  });
+
+  // In-place update for PayTR parameters
+  Object.assign(config.paytr, {
+    merchantId: env.PAYTR_MERCHANT_ID || '',
+    merchantKey: env.PAYTR_MERCHANT_KEY || '',
+    merchantSalt: env.PAYTR_MERCHANT_SALT || '',
+    baseUrl: env.PAYTR_BASE_URL || 'https://www.paytr.com',
     callbackUrl: env.API_URL || 'http://localhost:8787'
   });
 

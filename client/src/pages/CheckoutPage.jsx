@@ -78,6 +78,41 @@ export function CheckoutPage() {
     const [installments, setInstallments] = useState([]);
     const [selectedInstallment, setSelectedInstallment] = useState(1);
     const [installmentsLoading, setInstallmentsLoading] = useState(false);
+    const [showTestCards, setShowTestCards] = useState(false);
+
+    const isTestEnv = import.meta.env.DEV || 
+                      window.location.hostname.includes('test') || 
+                      window.location.hostname.includes('localhost') || 
+                      window.location.hostname.includes('staging');
+
+    const handleSelectTestCard = async (cardNumber) => {
+        const formattedCardNumber = cardNumber.match(/.{1,4}/g)?.join(' ') || cardNumber;
+        setCardInfo({
+            cardHolderName: 'TEST USER',
+            cardNumber: formattedCardNumber,
+            cardExpMonth: '12',
+            cardExpYear: '28',
+            cardCvc: '123'
+        });
+        setShowTestCards(false);
+
+        // Fetch installments for the chosen test card
+        const bin = cardNumber.replace(/\s/g, '').slice(0, 6);
+        setInstallmentsLoading(true);
+        try {
+            const response = await api.get(`/api/v1/payment/param/installments?bin=${bin}&amount=${displayTotal}`);
+            if (response.data.status === 'success' && response.data.installments) {
+                setInstallments(response.data.installments);
+            } else {
+                setInstallments([]);
+            }
+        } catch (err) {
+            console.error('Failed to fetch installments for test card:', err);
+            setInstallments([]);
+        } finally {
+            setInstallmentsLoading(false);
+        }
+    };
 
     useEffect(() => {
         if (cartItems && cartItems.length > 0) {
@@ -596,10 +631,21 @@ export function CheckoutPage() {
                             {/* Step 3: Payment Info */}
                             {currentStep === 3 && (
                                 <div className="space-y-6 animate-in fade-in duration-300">
-                                    <h2 className="text-xl font-bold text-corporate-black flex items-center gap-2">
-                                        <CreditCard size={24} className="text-indigo-600" />
-                                        Ödeme Bilgileri
-                                    </h2>
+                                    <div className="flex items-center justify-between">
+                                        <h2 className="text-xl font-bold text-corporate-black flex items-center gap-2">
+                                            <CreditCard size={24} className="text-indigo-600" />
+                                            Ödeme Bilgileri
+                                        </h2>
+                                        {isTestEnv && (
+                                            <button 
+                                                type="button"
+                                                onClick={() => setShowTestCards(true)}
+                                                className="text-xs bg-indigo-50 text-indigo-600 hover:bg-indigo-100 font-bold px-3 py-1.5 rounded-lg border border-indigo-200 transition-colors"
+                                            >
+                                                🧪 Test Kartları
+                                            </button>
+                                        )}
+                                    </div>
 
                                     {loading ? (
                                         <div className="text-center py-12">
@@ -878,6 +924,77 @@ export function CheckoutPage() {
                     </div>
                 )
             }
+
+            {/* Test Cards Modal */}
+            {showTestCards && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+                    <div className="bg-white rounded-2xl max-w-lg w-full max-h-[80vh] flex flex-col shadow-2xl animate-in zoom-in-95 duration-200">
+                        {/* Header */}
+                        <div className="p-5 border-b flex items-center justify-between">
+                            <h3 className="text-lg font-extrabold text-corporate-black flex items-center gap-2">
+                                🧪 iyzico / Param Test Kartları
+                            </h3>
+                            <button 
+                                onClick={() => setShowTestCards(false)}
+                                className="w-10 h-10 rounded-full hover:bg-gray-100 flex items-center justify-center text-xl text-gray-500 transition-colors"
+                            >
+                                ×
+                            </button>
+                        </div>
+                        {/* Body */}
+                        <div className="p-6 overflow-y-auto space-y-5 text-sm">
+                            <p className="text-gray-500 text-xs leading-relaxed">
+                                Test ortamında ödeme senaryolarını test etmek için aşağıdaki kartlardan birine tıklayarak ödeme formunu otomatik doldurabilirsiniz.
+                            </p>
+                            
+                            <div>
+                                <h4 className="font-bold text-green-600 mb-2 flex items-center gap-1">✓ Başarılı Ödeme Kartları</h4>
+                                <div className="grid grid-cols-1 gap-2">
+                                    {[
+                                        { num: '5526080000000006', bank: 'Akbank (Kredi Kartı)' },
+                                        { num: '5890040000000016', bank: 'Akbank (Banka Kartı)' },
+                                        { num: '4543590000000006', bank: 'İş Bankası (Kredi Kartı)' },
+                                        { num: '6501700194147183', bank: 'Vakıfbank (Troy Kredi)' },
+                                        { num: '5451030000000000', bank: 'Yapı Kredi (Kredi Kartı)' }
+                                    ].map(card => (
+                                        <button
+                                            key={card.num}
+                                            type="button"
+                                            onClick={() => handleSelectTestCard(card.num)}
+                                            className="flex items-center justify-between p-3 bg-green-50/40 hover:bg-green-50 border border-green-200 rounded-xl transition-all text-left font-semibold text-xs text-corporate-black hover:border-green-400"
+                                        >
+                                            <span>{card.bank}</span>
+                                            <span className="font-mono text-indigo-600">{card.num.match(/.{1,4}/g).join(' ')}</span>
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+
+                            <div>
+                                <h4 className="font-bold text-red-600 mb-2 flex items-center gap-1">✗ Hata Simülasyon Kartları</h4>
+                                <div className="grid grid-cols-1 gap-2">
+                                    {[
+                                        { num: '4111111111111129', err: 'Yetersiz Bakiye (Not sufficient funds)' },
+                                        { num: '4125111111111115', err: 'Süresi Geçmiş Kart (Expired card)' },
+                                        { num: '4124111111111116', err: 'Geçersiz CVC (Invalid CVC)' },
+                                        { num: '4151111111111112', err: '3D Secure Başlatma Hatası' }
+                                    ].map(card => (
+                                        <button
+                                            key={card.num}
+                                            type="button"
+                                            onClick={() => handleSelectTestCard(card.num)}
+                                            className="flex items-center justify-between p-3 bg-red-50/20 hover:bg-red-50/50 border border-red-100 rounded-xl transition-all text-left font-semibold text-xs text-corporate-black hover:border-red-300"
+                                        >
+                                            <span className="truncate max-w-[220px]" title={card.err}>{card.err}</span>
+                                            <span className="font-mono text-gray-600">{card.num.match(/.{1,4}/g).join(' ')}</span>
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div >
     );
 }

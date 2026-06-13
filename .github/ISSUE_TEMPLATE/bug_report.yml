@@ -1,0 +1,87 @@
+name: 🐛 Hata Bildirimi (Bug Report)
+description: E-Market üzerinde bulduğunuz hataları ayrıntılı bildirmek için bu şablonu kullanın.
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        E-Market projesine hata bildirerek katkıda bulunduğunuz için teşekkür ederiz! Lütfen hatanın en kısa sürede çözülebilmesi için aşağıdaki formu olabildiğince detaylı doldurunuz.
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Hata Açıklaması
+      description: Karşılaştığınız hatayı kısaca açıklayın.
+      placeholder: Hata ne zaman, hangi sayfada ve ne şekilde gerçekleşiyor?
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction_steps
+    attributes:
+      label: Hatayı Yeniden Oluşturma Adımları
+      description: Hatayı kendi bilgisayarımızda görebilmemiz için yapılması gereken adımları listeleyin.
+      placeholder: |
+        1. '...' sayfasına gidin.
+        2. '...' butonuna tıklayın.
+        3. '...' hatasını görün.
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected_behavior
+    attributes:
+      label: Beklenen Davranış
+      description: Olması gereken davranış neydi?
+      placeholder: Hata yerine ne gerçekleşmeliydi?
+    validations:
+      required: true
+
+  - type: dropdown
+    id: active_payment_gateway
+    attributes:
+      label: Aktif Ödeme Altyapısı
+      description: Hata ödeme adımlarında gerçekleştiyse hangi altyapı aktifti?
+      options:
+        - Belirtilmemiş / Ödeme Dışı
+        - Param POS (SOAP)
+        - iyzico (REST)
+        - PayTR (HMAC Direct)
+    validations:
+      required: false
+
+  - type: input
+    id: node_version
+    attributes:
+      label: Node.js Versiyonu
+      placeholder: Örn: v20.11.0 (node -v komutu çıktısı)
+    validations:
+      required: false
+
+  - type: input
+    id: wrangler_version
+    attributes:
+      label: Cloudflare Wrangler Versiyonu
+      placeholder: Örn: wrangler 3.30.0 (npx wrangler --version çıktısı)
+    validations:
+      required: false
+
+  - type: textarea
+    id: error_logs
+    attributes:
+      label: Hata Logları & Konsol Çıktıları
+      description: Tarayıcı konsolundaki veya Wrangler terminalindeki hata çıktılarını buraya yapıştırın.
+      render: bash
+      placeholder: Hata logu veya stack trace buraya gelecek...
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Ön Kontroller
+      options:
+        - label: Benzer bir hata kaydının (issue) daha önce açılmadığını kontrol ettim.
+          required: true
+        - label: Proje bağımlılıklarını temiz şekilde kurup (npm run install:all) yerel ortamı yeniden başlattım.
+          required: true

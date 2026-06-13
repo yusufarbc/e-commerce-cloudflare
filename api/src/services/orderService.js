@@ -10,13 +10,13 @@ export class OrderService {
      * Creates an instance of OrderService.
      * @param {import('../repositories/orderRepository.js').OrderRepository} orderRepository - Order repository.
      * @param {import('./productService.js').ProductService} productService - Product service.
-     * @param {import('./paramService.js').ParamService} paramService - POS service.
+     * @param {import('./paymentService.js').PaymentService} paymentService - Unified payment service.
      * @param {import('./emailService.js').EmailService} emailService - Email service.
      */
-    constructor(orderRepository, productService, paramService, emailService) {
+    constructor(orderRepository, productService, paymentService, emailService) {
         this.orderRepository = orderRepository;
         this.productService = productService;
-        this.paramService = paramService;
+        this.paymentService = paymentService;
         this.emailService = emailService;
     }
 
@@ -199,13 +199,13 @@ export class OrderService {
     }
 
     /**
-     * Initiates Param payment gateway session with card details.
+     * Initiates payment gateway session with card details using the active strategy.
      * @param {string} orderId - Order UUID.
      * @param {Object} cardInfo - Card details (cardNumber, cardExpMonth, cardExpYear, cardCvc).
      * @param {Object} buyerInfo - Buyer details (IP address, etc.).
      * @returns {Promise<Object>} 3D secure redirect HTML or error object.
      */
-    async initiateParamPayment(orderId, cardInfo, buyerInfo) {
+    async initiatePayment(orderId, cardInfo, buyerInfo) {
         const siparis = await this.orderRepository.getOrderById(orderId);
 
         if (!siparis) {
@@ -228,11 +228,12 @@ export class OrderService {
                 ip: buyerInfo.ip || '127.0.0.1'
             };
 
-            const paymentResult = await this.paramService.startPaymentProcess(siparis, [], buyer);
+            const paymentResult = await this.paymentService.startPaymentProcess(siparis, siparis.kalemler || [], buyer);
 
             // Store verification code/token
-            if (paymentResult.dekontId) {
-                await this.orderRepository.updatePaymentToken(siparis.id, paymentResult.dekontId);
+            const tokenValue = paymentResult.dekontId || paymentResult.paymentId;
+            if (tokenValue) {
+                await this.orderRepository.updatePaymentToken(siparis.id, tokenValue);
             }
 
             return {
@@ -241,19 +242,27 @@ export class OrderService {
                 orderId: siparis.id
             };
         } catch (error) {
-            console.error('Param Payment Error:', error);
+            console.error('[Payment Strategy] Error initiating payment:', error);
             return { status: 'failure', errorMessage: error.message || 'Payment initiation failed.' };
         }
     }
 
     /**
+     * Backward-compatible alias for initiatePayment.
+     */
+    async initiateParamPayment(orderId, cardInfo, buyerInfo) {
+        return this.initiatePayment(orderId, cardInfo, buyerInfo);
+    }
+
+    /**
      * Completes and finalizes payment after successful 3D secure callback.
-     * @param {Object} callbackData - Callback parameters sent from Param gateway.
+     * @param {Object} callbackData - Callback parameters sent from gateway.
+     * @param {string} [provider] - Specific provider callback identifier.
      * @returns {Promise<Object>} Payment completion results.
      */
-    async completePayment(callbackData) {
+    async completePayment(callbackData, provider) {
         try {
-            const result = this.paramService.verifyCallback(callbackData);
+            const result = await this.paymentService.verifyCallback(callbackData, provider);
 
             if (result.status === 'success') {
                 console.log('Completing payment, Order Number:', result.siparisNumarasi);
@@ -340,11 +349,15 @@ export class OrderService {
 
         if (order.odemeDurumu === 'SUCCESS' && order.odemeId) {
             try {
-                await this.paramService.cancelPayment(order.odemeId, reason);
+                let provider = this.paymentService.getProvider();
+                if (order.odemeId.startsWith('paytr-')) {
+                    provider = 'paytr';
+                }
+                await this.paymentService.cancelPayment(order.odemeId, reason, provider);
                 refundStatus = 'SUCCESS';
-                console.log(`[Param Refund] Successful, Order: ${order.siparisNumarasi}`);
+                console.log(`[Payment Refund] Successful, Order: ${order.siparisNumarasi}`);
             } catch (error) {
-                console.error(`[Param Refund Failed] Order: ${order.siparisNumarasi}`, error);
+                console.error(`[Payment Refund Failed] Order: ${order.siparisNumarasi}`, error);
             }
         }
 
@@ -396,7 +409,7 @@ export class OrderService {
      * @returns {Promise<Array>} Available installment options.
      */
     async getInstallmentOptions(bin, amount) {
-        return this.paramService.getInstallmentOptions(bin, amount);
+        return this.paymentService.getInstallmentOptions(bin, amount);
     }
 
     /**

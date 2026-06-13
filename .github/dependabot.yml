@@ -1,0 +1,65 @@
+version: 2
+updates:
+  # 1. Root Workspace dependencies
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      time: "08:00"
+      timezone: "Europe/Istanbul"
+    open-pull-requests-limit: 3
+    groups:
+      dependencies:
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"
+
+  # 2. Hono API Workers dependencies
+  - package-ecosystem: "npm"
+    directory: "/api"
+    schedule:
+      interval: "weekly"
+      time: "08:00"
+      timezone: "Europe/Istanbul"
+    open-pull-requests-limit: 3
+    groups:
+      dependencies:
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"
+
+  # 3. Storefront Client dependencies
+  - package-ecosystem: "npm"
+    directory: "/client"
+    schedule:
+      interval: "weekly"
+      time: "08:00"
+      timezone: "Europe/Istanbul"
+    open-pull-requests-limit: 3
+    groups:
+      dependencies:
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"
+
+  # 4. Administration Dashboard dependencies
+  - package-ecosystem: "npm"
+    directory: "/admin"
+    schedule:
+      interval: "weekly"
+      time: "08:00"
+      timezone: "Europe/Istanbul"
+    open-pull-requests-limit: 3
+    groups:
+      dependencies:
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"

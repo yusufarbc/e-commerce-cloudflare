@@ -1,8 +1,8 @@
 # ⚡ E-Market: Serverless E-Commerce Platform on Cloudflare
 
-E-Market is a modern, high-performance, fully serverless e-commerce platform designed from the ground up to deploy and run entirely within the **Cloudflare Ecosystem**. 
+E-Market is a modern, high-performance, fully serverless e-commerce framework designed to deploy and run entirely within the **Cloudflare Ecosystem**. 
 
-Unlike traditional monoliths or containerized setups, E-Market leverages lightweight V8 isolates (Cloudflare Workers), serverless SQL databases (Cloudflare D1), free-egress object storage (Cloudflare R2), and lightning-fast CDNs (Cloudflare Pages) to deliver sub-millisecond response times, absolute security, and near-zero running costs.
+Unlike traditional monoliths or containerized setups, E-Market leverages lightweight V8 isolates (**Cloudflare Workers**), serverless SQL databases (**Cloudflare D1**), free-egress object storage (**Cloudflare R2**), and lightning-fast CDNs (**Cloudflare Pages**) to deliver sub-millisecond response times, absolute privacy compliance, and near-zero running costs.
 
 This project is open-source, fully responsive, and works as a Progressive Web App (PWA) out-of-the-box.
 
@@ -10,7 +10,7 @@ This project is open-source, fully responsive, and works as a Progressive Web Ap
 
 ## 📐 System Architecture
 
-Below is the serverless architecture diagram showing how the client storefront, admin dashboard, server API, databases, and third-party integrations interact:
+Below is the serverless architecture diagram showing how the client storefront, admin dashboard, Hono API, databases, telemetry proxies, and third-party integrations interact:
 
 ```mermaid
 graph TD
@@ -20,11 +20,12 @@ graph TD
 
     Storefront["Storefront\nReact PWA - Cloudflare Pages"]:::cfPages
     Admin["Admin Dashboard\nReact SPA - Cloudflare Pages"]:::cfPages
-    API["Workers API\nHono - Cloudflare Workers"]:::cfWorkers
+    API["Workers API & sGTM\nHono - Cloudflare Workers"]:::cfWorkers
     D1[("D1 Database\nCloudflare SQLite")]:::cfWorkers
     R2["R2 Object Storage\nCloudflare Assets"]:::cfWorkers
     Email["Email Sending\nCloudflare Email Routing"]:::cfWorkers
-    Param["Param POS\nPayment Gateway"]:::external
+    Gateways["Switchable Gateway\nPayTR / iyzico / Param"]:::external
+    GA4["Google Analytics 4\nEdge Sanitized"]:::external
 
     Storefront -->|HTTPS REST| API
     Admin -->|JWT Auth REST| API
@@ -32,7 +33,9 @@ graph TD
     API -->|Prisma D1 Adapter| D1
     API -->|R2 Binding PUT| R2
     API -->|Send Email Binding| Email
-    API -->|SOAP XML via Fetch| Param
+    API -->|REST / SOAP via Fetch| Gateways
+    Storefront -->|Telemetry Hits| API
+    API -->|KVKK Masked IP/PII| GA4
 ```
 
 ---
@@ -42,11 +45,12 @@ graph TD
 | Component | Technology | Description |
 | :--- | :--- | :--- |
 | **Storefront** | React, Vite, PWA, Tailwind CSS | Fully responsive storefront, SEO-optimized, with PWA offline-capability and multilingual support. |
-| **Admin Panel** | React, Vite, CSS, Lucide | Premium, dark-mode dashboard with interactive charts, Canvas-based client-side image compression, and direct uploads. |
+| **Admin Panel** | React, Vite, CSS, Lucide | Premium, light/dark mode switchable dashboard with interactive charts and direct R2 image uploads. |
 | **API Backend** | Hono Framework | Ultra-fast REST API designed for V8 isolates, providing zero cold start. |
 | **Database** | Cloudflare D1 & Prisma ORM | Serverless SQL database using Prisma with `@prisma/adapter-d1`. |
 | **Asset Storage** | Cloudflare R2 | S3-compatible object storage for product images with zero egress fees. |
-| **Integrations** | Cloudflare Email & Web Crypto | Native Workers Email Sending (send_email) & Param POS Gateway (3D secure payments). |
+| **Edge Telemetry** | Server-Side GTM & KVKK Filter | Proxy-loads GTM scripts and routes GA4 analytics events through Worker middleware to mask IPs and scrub PII. |
+| **Gateways** | PayTR / iyzico / Param | Decoupled payment provider interface switchable via a single configuration. |
 
 ---
 
@@ -54,13 +58,13 @@ graph TD
 
 ```text
 e-commerce-cloudflare/
-├── client/              # React Storefront (Pages)
-├── admin/               # React Admin Dashboard (Pages)
-├── server/
-│   └── api/             # Hono REST API Worker (Workers)
-│       ├── prisma/      # Prisma SQLite migrations and seed scripts
-│       └── src/         # API Controllers, Repositories, and Services
-├── scripts/             # Utility extraction scripts
+├── client/              # React Storefront (Cloudflare Pages)
+├── admin/               # React Admin Dashboard (Cloudflare Pages)
+├── api/                 # Hono REST API Worker (Cloudflare Workers)
+│   ├── prisma/          # Prisma SQLite migrations and seed scripts
+│   └── src/             # API Controllers, Repositories, Middlewares, and Services
+├── scripts/             # Utility deploy & execution scripts
+├── .github/             # CI/CD Workflows, Dependabot, and Issue Templates
 └── package.json         # Monorepo management scripts
 ```
 
@@ -69,12 +73,12 @@ e-commerce-cloudflare/
 ## 🚀 Local Development Quickstart
 
 ### Prerequisites
-- [Node.js](https://nodejs.org/) (v18 or higher recommended)
-- [NPM](https://www.npmjs.com/) (bundled with Node.js)
-- Cloudflare Wrangler CLI (installed automatically via devDependencies)
+- [Node.js](https://nodejs.org/) (v20 or higher recommended)
+- [NPM](https://www.npmjs.com/)
+- Cloudflare Wrangler CLI (installed automatically)
 
 ### 1. Install Dependencies
-Install all node modules recursively across the monorepo root, client, admin, and server/api directories:
+Install all node modules recursively across the monorepo:
 ```bash
 npm run install:all
 ```
@@ -103,19 +107,74 @@ npm run dev
 
 Your local endpoints will be available at:
 - **Workers API:** `http://localhost:8787`
-- **Storefront:** `http://localhost:5173` (configured locally)
-- **Admin Panel:** `http://localhost:5174` (configured locally)
+- **Storefront storefront:** `http://localhost:5173`
+- **Admin Panel:** `http://localhost:5174`
 
 ---
 
-## ⚙️ Environment Configuration
+## 💳 Payment Gateway Configurations
 
-### Workers API Environment Variables
-Create a `.env` file inside `server/api/` based on `server/api/.env.example`:
+E-Market includes built-in, ready-to-use integrations for Turkey's leading payment gateways. To select a provider, set the `PAYMENT_PROVIDER` environment variable in your `api/.env` file:
 
-- `ADMIN_JWT_SECRET`: Secret key used for signing administrator session tokens.
-- `SMTP_SENDER`: Email sender header format (e.g., `E-Market <siparis@e-market-domain.com>`). Note that this sender email must be verified on your Cloudflare account.
-- `PARAM_CLIENT_CODE`, `PARAM_CLIENT_USERNAME`, `PARAM_CLIENT_PASSWORD`, `PARAM_GUID`: Parameters for the Param POS Gateway interface.
+```env
+# Switchable options: param, iyzico, paytr
+PAYMENT_PROVIDER=param
+
+# Param POS Gateway Configuration:
+PARAM_CLIENT_CODE=your-code
+PARAM_CLIENT_USERNAME=your-username
+PARAM_CLIENT_PASSWORD=your-password
+PARAM_GUID=your-guid
+
+# iyzico Configuration:
+IYZICO_API_KEY=your-api-key
+IYZICO_SECRET_KEY=your-secret-key
+IYZICO_BASE_URL=https://sandbox-api.iyzipay.com
+
+# PayTR Configuration:
+PAYTR_MERCHANT_ID=your-merchant-id
+PAYTR_MERCHANT_KEY=your-merchant-key
+PAYTR_MERCHANT_SALT=your-merchant-salt
+PAYTR_BASE_URL=https://www.paytr.com
+```
+
+---
+
+## 🛡️ Edge Telemetry & KVKK Compliance
+
+E-Market enforces data privacy natively at the edge. 
+
+- **Proxy Routing:** Client-side telemetry is loaded from `/api/v1/metrics/gtm.js` and events are sent to `/api/v1/metrics/collect`.
+- **IP Masking:** Client IP address octets are masked (e.g. `192.168.1.123` -> `192.168.1.0`) before forwarding to analytics endpoints.
+- **PII Scrubbing:** Emails and phone number formats are scrubbed out of payloads via regex scanning at the edge.
+
+---
+
+## 💾 Automated Database Backups to Google Drive
+
+E-Market includes a nightly automated backup pipeline (`.github/workflows/backup.yml`) that exports your remote production D1 SQL database content, compresses it (`gzip`), and encrypts it symmetrically using `GPG` for maximum security. The encrypted file is uploaded directly to a Google Drive folder using a native Node.js upload utility (`scripts/uploadToDrive.js`) without external npm library dependencies.
+
+### Configuration
+To configure the backup pipeline, add the following Repository Secrets to your GitHub repository:
+- `CLOUDFLARE_API_TOKEN`: A Cloudflare token with edit permissions for your D1 Database.
+- `CLOUDFLARE_ACCOUNT_ID`: Your Cloudflare Account ID.
+- `BACKUP_ENCRYPTION_PASSPHRASE`: A strong passphrase used to encrypt your backup file symmetrically using GPG.
+- `GDRIVE_SERVICE_ACCOUNT`: The full JSON key contents of your Google Cloud Service Account.
+- `GDRIVE_FOLDER_ID`: (Optional) The folder ID of your target Google Drive folder.
+
+*Note: Remember to share the target Google Drive backup folder with your service account email address (with Editor role) to grant permission.*
+
+---
+
+## 🚦 Branch Protection & CI/CD Checks
+
+To guarantee code quality and stability in open-source environments, E-Market runs automated checks on every pull request targeting `test` or `main` branches:
+- **Dependency Audit:** Immutability checking with `npm ci`.
+- **Database Schema Validation:** Validates model structure consistency using `npx prisma validate`.
+- **Code Linter Verification:** Code quality checks on the client storefront and admin panels.
+- **SAST Security Scanning:** Automated vulnerability checks using Semgrep.
+
+These checks must pass successfully before a pull request can be merged. Deployments to staging or production are strictly reserved for post-merge pushes to the `test` or `main` branches respectively.
 
 ---
 
@@ -126,28 +185,25 @@ You can deploy the entire stack (D1 database, R2 bucket, Hono API Worker, Storef
 ```bash
 npm run deploy
 ```
-The wizard will automatically check your authentication, guide you through creating cloud resources, update configuration files, set up proxy redirects, build, and deploy all components.
+The wizard will check your authentication, guide you through creating cloud resources, set up D1 bindings, build, and deploy all components.
 
----
-
-### Manual Deployment Steps (Alternative)
+### Manual Deployment Steps
 
 #### 1. D1 Database Creation
 Create your production D1 Database in Cloudflare:
 ```bash
 npx wrangler d1 create ecommerce-d1
 ```
-Copy the outputted `database_id` and paste it inside `server/api/wrangler.toml`:
+Copy the outputted `database_id` and paste it inside `api/wrangler.toml`:
 ```toml
 [[d1_databases]]
 binding = "DB"
 database_name = "ecommerce-d1"
 database_id = "YOUR_CLOUDFLARE_D1_DATABASE_UUID"
 ```
-
 Apply migrations to production D1:
 ```bash
-npx wrangler d1 migrations apply ecommerce-d1 --remote
+npx wrangler d1 migrations apply ecommerce-d1 --remote --cwd api
 ```
 
 #### 2. R2 Storage Bucket Creation
@@ -159,7 +215,7 @@ npx wrangler r2 bucket create ecommerce-r2
 #### 3. Deploy API Worker
 Deploy the Workers API using wrangler:
 ```bash
-cd server/api
+cd api
 npx wrangler deploy
 ```
 
@@ -168,30 +224,26 @@ Create a `_redirects` file in `client/public/_redirects` and `admin/public/_redi
 ```text
 /api/* https://your-workers-api-url.workers.dev/api/:splat 200
 ```
-
 Build and deploy `client/dist` and `admin/dist` directly as Cloudflare Pages projects:
 ```bash
 # Build Client & Admin
 npm run build --prefix client
 npm run build --prefix admin
 
-# Deploy Client
-npx wrangler pages deploy client/dist --project-name e-market-client
+# Deploy to Staging (Preview)
+npx wrangler pages deploy client/dist --project-name e-market-client --branch test
+npx wrangler pages deploy admin/dist --project-name e-market-admin --branch test
 
-# Deploy Admin
-npx wrangler pages deploy admin/dist --project-name e-market-admin
+# Deploy to Production (Live)
+npx wrangler pages deploy client/dist --project-name e-market-client --branch main
+npx wrangler pages deploy admin/dist --project-name e-market-admin --branch main
 ```
 
 ---
 
 ## 🤝 Contributing
 
-We welcome contributions to E-Market! Feel free to:
-1. Fork the Repository.
-2. Create your Feature Branch (`git checkout -b feature/AmazingFeature`).
-3. Commit your changes (`git commit -m 'Add some AmazingFeature'`).
-4. Push to the Branch (`git push origin feature/AmazingFeature`).
-5. Open a Pull Request.
+We welcome contributions to E-Market! Please refer to our [Contributing Guidelines](CONTRIBUTING.md) and [Code of Conduct](CODE_OF_CONDUCT.md) for standards.
 
 ---
 

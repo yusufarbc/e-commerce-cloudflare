@@ -26,6 +26,9 @@ import { ProductService } from './services/productService.js';
 import { CategoryService } from './services/categoryService.js';
 import { OrderService } from './services/orderService.js';
 import { ParamService } from './services/paramService.js';
+import { IyzicoService } from './services/iyzicoService.js';
+import { PaytrService } from './services/paytrService.js';
+import { PaymentService } from './services/paymentService.js';
 import { EmailService } from './services/emailService.js';
 import { BrandService } from './services/brandService.js';
 import { SettingsService } from './services/settingsService.js';
@@ -55,6 +58,9 @@ const returnRepository = new ReturnRepository(prisma);
 
 // Infrastructure Services
 const paramService = new ParamService(config.param);
+const iyzicoService = new IyzicoService(config.iyzico);
+const paytrService = new PaytrService(config.paytr);
+const paymentService = new PaymentService(paramService, iyzicoService, paytrService, config);
 const emailService = new EmailService(config.brevo.smtp);
 
 // Domain Services
@@ -62,7 +68,7 @@ const productService = new ProductService(productRepository, categoryRepository,
 const categoryService = new CategoryService(categoryRepository);
 const settingsService = new SettingsService(settingsRepository);
 const returnService = new ReturnService(returnRepository, orderRepository);
-const orderService = new OrderService(orderRepository, productService, paramService, emailService);
+const orderService = new OrderService(orderRepository, productService, paymentService, emailService);
 const brandService = new BrandService(brandRepository);
 
 // Controllers

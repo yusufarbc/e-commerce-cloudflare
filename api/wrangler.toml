@@ -42,3 +42,55 @@ name = "EMAIL"
 [triggers]
 crons = [ "0 2 * * *" ] # Everyday at 02:00 AM UTC
 
+# ========================================================
+# ⚙️ Cloudflare Environments Configuration
+# ========================================================
+
+# 🧪 Staging (Deployed automatically from 'test' branch)
+[env.staging]
+name = "ecommerce-api-staging"
+
+[env.staging.vars]
+NODE_ENV = "staging"
+CORS_ORIGIN = "*"
+CLIENT_URL = "https://test.ecommerce-storefront.pages.dev"
+PAYMENT_PROVIDER = "iyzico"
+
+[[env.staging.d1_databases]]
+binding = "DB"
+database_name = "ecommerce-d1-staging"
+database_id = "your-staging-d1-database-uuid-here"
+migrations_dir = "migrations"
+
+[[env.staging.r2_buckets]]
+binding = "IMAGES_BUCKET"
+bucket_name = "ecommerce-r2-staging"
+preview_bucket_name = "ecommerce-r2-staging"
+
+[[env.staging.send_email]]
+name = "EMAIL"
+
+# 🚀 Production (Deployed automatically from 'main' branch)
+[env.production]
+name = "ecommerce-api"
+
+[env.production.vars]
+NODE_ENV = "production"
+CORS_ORIGIN = "*"
+CLIENT_URL = "https://ecommerce-storefront.pages.dev"
+
+[[env.production.d1_databases]]
+binding = "DB"
+database_name = "ecommerce-d1"
+database_id = "your-d1-database-uuid-here"
+migrations_dir = "migrations"
+
+[[env.production.r2_buckets]]
+binding = "IMAGES_BUCKET"
+bucket_name = "ecommerce-r2"
+preview_bucket_name = "ecommerce-r2"
+
+[[env.production.send_email]]
+name = "EMAIL"
+
+

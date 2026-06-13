@@ -40,18 +40,9 @@ jobs:
         env:
           BACKUP_ENCRYPTION_PASSPHRASE: ${{ secrets.BACKUP_ENCRYPTION_PASSPHRASE }}
 
-      - name: Upload Backup to Secure Offsite Storage (S3 Compatibility)
+      - name: Upload Backup to Google Drive
         run: |
-          # Use aws cli to upload to secure bucket (Cloudflare R2, Backblaze B2, or AWS S3)
-          # Requires AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, and AWS_DEFAULT_REGION configured in secrets
-          if [ -n "${{ secrets.AWS_ACCESS_KEY_ID }}" ]; then
-            aws s3 cp d1-backup.sql.gz.gpg s3://${{ secrets.BACKUP_S3_BUCKET_NAME }}/database/d1-backup-$(date +%Y-%m-%d).sql.gz.gpg --endpoint-url ${{ secrets.BACKUP_S3_ENDPOINT }}
-          else
-            echo "AWS/S3 credentials not found. Backups can also be securely uploaded to a backup web portal."
-            # Fallback upload script to secure API:
-            # curl -X POST -H "Authorization: Bearer ${{ secrets.BACKUP_PORTAL_TOKEN }}" -F "file=@d1-backup.sql.gz.gpg" ${{ secrets.BACKUP_PORTAL_UPLOAD_URL }}
-          fi
+          node scripts/uploadToDrive.js d1-backup.sql.gz.gpg
         env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          AWS_DEFAULT_REGION: ${{ secrets.AWS_DEFAULT_REGION || 'us-east-1' }}
+          GDRIVE_SERVICE_ACCOUNT: ${{ secrets.GDRIVE_SERVICE_ACCOUNT }}
+          GDRIVE_FOLDER_ID: ${{ secrets.GDRIVE_FOLDER_ID }}

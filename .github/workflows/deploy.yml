@@ -4,7 +4,11 @@ on:
   push:
     branches:
       - main
-      - master
+      - test
+  pull_request:
+    branches:
+      - main
+      - test
   workflow_dispatch:
 
 jobs:
@@ -22,27 +26,52 @@ jobs:
           node-version: 20
           cache: 'npm'
 
+      - name: Determine Target Environment
+        id: env-setup
+        run: |
+          if [ "${{ github.ref }}" = "refs/heads/test" ] || [ "${{ github.base_ref }}" = "test" ]; then
+            echo "VITE_API_URL=${{ secrets.STAGING_API_URL }}" >> $GITHUB_ENV
+          else
+            echo "VITE_API_URL=${{ secrets.PRODUCTION_API_URL }}" >> $GITHUB_ENV
+          fi
+        shell: bash
+
       - name: Install All Dependencies
-        run: npm run install:all
+        run: npm run ci:all
 
       - name: Run Backend Prisma Validation
         run: |
           cd api
           npx prisma validate
 
+      - name: Run ESLint Linter (Storefront)
+        run: |
+          cd client
+          npm run lint
+
+      - name: Run ESLint Linter (Admin Dashboard)
+        run: |
+          cd admin
+          npm run lint
+
+      - name: Run Semgrep SAST Security Scan
+        run: |
+          pip install semgrep
+          semgrep scan --config auto --error
+
       - name: Build Storefront Client
         run: |
           cd client
           npm run build
         env:
-          VITE_API_URL: ${{ secrets.PRODUCTION_API_URL }}
+          VITE_API_URL: ${{ env.VITE_API_URL }}
 
       - name: Build Admin Panel
         run: |
           cd admin
           npm run build
         env:
-          VITE_API_URL: ${{ secrets.PRODUCTION_API_URL }}
+          VITE_API_URL: ${{ env.VITE_API_URL }}
 
       - name: Upload Storefront Artifacts
         uses: actions/upload-artifact@v4
@@ -59,6 +88,7 @@ jobs:
   deploy-backend:
     name: Deploy API to Cloudflare Workers
     needs: test-and-build
+    if: github.event_name == 'push'
     runs-on: ubuntu-latest
 
     steps:
@@ -71,10 +101,20 @@ jobs:
           node-version: 20
           cache: 'npm'
 
+      - name: Determine Deploy Environment
+        id: deploy-env-setup
+        run: |
+          if [ "${{ github.ref }}" = "refs/heads/test" ]; then
+            echo "DEPLOY_ENV=staging" >> $GITHUB_ENV
+          else
+            echo "DEPLOY_ENV=production" >> $GITHUB_ENV
+          fi
+        shell: bash
+
       - name: Install API Dependencies
         run: |
           cd api
-          npm install
+          npm ci
 
       - name: Run Prisma Client Generation
         run: |
@@ -84,7 +124,7 @@ jobs:
       - name: Deploy to Cloudflare Workers
         run: |
           cd api
-          npx wrangler deploy --env production
+          npx wrangler deploy --env ${{ env.DEPLOY_ENV }}
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
@@ -92,6 +132,7 @@ jobs:
   deploy-frontend:
     name: Deploy Frontends to Cloudflare Pages
     needs: [test-and-build, deploy-backend]
+    if: github.event_name == 'push'
     runs-on: ubuntu-latest
 
     steps:
@@ -110,16 +151,26 @@ jobs:
           name: admin-dist
           path: admin/dist
 
+      - name: Determine Pages Branch Target
+        id: pages-target
+        run: |
+          if [ "${{ github.ref }}" = "refs/heads/test" ]; then
+            echo "PAGES_BRANCH=test" >> $GITHUB_ENV
+          else
+            echo "PAGES_BRANCH=main" >> $GITHUB_ENV
+          fi
+        shell: bash
+
       - name: Deploy Storefront to Cloudflare Pages
         run: |
-          npx wrangler pages deploy client/dist --project-name=ecommerce-storefront --branch=main
+          npx wrangler pages deploy client/dist --project-name=ecommerce-storefront --branch=${{ env.PAGES_BRANCH }}
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
 
       - name: Deploy Admin Dashboard to Cloudflare Pages
         run: |
-          npx wrangler pages deploy admin/dist --project-name=ecommerce-admin --branch=main
+          npx wrangler pages deploy admin/dist --project-name=ecommerce-admin --branch=${{ env.PAGES_BRANCH }}
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}

@@ -8,5 +8,7 @@ router.post('/success', adapt(paymentController.handleParamSuccess));
 router.post('/error', adapt(paymentController.handleParamError));
 router.post('/initiate', adapt(paymentController.initiatePayment));
 router.get('/installments', adapt(paymentController.getInstallments));
+router.post('/callback/iyzico', adapt(paymentController.handleIyzicoCallback));
+router.post('/callback/paytr', adapt(paymentController.handlePaytrCallback));
 
 export default router;

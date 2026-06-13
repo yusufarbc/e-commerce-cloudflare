@@ -51,7 +51,7 @@ export class PaymentController {
         console.log('Payment Success Callback:', req.body);
 
         try {
-            const result = await this.orderService.completePayment(req.body);
+            const result = await this.orderService.completePayment(req.body, 'param');
 
             if (result.status === 'success') {
                 // Redirect to Frontend Success Page
@@ -84,6 +84,42 @@ export class PaymentController {
 
         console.log('Redirecting to Failure:', redirectUrl);
         res.redirect(redirectUrl);
+    });
+
+    /**
+     * Handles iyzico 3D Secure callback redirection.
+     */
+    handleIyzicoCallback = asyncHandler(async (req, res) => {
+        console.log('iyzico Callback POST:', req.body);
+        try {
+            const result = await this.orderService.completePayment(req.body, 'iyzico');
+            if (result.status === 'success') {
+                res.redirect(`${config.clientUrl}/payment/success?orderNumber=${result.orderNumber}&trackingToken=${result.trackingToken}`);
+            } else {
+                res.redirect(`${config.clientUrl}/payment/failure?errorMessage=${encodeURIComponent(result.errorMessage || 'iyzico ödeme başarısız.')}`);
+            }
+        } catch (error) {
+            console.error('iyzico Callback Error:', error);
+            res.redirect(`${config.clientUrl}/payment/failure?errorMessage=${encodeURIComponent('iyzico ödeme doğrulama hatası oluştu.')}`);
+        }
+    });
+
+    /**
+     * Handles PayTR server-to-server callback POST.
+     */
+    handlePaytrCallback = asyncHandler(async (req, res) => {
+        console.log('PayTR Callback POST:', req.body);
+        try {
+            const result = await this.orderService.completePayment(req.body, 'paytr');
+            if (result.status === 'success') {
+                res.send('OK'); // PayTR requires literal response 'OK' on success
+            } else {
+                res.send('FAIL: ' + (result.errorMessage || 'Verify failed'));
+            }
+        } catch (error) {
+            console.error('PayTR Callback Error:', error);
+            res.send('FAIL: ' + error.message);
+        }
     });
 
     /**
