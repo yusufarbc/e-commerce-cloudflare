@@ -5,6 +5,9 @@ on:
     - cron: '0 0 * * *' # Every night at 00:00 UTC
   workflow_dispatch: # Enable manual execution
 
+permissions:
+  contents: read
+
 jobs:
   db-backup:
     name: Backup and Export D1 Database

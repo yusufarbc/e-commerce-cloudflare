@@ -11,6 +11,9 @@ on:
       - test
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   test-and-build:
     name: Test and Build Projects
