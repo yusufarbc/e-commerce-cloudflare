@@ -32,7 +32,7 @@ export const errorHandler = (err, c) => {
         }
     }
 
-    console.error(`[Hata] ${statusCode} - ${c.req.method} ${c.req.path}: ${message}`);
+    console.error('[Hata] %s - %s %s: %s', statusCode, c.req.method, c.req.path, message);
     if (config.nodeEnv === 'development' && !(err instanceof ZodError)) {
         console.error(err.stack);
     }

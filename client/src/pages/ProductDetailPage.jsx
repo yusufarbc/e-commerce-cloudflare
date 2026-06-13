@@ -53,7 +53,13 @@ const decodeHtmlEntities = (input) => {
 
 const stripHtml = (html) => {
     if (!html) return '';
-    return html.replace(/<[^>]*>?/gm, '');
+    let text = html;
+    let previousText;
+    do {
+        previousText = text;
+        text = text.replace(/<[^>]*>/g, '');
+    } while (text !== previousText);
+    return text;
 };
 
 export function ProductDetailPage() {

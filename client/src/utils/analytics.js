@@ -47,7 +47,7 @@ export function initGTM(gtmId = DEFAULT_GTM_ID) {
         } else {
             document.head.appendChild(script);
         }
-        console.log(`[Telemetry] Initialized GTM proxy container: ${gtmId}`);
+        console.log('[Telemetry] Initialized GTM proxy container: %s', gtmId);
     } catch (e) {
         console.error('[Telemetry] Failed to load GTM container proxy script:', e);
     }
@@ -76,7 +76,7 @@ export function pushToDataLayer(eventName, ecommerceData = {}) {
     };
     
     window.dataLayer.push(eventPayload);
-    console.log(`[Telemetry Event] Push: ${eventName}`, eventPayload);
+    console.log('[Telemetry Event] Push: %s', eventName, eventPayload);
 }
 
 /**

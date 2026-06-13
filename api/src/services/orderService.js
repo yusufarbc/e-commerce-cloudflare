@@ -343,7 +343,7 @@ export class OrderService {
             throw new Error('This order contains custom or non-returnable items and cannot be canceled.');
         }
 
-        console.log(`[Order Cancel] Order: ${order.siparisNumarasi}, Reason: ${reason}`);
+        console.log('[Order Cancel] Order: %s, Reason: %s', order.siparisNumarasi, reason);
 
         let refundStatus = 'NONE';
 
@@ -355,9 +355,9 @@ export class OrderService {
                 }
                 await this.paymentService.cancelPayment(order.odemeId, reason, provider);
                 refundStatus = 'SUCCESS';
-                console.log(`[Payment Refund] Successful, Order: ${order.siparisNumarasi}`);
+                console.log('[Payment Refund] Successful, Order: %s', order.siparisNumarasi);
             } catch (error) {
-                console.error(`[Payment Refund Failed] Order: ${order.siparisNumarasi}`, error);
+                console.error('[Payment Refund Failed] Order: %s', order.siparisNumarasi, error);
             }
         }
 

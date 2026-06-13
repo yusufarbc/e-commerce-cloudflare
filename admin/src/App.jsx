@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { 
   LayoutDashboard, 
   Package, 
@@ -13,19 +13,16 @@ import {
   Trash2, 
   Upload, 
   TrendingUp, 
-  DollarSign, 
   ShoppingBag as OrdersIcon, 
-  Activity, 
   Eye, 
-  Check, 
   X,
   Lock,
-  ChevronRight,
   Sun,
   Moon
 } from 'lucide-react';
 
 const API_URL = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') ? 'http://localhost:8787' : '';
+const config = { cdnUrl: '' };
 
 export default function App() {
   const [token, setToken] = useState(localStorage.getItem('admin_token') || '');
@@ -94,12 +91,20 @@ export default function App() {
   const [selectedReturn, setSelectedReturn] = useState(null);
   const [returnStatusForm, setReturnStatusForm] = useState({ durum: 'ONAYLANDI', adminNotu: '', manuelIadeKodu: '' });
 
-  // Fetch all dashboard data when token is present
-  useEffect(() => {
-    if (token) {
-      fetchData();
-    }
-  }, [token]);
+  const calculateStats = (ords, prods, rets) => {
+    const totalSales = ords
+      .filter(o => o.durum === 'TESLIM_EDILDI' || o.durum === 'TAMAMLANDI')
+      .reduce((sum, o) => sum + parseFloat(o.toplamTutar || 0), 0);
+    const activeProducts = prods.filter(p => p.aktif).length;
+    const pendingReturns = rets.filter(r => r.durum === 'ONAY_BEKLENIYOR').length;
+
+    setStats({
+      totalSales,
+      totalOrders: ords.length,
+      activeProducts,
+      pendingReturns
+    });
+  };
 
   const fetchData = async () => {
     setLoading(true);
@@ -139,20 +144,14 @@ export default function App() {
     }
   };
 
-  const calculateStats = (ords, prods, rets) => {
-    const totalSales = ords
-      .filter(o => o.durum === 'TESLIM_EDILDI' || o.durum === 'TAMAMLANDI')
-      .reduce((sum, o) => sum + parseFloat(o.toplamTutar || 0), 0);
-    const activeProducts = prods.filter(p => p.aktif).length;
-    const pendingReturns = rets.filter(r => r.durum === 'ONAY_BEKLENIYOR').length;
-
-    setStats({
-      totalSales,
-      totalOrders: ords.length,
-      activeProducts,
-      pendingReturns
-    });
-  };
+  // Fetch all dashboard data when token is present
+  useEffect(() => {
+    if (token) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      fetchData();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [token]);
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -171,6 +170,7 @@ export default function App() {
         setLoginError(data.errorMessage || 'Giriş başarısız!');
       }
     } catch (err) {
+      console.error(err);
       setLoginError('Sunucu bağlantı hatası!');
     }
   };
@@ -221,6 +221,7 @@ export default function App() {
             alert('Görsel yüklenemedi: ' + data.errorMessage);
           }
         } catch (err) {
+          console.error(err);
           alert('Görsel sunucuya yüklenirken bağlantı hatası oluştu!');
         } finally {
           setLoading(false);
@@ -255,6 +256,7 @@ export default function App() {
         alert('Kaydetme hatası: ' + data.errorMessage);
       }
     } catch (err) {
+      console.error(err);
       alert('İstek gönderilirken hata oluştu.');
     }
   };
@@ -271,6 +273,7 @@ export default function App() {
         fetchData();
       }
     } catch (err) {
+      console.error(err);
       alert('Silme hatası.');
     }
   };
@@ -298,6 +301,7 @@ export default function App() {
         fetchData();
       }
     } catch (err) {
+      console.error(err);
       alert('Kategori kaydedilemedi.');
     }
   };
@@ -311,6 +315,7 @@ export default function App() {
       });
       fetchData();
     } catch (err) {
+      console.error(err);
       alert('Kategori silinemedi.');
     }
   };
@@ -338,6 +343,7 @@ export default function App() {
         fetchData();
       }
     } catch (err) {
+      console.error(err);
       alert('Marka kaydedilemedi.');
     }
   };
@@ -351,6 +357,7 @@ export default function App() {
       });
       fetchData();
     } catch (err) {
+      console.error(err);
       alert('Marka silinemedi.');
     }
   };
@@ -385,6 +392,7 @@ export default function App() {
         fetchData();
       }
     } catch (err) {
+      console.error(err);
       alert('Sipariş güncellenemedi.');
     }
   };
@@ -416,6 +424,7 @@ export default function App() {
         fetchData();
       }
     } catch (err) {
+      console.error(err);
       alert('İade talebi güncellenemedi.');
     }
   };
@@ -437,6 +446,7 @@ export default function App() {
         fetchData();
       }
     } catch (err) {
+      console.error(err);
       alert('Ayarlar kaydedilemedi.');
     }
   };

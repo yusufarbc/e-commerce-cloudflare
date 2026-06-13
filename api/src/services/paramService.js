@@ -26,9 +26,14 @@ export class ParamService {
      * @private
      */
     _extractTag(xml, tagName) {
-        const regex = new RegExp(`<${tagName}>(.*?)</${tagName}>`, 's');
-        const match = xml.match(regex);
-        return match ? match[1].trim() : null;
+        if (!xml || !tagName) return null;
+        const startTag = `<${tagName}>`;
+        const endTag = `</${tagName}>`;
+        const startIndex = xml.indexOf(startTag);
+        if (startIndex === -1) return null;
+        const endIndex = xml.indexOf(endTag, startIndex + startTag.length);
+        if (endIndex === -1) return null;
+        return xml.substring(startIndex + startTag.length, endIndex).trim();
     }
 
     /**
@@ -45,7 +50,7 @@ export class ParamService {
      */
     _validateGuid(guid) {
         if (!guid || guid.length !== 36) {
-            console.error(`[Param] Invalid GUID length: ${guid?.length || 0}, expected 36`);
+            console.error('[Param] Invalid GUID length: %d, expected 36', guid?.length || 0);
             return false;
         }
         const guidRegex = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
@@ -65,7 +70,7 @@ export class ParamService {
   </soap:Body>
 </soap:Envelope>`;
 
-        console.log(`[Param SOAP] Sending request for action: ${actionName} to ${endpoint}`);
+        console.log('[Param SOAP] Sending request for action: %s to %s', actionName, endpoint);
 
         const response = await fetch(endpoint, {
             method: 'POST',
@@ -198,7 +203,7 @@ export class ParamService {
      * Cancels/refunds a payment.
      */
     async cancelPayment(dekontId, reason) {
-        console.log(`[Param] Cancelling payment ${dekontId}, Reason: ${reason}`);
+        console.log('[Param] Cancelling payment %s, Reason: %s', dekontId, reason);
 
         const bodyContent = `
     <TP_Islem_Iptal_Iade xmlns="https://turkpos.com.tr/">

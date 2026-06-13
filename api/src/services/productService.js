@@ -100,7 +100,7 @@ export class ProductService {
         const hasSelectedNames = selectedNames.length > 0;
 
         // Log for production debugging to verify deployment
-        console.log(`[PaletteCheck] Product: "${product.ad}" | Colors: ${hasSelectedNames} | Int: ${isInteriorPaint} | Ext: ${isExteriorPaint}`);
+        console.log('[PaletteCheck] Product: "%s" | Colors: %s | Int: %s | Ext: %s', product.ad, hasSelectedNames, isInteriorPaint, isExteriorPaint);
 
         const sectionCandidates = this._getSectionCandidates(isInteriorPaint, isExteriorPaint);
 

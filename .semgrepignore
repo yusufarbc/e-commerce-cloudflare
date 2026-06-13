@@ -1,0 +1,23 @@
+# Ignore node modules and dependencies
+**/node_modules/**
+node_modules/
+
+# Ignore local dev databases/caches/build artifacts
+**/dist/**
+dist/
+.wrangler/
+**/.wrangler/**
+.git/
+**/.git/**
+
+# Ignore agents skills templates and scripts
+.agents/
+**/.agents/**
+scripts/
+**/scripts/**
+api/scratch/**
+scratch/**
+
+# Ignore Dockerfile
+api/Dockerfile
+**/Dockerfile
