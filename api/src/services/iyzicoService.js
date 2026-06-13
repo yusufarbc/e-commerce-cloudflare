@@ -1,9 +1,11 @@
+import crypto from 'node:crypto';
+
 /**
  * IyzicoService — iyzico Payment Gateway Integration
  *
  * Implements the IPaymentProvider interface for the iyzico (iyzipay) payment gateway.
- * Communicates with iyzico's REST JSON API, computing IYZWS authorization headers
- * using a custom SHA-1 implementation (required by iyzico's API specification).
+ * Communicates with iyzico's REST JSON API, computing IYZWSv2 authorization headers
+ * using HMAC-SHA256 (required by iyzico's API specification).
  *
  * Sandbox base URL: https://sandbox-api.iyzipay.com
  * Production base URL: https://api.iyzipay.com
@@ -20,133 +22,53 @@ export class IyzicoService {
     }
 
     /**
-     * Computes the SHA-1 hash of a string and returns it in base64 encoding.
-     * Implemented in pure JavaScript to resolve CodeQL false-positive warnings
-     * on standard library weak hash algorithms (since iyzico mandates SHA-1).
-     * @private
-     */
-    _sha1Base64(str) {
-        const buffer = new TextEncoder().encode(str);
-        const words = [];
-        const len = buffer.length;
-        for (let i = 0; i < len; i++) {
-            words[i >> 2] |= buffer[i] << (24 - (i % 4) * 8);
-        }
-        words[((len + 8) >> 6) * 16 + 15] = len * 8;
-        words[len >> 2] |= 0x80 << (24 - (len % 4) * 8);
-
-        let h0 = 1732584193;
-        let h1 = -271733879;
-        let h2 = -1732584194;
-        let h3 = 271733878;
-        let h4 = -1009589776;
-
-        const w = new Int32Array(80);
-
-        for (let i = 0; i < words.length; i += 16) {
-            let a = h0;
-            let b = h1;
-            let c = h2;
-            let d = h3;
-            let e = h4;
-
-            for (let j = 0; j < 80; j++) {
-                if (j < 16) {
-                    w[j] = words[i + j];
-                } else {
-                    const val = w[j - 3] ^ w[j - 8] ^ w[j - 14] ^ w[j - 16];
-                    w[j] = (val << 1) | (val >>> 31);
-                }
-
-                let f, k;
-                if (j < 20) {
-                    f = (b & c) | (~b & d);
-                    k = 1518500249;
-                } else if (j < 40) {
-                    f = b ^ c ^ d;
-                    k = 1859775393;
-                } else if (j < 60) {
-                    f = (b & c) | (b & d) | (c & d);
-                    k = -1894007588;
-                } else {
-                    f = b ^ c ^ d;
-                    k = -899497514;
-                }
-
-                const temp = (((a << 5) | (a >>> 27)) + f + e + k + w[j]) | 0;
-                e = d;
-                d = c;
-                c = (b << 30) | (b >>> 2);
-                b = a;
-                a = temp;
-            }
-
-            h0 = (h0 + a) | 0;
-            h1 = (h1 + b) | 0;
-            h2 = (h2 + c) | 0;
-            h3 = (h3 + d) | 0;
-            h4 = (h4 + e) | 0;
-        }
-
-        const result = new Uint8Array(20);
-        const view = new DataView(result.buffer);
-        view.setInt32(0, h0);
-        view.setInt32(4, h1);
-        view.setInt32(8, h2);
-        view.setInt32(12, h3);
-        view.setInt32(16, h4);
-
-        let binary = '';
-        const bytes = new Uint8Array(result);
-        const lenBytes = bytes.byteLength;
-        for (let i = 0; i < lenBytes; i++) {
-            binary += String.fromCharCode(bytes[i]);
-        }
-        return btoa(binary);
-    }
-
-    /**
-     * Builds the iyzico IYZWS authorization header for a given request.
+     * Builds the iyzico IYZWSv2 authorization header for a given request.
      *
      * The authorization scheme requires:
-     *   1. A random nonce string (`x-iyzi-rnd`) included in both the header and hash.
-     *   2. A SHA-1 hash of (apiKey + rnd + secretKey + requestBodyString), base64-encoded.
-     *
-     * SHA-1 is mandated by iyzico's API specification and cannot be substituted.
-     * The hash signs only API credentials and the request nonce — not user PII.
+     *   1. A random nonce string (`x-iyzi-rnd`) included in the header.
+     *   2. A Base64-encoded parameter string containing apiKey, randomKey, and HMAC-SHA256 signature.
      *
      * @param {string} rnd         - Random nonce string for this request.
-     * @param {string} bodyString  - JSON-serialised request body (empty string for GET).
+     * @param {string} path        - API path (e.g. '/payment/3dsecure/initialize').
+     * @param {Object} bodyObject  - Request payload, or null.
      * @returns {Object} HTTP headers object including Authorization and iyzico-specific fields.
      * @private
      */
-    _getHeaders(rnd, bodyString = '') {
+    _getHeaders(rnd, path, bodyObject = null) {
         const apiKey = this.config.apiKey;
         const secretKey = this.config.secretKey;
         
-        // iyzico's HTTP authorization protocol mandates SHA-1 for its IYZWS signature scheme.
-        // This algorithm is required by the payment provider's API specification and cannot
-        // be changed on our side. The hash signs only the API key, a random nonce, and the
-        // secret key — it does not hash passwords or sensitive PII.
-        const payload = apiKey + rnd + secretKey + bodyString;
-        const signature = this._sha1Base64(payload);
+        const bodyString = bodyObject ? JSON.stringify(bodyObject) : '';
+        const signature = crypto
+            .createHmac('sha256', secretKey)
+            .update(rnd + path + bodyString)
+            .digest('hex');
+            
+        const separator = ':';
+        const authorizationParams = [
+            'apiKey' + separator + apiKey,
+            'randomKey' + separator + rnd,
+            'signature' + separator + signature
+        ];
+        
+        const base64Auth = btoa(authorizationParams.join('&'));
             
         return {
             'Content-Type': 'application/json',
             'Accept': 'application/json',
             'x-iyzi-rnd': rnd,
-            'x-iyzi-client-version': 'iyzipay-node-2.0.0',
-            'Authorization': `IYZWS ${apiKey}:${signature}`
+            'x-iyzi-client-version': 'iyzipay-node-2.0.67',
+            'Authorization': `IYZWSv2 ${base64Auth}`
         };
     }
 
     /**
      * Sends an authenticated HTTP request to the iyzico REST API.
      *
-     * Serialises the body to JSON if provided, computes the IYZWS authorization header,
+     * Serialises the body to JSON if provided, computes the IYZWSv2 authorization header,
      * and throws a descriptive error on non-2xx HTTP responses.
      *
-     * @param {string}  path        - API path (e.g. '/payment/3dsec/initialize').
+     * @param {string}  path        - API path (e.g. '/payment/3dsecure/initialize').
      * @param {string}  method      - HTTP method ('POST' or 'GET').
      * @param {Object|null} bodyObject - Request payload, or null for GET requests.
      * @returns {Promise<Object>}   Parsed JSON response from iyzico.
@@ -158,8 +80,8 @@ export class IyzicoService {
         const url = `${baseUrl.replace(/\/$/, '')}${path}`;
         const rnd = Math.random().toString(36).substring(2, 12);
         
+        const headers = this._getHeaders(rnd, path, bodyObject);
         const bodyString = bodyObject ? JSON.stringify(bodyObject) : '';
-        const headers = this._getHeaders(rnd, bodyString);
         
         console.log('[iyzico Request] %s %s', method, url);
         
@@ -271,7 +193,7 @@ export class IyzicoService {
             callbackUrl: callbackUrl
         };
 
-        const result = await this._request('/payment/3dsec/initialize', 'POST', payload);
+        const result = await this._request('/payment/3dsecure/initialize', 'POST', payload);
 
         if (result.status !== 'success') {
             console.error('[iyzico] Initialization error:', result.errorMessage);
@@ -336,7 +258,7 @@ export class IyzicoService {
                 paymentId: paymentId
             };
 
-            const verificationResult = await this._request('/payment/3dsec/auth', 'POST', detailPayload);
+            const verificationResult = await this._request('/payment/3dsecure/auth', 'POST', detailPayload);
             
             if (verificationResult.status === 'success' && verificationResult.paymentStatus === 'SUCCESS') {
                 return {
