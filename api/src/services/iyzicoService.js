@@ -281,7 +281,7 @@ export class IyzicoService {
 
             const verificationResult = await this._request('/payment/3dsecure/auth', 'POST', detailPayload);
             
-            if (verificationResult.status === 'success' && verificationResult.paymentStatus === 'SUCCESS') {
+            if (verificationResult.status === 'success') {
                 return {
                     status: 'success',
                     paymentId: verificationResult.paymentId,
