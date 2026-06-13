@@ -114,11 +114,14 @@ export class PaymentController {
             if (result.status === 'success') {
                 res.send('OK'); // PayTR requires literal response 'OK' on success
             } else {
-                res.send('FAIL: ' + (result.errorMessage || 'Verify failed'));
+                console.error('[PayTR] Callback validation failed: %s', result.errorMessage || 'Verify failed');
+                res.set('Content-Type', 'text/plain');
+                res.send('FAIL');
             }
         } catch (error) {
-            console.error('PayTR Callback Error:', error);
-            res.send('FAIL: ' + error.message);
+            console.error('[PayTR] Callback Error: %s', error.message || error);
+            res.set('Content-Type', 'text/plain');
+            res.send('FAIL');
         }
     });
 

@@ -122,7 +122,7 @@ export class EmailService {
      * Sends order confirmation email to customer.
      */
     async sendOrderConfirmation(toEmail, toName, orderDetails) {
-        console.log(`[Email] Sipariş Onayı gönderiliyor: ${toEmail} - Sipariş: ${orderDetails.id}`);
+        console.log('[Email] Sipariş Onayı gönderiliyor: %s - Sipariş: %s', toEmail, orderDetails.id);
 
         const orderLink = `${config.clientUrl}/siparis-takip?token=${orderDetails.trackingToken}`;
 

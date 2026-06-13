@@ -52,7 +52,7 @@ export class PaymentService {
      */
     async startPaymentProcess(order, basketItems, buyer) {
         const service = this._getService();
-        console.log(`[Payment Strategy] Initiating payment using provider: ${this.getProvider()}`);
+        console.log('[Payment Strategy] Initiating payment using provider: %s', this.getProvider());
         return service.startPaymentProcess(order, basketItems, buyer);
     }
 
@@ -65,7 +65,7 @@ export class PaymentService {
     async verifyCallback(callbackData, provider) {
         const activeProvider = provider || this.getProvider();
         const service = this._getService(activeProvider);
-        console.log(`[Payment Strategy] Verifying callback using provider: ${activeProvider}`);
+        console.log('[Payment Strategy] Verifying callback using provider: %s', activeProvider);
         return service.verifyCallback(callbackData);
     }
 
@@ -79,7 +79,7 @@ export class PaymentService {
     async cancelPayment(paymentId, reason, provider) {
         const activeProvider = provider || this.getProvider();
         const service = this._getService(activeProvider);
-        console.log(`[Payment Strategy] Refunding payment using provider: ${activeProvider}`);
+        console.log('[Payment Strategy] Refunding payment using provider: %s', activeProvider);
         return service.cancelPayment(paymentId, reason);
     }
 
@@ -91,7 +91,7 @@ export class PaymentService {
      */
     async getInstallmentOptions(bin, amount) {
         const service = this._getService();
-        console.log(`[Payment Strategy] Retrieving installments using provider: ${this.getProvider()}`);
+        console.log('[Payment Strategy] Retrieving installments using provider: %s', this.getProvider());
         return service.getInstallmentOptions(bin, amount);
     }
 }

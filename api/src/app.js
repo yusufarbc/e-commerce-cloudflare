@@ -116,7 +116,7 @@ app.onError(errorHandler);
 export default {
     fetch: app.fetch,
     async scheduled(event, env, ctx) {
-        console.log(`[Cron Trigger] Active: executing scheduled task for cron: ${event.cron}`);
+        console.log('[Cron Trigger] Active: executing scheduled task for cron: %s', event.cron);
         try {
             const clientUrl = env.CLIENT_URL || 'https://e-market.com';
             const sitemapUrl = `${clientUrl}/sitemap.xml`;
@@ -124,9 +124,9 @@ export default {
             const apiFetchUrl = `${env.API_URL || 'http://localhost:8787'}/sitemap.xml`;
             const response = await fetch(apiFetchUrl);
             if (response.ok) {
-                console.log(`[Cron Trigger] Sitemap cache warmed successfully: ${sitemapUrl}`);
+                console.log('[Cron Trigger] Sitemap cache warmed successfully: %s', sitemapUrl);
             } else {
-                console.warn(`[Cron Trigger] Sitemap warm up returned status: ${response.status}`);
+                console.warn('[Cron Trigger] Sitemap warm up returned status: %s', response.status);
             }
         } catch (error) {
             console.error('[Cron Trigger] Failed to run sitemap cron updates:', error);

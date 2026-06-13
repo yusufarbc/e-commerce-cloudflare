@@ -44,7 +44,7 @@ export class IyzicoService {
         const bodyString = bodyObject ? JSON.stringify(bodyObject) : '';
         const headers = this._getHeaders(rnd, bodyString);
         
-        console.log(`[iyzico Request] ${method} ${url}`);
+        console.log('[iyzico Request] %s %s', method, url);
         
         const response = await fetch(url, {
             method,
@@ -220,7 +220,7 @@ export class IyzicoService {
      * Cancels/Refunds a paid transaction.
      */
     async cancelPayment(paymentId, reason) {
-        console.log(`[iyzico] Refunding payment ${paymentId}, Reason: ${reason}`);
+        console.log('[iyzico] Refunding payment %s, Reason: %s', paymentId, reason);
 
         const payload = {
             locale: 'tr',

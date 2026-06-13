@@ -92,7 +92,7 @@ export class PaytrService {
             test_mode: String(testMode)
         });
 
-        console.log(`[PayTR Token Request] Ordering number: ${orderNumber}`);
+        console.log('[PayTR Token Request] Ordering number: %s', orderNumber);
 
         const response = await fetch(`${baseUrl.replace(/\/$/, '')}/odeme/api/get-token`, {
             method: 'POST',
@@ -192,7 +192,7 @@ export class PaytrService {
      * Refunds/Cancels a paid order.
      */
     async cancelPayment(paymentId, reason) {
-        console.log(`[PayTR] Refunding payment ${paymentId}, Reason: ${reason}`);
+        console.log('[PayTR] Refunding payment %s, Reason: %s', paymentId, reason);
 
         const merchantOid = paymentId.replace(/^paytr-/, '');
         const merchantId = this.config.merchantId;
