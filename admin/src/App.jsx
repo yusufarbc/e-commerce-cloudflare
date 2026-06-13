@@ -21,7 +21,19 @@ import {
   Moon
 } from 'lucide-react';
 
-const API_URL = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') ? 'http://localhost:8787' : '';
+const getApiUrl = () => {
+  if (import.meta.env.VITE_API_URL) return import.meta.env.VITE_API_URL;
+  const hostname = typeof window !== 'undefined' ? window.location.hostname : '';
+  if (hostname === 'localhost' || hostname === '127.0.0.1') {
+    return 'http://localhost:8787';
+  }
+  if (hostname.includes('test') || hostname.includes('staging')) {
+    return 'https://e-commerce-cloudflare-staging.yusuftalhaarabaci-91d.workers.dev';
+  }
+  return 'https://e-commerce-cloudflare.yusuftalhaarabaci-91d.workers.dev';
+};
+
+const API_URL = getApiUrl();
 const config = { cdnUrl: '' };
 
 export default function App() {

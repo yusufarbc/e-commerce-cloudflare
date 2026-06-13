@@ -4,9 +4,18 @@ import axios from 'axios';
  * API Base URL Configuration
  * Uses proxy in development to avoid CORS, and direct URL in production.
  */
-const API_BASE_URL = import.meta.env.VITE_API_URL || (import.meta.env.DEV
-    ? '' // Relative path in dev to trigger Vite proxy
-    : 'https://api.e-market-domain.com');
+const getApiUrl = () => {
+    if (import.meta.env.VITE_API_URL) return import.meta.env.VITE_API_URL;
+    if (import.meta.env.DEV) return '';
+    
+    const hostname = typeof window !== 'undefined' ? window.location.hostname : '';
+    if (hostname.includes('test') || hostname.includes('staging')) {
+        return 'https://e-commerce-cloudflare-staging.yusuftalhaarabaci-91d.workers.dev';
+    }
+    return 'https://e-commerce-cloudflare.yusuftalhaarabaci-91d.workers.dev';
+};
+
+const API_BASE_URL = getApiUrl();
 
 const api = axios.create({
     baseURL: API_BASE_URL,
