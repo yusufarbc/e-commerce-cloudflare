@@ -257,6 +257,21 @@ npx wrangler pages deploy admin/dist --project-name e-market-admin --branch main
 
 ---
 
+## 📚 Documentation
+
+Detailed guides for every aspect of E-Market are available in the [`docs/`](docs/) directory:
+
+| Guide | Description |
+| :--- | :--- |
+| [CI/CD Pipeline](docs/cicd_pipeline.md) | GitHub Actions workflow stages, job dependencies, and secrets setup |
+| [Cloudflare Deployment Guide](docs/cloudflare_deployment_guide.md) | Full step-by-step deployment of Workers, D1, R2, and Pages |
+| [Google Services Integration](docs/google_services.md) | sGTM proxy on Workers, GA4, Search Console, Merchant Center, Consent Mode v2 |
+| [Google Drive Backup](docs/google_drive_backup.md) | Automated encrypted D1 database backup pipeline to Google Drive |
+| [Payment Gateways](docs/payment_gateways.md) | Param POS, iyzico, and PayTR configuration and 3D Secure flows |
+| [KVKK & GDPR Compliance](docs/kvkk_compliance.md) | Edge IP masking, PII scrubbing, consent management, and data inventory |
+
+---
+
 ## 🤝 Contributing
 
 We welcome contributions to E-Market! Please refer to our [Contributing Guidelines](CONTRIBUTING.md) and [Code of Conduct](CODE_OF_CONDUCT.md) for standards.
