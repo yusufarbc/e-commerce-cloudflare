@@ -1,4 +1,5 @@
 import { config } from '../config.js';
+import prisma from '../prisma.js';
 
 /**
  * Service for managing order processing and checkout operations.
