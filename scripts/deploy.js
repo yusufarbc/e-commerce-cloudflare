@@ -332,7 +332,8 @@ async function main() {
                         tomlContent = tomlContent.replace(/(database_name = "ecommerce-d1"\s+database_id = ")[a-f0-9-]+"/, `$1${dbId}"`);
                     } else {
                         // Replace environment-specific database_id
-                        const regex = new RegExp(`(database_name = "ecommerce-d1-${targetEnv}"\\s+database_id = ")[a-f0-9-]+"` );
+                        const safeEnv = targetEnv.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                        const regex = new RegExp(`(database_name = "ecommerce-d1-${safeEnv}"\\s+database_id = ")[a-f0-9-]+"` );
                         tomlContent = tomlContent.replace(regex, `$1${dbId}"`);
                     }
                     fs.writeFileSync(tomlPath, tomlContent, 'utf8');
