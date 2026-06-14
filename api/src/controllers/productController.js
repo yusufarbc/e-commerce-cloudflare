@@ -73,7 +73,6 @@ export class ProductController {
         }
 
         // Increment view count asynchronously (fire and forget)
-        // Note: View count is still ID based, so we use product.id
         if (product.id) {
             this.productService.incrementViewCount(product.id).catch(err =>
                 console.error('Failed to increment view count:', err)
@@ -97,6 +96,8 @@ export class ProductController {
     adminCreateProduct = asyncHandler(async (req, res, next) => {
         const body = req.body;
         const slug = body.ad.toLowerCase()
+            .replace(/ğ/g, 'g').replace(/ü/g, 'u').replace(/ş/g, 's')
+            .replace(/ı/g, 'i').replace(/ö/g, 'o').replace(/ç/g, 'c')
             .replace(/[^a-z0-9]+/g, '-')
             .replace(/(^-|-$)/g, '');
 
@@ -105,9 +106,9 @@ export class ProductController {
             slug: slug,
             fiyat: parseFloat(body.fiyat),
             indirimliFiyat: body.indirimliFiyat ? parseFloat(body.indirimliFiyat) : null,
+            kisaAciklama: body.kisaAciklama || null,
             renkSecenekleri: Array.isArray(body.renkSecenekleri) ? JSON.stringify(body.renkSecenekleri) : "[]",
-            kartelaIcCephe: !!body.kartelaIcCephe,
-            kartelaDisCephe: !!body.kartelaDisCephe,
+            boyutSecenekleri: Array.isArray(body.boyutSecenekleri) ? JSON.stringify(body.boyutSecenekleri) : "[]",
             iadeImkaniVar: body.iadeImkaniVar !== false,
             agirlik: parseFloat(body.agirlik || 1),
             aciklama: body.aciklama || '',
@@ -136,13 +137,17 @@ export class ProductController {
         const data = {};
         if (body.ad !== undefined) {
             data.ad = body.ad;
-            data.slug = body.ad.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+            data.slug = body.ad.toLowerCase()
+                .replace(/ğ/g, 'g').replace(/ü/g, 'u').replace(/ş/g, 's')
+                .replace(/ı/g, 'i').replace(/ö/g, 'o').replace(/ç/g, 'c')
+                .replace(/[^a-z0-9]+/g, '-')
+                .replace(/(^-|-$)/g, '');
         }
         if (body.fiyat !== undefined) data.fiyat = parseFloat(body.fiyat);
         if (body.indirimliFiyat !== undefined) data.indirimliFiyat = body.indirimliFiyat ? parseFloat(body.indirimliFiyat) : null;
+        if (body.kisaAciklama !== undefined) data.kisaAciklama = body.kisaAciklama || null;
         if (body.renkSecenekleri !== undefined) data.renkSecenekleri = Array.isArray(body.renkSecenekleri) ? JSON.stringify(body.renkSecenekleri) : "[]";
-        if (body.kartelaIcCephe !== undefined) data.kartelaIcCephe = !!body.kartelaIcCephe;
-        if (body.kartelaDisCephe !== undefined) data.kartelaDisCephe = !!body.kartelaDisCephe;
+        if (body.boyutSecenekleri !== undefined) data.boyutSecenekleri = Array.isArray(body.boyutSecenekleri) ? JSON.stringify(body.boyutSecenekleri) : "[]";
         if (body.iadeImkaniVar !== undefined) data.iadeImkaniVar = body.iadeImkaniVar !== false;
         if (body.agirlik !== undefined) data.agirlik = parseFloat(body.agirlik);
         if (body.aciklama !== undefined) data.aciklama = body.aciklama;

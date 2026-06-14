@@ -9,24 +9,10 @@ export class ProductService {
      * Creates an instance of ProductService.
      * @param {import('../repositories/productRepository.js').ProductRepository} productRepository - Product repository instance.
      * @param {import('../repositories/categoryRepository.js').CategoryRepository} categoryRepository - Category repository instance.
-     * @param {import('@prisma/client').PrismaClient} prisma - Prisma client for palette lookups.
      */
-    constructor(productRepository, categoryRepository, prisma) {
+    constructor(productRepository, categoryRepository) {
         this.productRepository = productRepository;
         this.categoryRepository = categoryRepository;
-        this.prisma = prisma;
-    }
-
-    _getSectionCandidates(isInteriorPaint, isExteriorPaint) {
-        if (isInteriorPaint) {
-            return ['ic-cephe', 'İç Cephe', 'Ic Cephe', 'iç cephe'];
-        }
-
-        if (isExteriorPaint) {
-            return ['dis-cephe', 'Dış Cephe', 'Dis Cephe', 'dış cephe'];
-        }
-
-        return [];
     }
 
     /**
@@ -35,7 +21,7 @@ export class ProductService {
      * @returns {Object|null} Formatted product with CDN-prefixed image URLs.
      * @private
      */
-    async _formatProduct(product) {
+    _formatProduct(product) {
         if (!product) return null;
 
         // Parse renkSecenekleri from JSON string if stored as text (SQLite)
@@ -47,7 +33,14 @@ export class ProductService {
             }
         }
 
-        const paletteRows = await this._getPaletteRows(product);
+        // Parse boyutSecenekleri from JSON string if stored as text (SQLite)
+        if (typeof product.boyutSecenekleri === 'string') {
+            try {
+                product.boyutSecenekleri = JSON.parse(product.boyutSecenekleri);
+            } catch (e) {
+                product.boyutSecenekleri = [];
+            }
+        }
 
         let resimUrl = product.resimUrl;
 
@@ -76,55 +69,8 @@ export class ProductService {
         return {
             ...product,
             resimUrl,
-            resimler,
-            renkKartelasi: paletteRows
+            resimler
         };
-    }
-
-    async _getPaletteRows(product) {
-        if (!product) return [];
-
-        const isInteriorPaint = Boolean(product.kartelaIcCephe);
-        const isExteriorPaint = Boolean(product.kartelaDisCephe);
-
-        // Force return empty array if not explicitly marked as a paint color palette product.
-        // This ensures generic products use simple color selections (renkSecenekleri) without database palette lookups.
-        if (!isInteriorPaint && !isExteriorPaint) {
-            return [];
-        }
-
-        const selectedNames = Array.isArray(product.renkSecenekleri)
-            ? product.renkSecenekleri.map((item) => String(item || '').trim()).filter(Boolean)
-            : [];
-
-        const hasSelectedNames = selectedNames.length > 0;
-
-        // Log for production debugging to verify deployment
-        console.log('[PaletteCheck] Product: "%s" | Colors: %s | Int: %s | Ext: %s', product.ad, hasSelectedNames, isInteriorPaint, isExteriorPaint);
-
-        const sectionCandidates = this._getSectionCandidates(isInteriorPaint, isExteriorPaint);
-
-        const where = {
-            aktif: true,
-            ...(hasSelectedNames
-                ? { name: { in: selectedNames } }
-                : { section: { in: sectionCandidates } })
-        };
-
-        const rows = await this.prisma.renkKartelasi.findMany({
-            where,
-            orderBy: [{ sira: 'asc' }, { name: 'asc' }]
-        });
-
-        return rows.map((row) => ({
-            id: row.id,
-            section: row.section,
-            code: row.code,
-            name: row.name,
-            hex: row.hex,
-            rgb: row.rgb,
-            sourceFile: row.sourceFile
-        }));
     }
 
     /**
@@ -143,7 +89,7 @@ export class ProductService {
         }
 
         const products = await this.productRepository.findAllWithCategories(filters);
-        return Promise.all(products.map((p) => this._formatProduct(p)));
+        return products.map((p) => this._formatProduct(p));
     }
 
     /**
@@ -180,7 +126,7 @@ export class ProductService {
      */
     async getAllProductsForAdmin() {
         const products = await this.productRepository.findAllForAdmin();
-        return Promise.all(products.map(p => this._formatProduct(p)));
+        return products.map(p => this._formatProduct(p));
     }
 
     /**
@@ -204,4 +150,3 @@ export class ProductService {
         return this.productRepository.delete(id);
     }
 }
-

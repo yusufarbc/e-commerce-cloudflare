@@ -1,4 +1,3 @@
-import prisma from '../prisma.js';
 import { config } from '../config.js';
 
 /**
@@ -52,16 +51,8 @@ export class OrderService {
                     throw new Error(`Selected color for ${product.ad} is invalid.`);
                 }
 
-                // Resolve color code from palette if available
-                let finalColorName = selectedColor;
-                if (selectedColor) {
-                    const colorRecord = await prisma.renkKartelasi.findFirst({
-                        where: { name: selectedColor, aktif: true }
-                    });
-                    if (colorRecord) {
-                        finalColorName = `${selectedColor} (${colorRecord.code})`;
-                    }
-                }
+                // Use the selected color name directly
+                const finalColorName = selectedColor;
 
                 subTotal += unitPrice * item.quantity;
                 totalWeight += Number(product.agirlik || 1) * item.quantity;

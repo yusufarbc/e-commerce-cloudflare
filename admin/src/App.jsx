@@ -65,7 +65,17 @@ export default function App() {
   const [settings, setSettings] = useState({
     kargoAgirlikCarpani: 15.00,
     ucretsizKargoAltLimit: 5000.00,
-    maintenanceMode: false
+    maintenanceMode: false,
+    siteAdi: '',
+    iletisimEmail: '',
+    whatsappNumarasi: '',
+    telefon: '',
+    adres: '',
+    instagramUrl: '',
+    facebookUrl: '',
+    twitterUrl: '',
+    youtubeUrl: '',
+    hakkindaMetni: ''
   });
   const [stats, setStats] = useState({
     totalSales: 0,
@@ -81,8 +91,8 @@ export default function App() {
   const [showProductModal, setShowProductModal] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
   const [productForm, setProductForm] = useState({
-    ad: '', fiyat: '', indirimliFiyat: '', renkSecenekleri: [],
-    kartelaIcCephe: false, kartelaDisCephe: false, agirlik: 1,
+    ad: '', fiyat: '', indirimliFiyat: '', kisaAciklama: '',
+    renkSecenekleri: [], boyutSecenekleri: [], agirlik: 1,
     aciklama: '', resimUrl: '', stokAdedi: 0, varyantBasligi: '',
     kategoriId: '', markaId: '', aktif: true, oneCikan: false,
     firsatUrunu: false, yeniUrun: false, cokSatanlar: false
@@ -707,8 +717,8 @@ export default function App() {
               <button className="btn btn-primary" onClick={() => {
                 setEditingProduct(null);
                 setProductForm({
-                  ad: '', fiyat: '', indirimliFiyat: '', renkSecenekleri: [],
-                  kartelaIcCephe: false, kartelaDisCephe: false, agirlik: 1,
+                  ad: '', fiyat: '', indirimliFiyat: '', kisaAciklama: '',
+                  renkSecenekleri: [], boyutSecenekleri: [], agirlik: 1,
                   aciklama: '', resimUrl: '', stokAdedi: 0, varyantBasligi: '',
                   kategoriId: categories[0]?.id || '', markaId: brands[0]?.id || '', aktif: true, oneCikan: false,
                   firsatUrunu: false, yeniUrun: false, cokSatanlar: false
@@ -774,8 +784,9 @@ export default function App() {
                                 setEditingProduct(prod);
                                 setProductForm({
                                   ad: prod.ad, fiyat: prod.fiyat, indirimliFiyat: prod.indirimliFiyat || '',
+                                  kisaAciklama: prod.kisaAciklama || '',
                                   renkSecenekleri: prod.renkSecenekleri || [],
-                                  kartelaIcCephe: prod.kartelaIcCephe, kartelaDisCephe: prod.kartelaDisCephe,
+                                  boyutSecenekleri: prod.boyutSecenekleri || [],
                                   agirlik: prod.agirlik, aciklama: prod.aciklama || '', resimUrl: prod.resimUrl || '',
                                   stokAdedi: prod.stokAdedi, varyantBasligi: prod.varyantBasligi || '',
                                   kategoriId: prod.kategoriId || '', markaId: prod.markaId || '',
@@ -1035,8 +1046,122 @@ export default function App() {
               <h1 className="content-title">Sistem Ayarları</h1>
             </div>
 
-            <div className="card" style={{ maxWidth: '600px' }}>
-              <form onSubmit={saveSettings}>
+            <form onSubmit={saveSettings} style={{ display: 'flex', flexDirection: 'column', gap: '24px', maxWidth: '720px' }}>
+
+              {/* Site Genel Bilgileri */}
+              <div className="card">
+                <h3 style={{ marginBottom: '16px', fontSize: '16px', fontWeight: '600', borderBottom: '1px solid var(--color-border)', paddingBottom: '10px' }}>
+                  🏪 Site Genel Bilgileri
+                </h3>
+                <div className="form-group">
+                  <label className="form-label">Site Adı</label>
+                  <input 
+                    type="text" className="form-control" placeholder="E-Market"
+                    value={settings.siteAdi || ''}
+                    onChange={e => setSettings({ ...settings, siteAdi: e.target.value })}
+                  />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Hakkımızda Metni</label>
+                  <textarea 
+                    className="form-control" rows={4}
+                    placeholder="Şirketiniz hakkında kısa tanıtım metni..."
+                    value={settings.hakkindaMetni || ''}
+                    onChange={e => setSettings({ ...settings, hakkindaMetni: e.target.value })}
+                  />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Adres</label>
+                  <input 
+                    type="text" className="form-control" placeholder="İstanbul, Türkiye"
+                    value={settings.adres || ''}
+                    onChange={e => setSettings({ ...settings, adres: e.target.value })}
+                  />
+                </div>
+              </div>
+
+              {/* İletişim Bilgileri */}
+              <div className="card">
+                <h3 style={{ marginBottom: '16px', fontSize: '16px', fontWeight: '600', borderBottom: '1px solid var(--color-border)', paddingBottom: '10px' }}>
+                  📞 İletişim Bilgileri
+                </h3>
+                <div className="grid-2">
+                  <div className="form-group">
+                    <label className="form-label">İletişim E-Posta</label>
+                    <input 
+                      type="email" className="form-control" placeholder="info@example.com"
+                      value={settings.iletisimEmail || ''}
+                      onChange={e => setSettings({ ...settings, iletisimEmail: e.target.value })}
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Telefon</label>
+                    <input 
+                      type="text" className="form-control" placeholder="+90 212 000 00 00"
+                      value={settings.telefon || ''}
+                      onChange={e => setSettings({ ...settings, telefon: e.target.value })}
+                    />
+                  </div>
+                </div>
+                <div className="form-group">
+                  <label className="form-label">WhatsApp Numarası</label>
+                  <input 
+                    type="text" className="form-control" placeholder="+905001234567"
+                    value={settings.whatsappNumarasi || ''}
+                    onChange={e => setSettings({ ...settings, whatsappNumarasi: e.target.value })}
+                  />
+                  <small style={{ color: 'var(--color-text-muted)', fontSize: '11px', marginTop: '4px', display: 'block' }}>
+                    Müşteri destek WhatsApp hattı — ülke kodu ile birlikte girin (örn: +905001234567)
+                  </small>
+                </div>
+              </div>
+
+              {/* Sosyal Medya */}
+              <div className="card">
+                <h3 style={{ marginBottom: '16px', fontSize: '16px', fontWeight: '600', borderBottom: '1px solid var(--color-border)', paddingBottom: '10px' }}>
+                  📱 Sosyal Medya
+                </h3>
+                <div className="grid-2">
+                  <div className="form-group">
+                    <label className="form-label">Instagram URL</label>
+                    <input 
+                      type="url" className="form-control" placeholder="https://instagram.com/kullaniciad"
+                      value={settings.instagramUrl || ''}
+                      onChange={e => setSettings({ ...settings, instagramUrl: e.target.value })}
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Facebook URL</label>
+                    <input 
+                      type="url" className="form-control" placeholder="https://facebook.com/sayfaad"
+                      value={settings.facebookUrl || ''}
+                      onChange={e => setSettings({ ...settings, facebookUrl: e.target.value })}
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">X (Twitter) URL</label>
+                    <input 
+                      type="url" className="form-control" placeholder="https://x.com/kullaniciad"
+                      value={settings.twitterUrl || ''}
+                      onChange={e => setSettings({ ...settings, twitterUrl: e.target.value })}
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">YouTube URL</label>
+                    <input 
+                      type="url" className="form-control" placeholder="https://youtube.com/@kanal"
+                      value={settings.youtubeUrl || ''}
+                      onChange={e => setSettings({ ...settings, youtubeUrl: e.target.value })}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Kargo Ayarları */}
+              <div className="card">
+                <h3 style={{ marginBottom: '16px', fontSize: '16px', fontWeight: '600', borderBottom: '1px solid var(--color-border)', paddingBottom: '10px' }}>
+                  🚚 Kargo Ayarları
+                </h3>
                 <div className="form-group">
                   <label className="form-label">Kargo Ağırlık/Desi Çarpanı (₺)</label>
                   <input 
@@ -1071,11 +1196,11 @@ export default function App() {
                     onChange={e => setSettings({ ...settings, kargoFiyatListesi: e.target.value })}
                   />
                   <small style={{ color: 'var(--color-text-muted)', fontSize: '11px', marginTop: '4px', display: 'block' }}>
-                    Örn: [{`{"maxWeight": 1, "price": 50}`}]
+                    {`Örn: [{"maxWeight": 1, "price": 50}]`}
                   </small>
                 </div>
 
-                <div className="form-group" style={{ margin: '30px 0' }}>
+                <div className="form-group" style={{ margin: '10px 0' }}>
                   <label className="form-check">
                     <input 
                       type="checkbox" 
@@ -1085,12 +1210,12 @@ export default function App() {
                     <span><strong>Bakım Modu (Sitenin tamamını bakıma al)</strong></span>
                   </label>
                 </div>
+              </div>
 
-                <button type="submit" className="btn btn-primary" style={{ width: '100%', padding: '12px' }}>
-                  Ayarları Kaydet
-                </button>
-              </form>
-            </div>
+              <button type="submit" className="btn btn-primary" style={{ padding: '14px', fontSize: '15px' }}>
+                Tüm Ayarları Kaydet
+              </button>
+            </form>
           </div>
         )}
       </main>
@@ -1208,20 +1333,41 @@ export default function App() {
                 </div>
 
                 <div className="form-group">
-                  <label className="form-label">Varyant Seçenekleri (Virgül veya yeni satır ile ayırın)</label>
+                  <label className="form-label">Kısa Açıklama (Ürün kartında görünür)</label>
+                  <input
+                    type="text" className="form-control"
+                    placeholder="Örn: Yüksek performanslı koşu ayakkabısı"
+                    value={productForm.kisaAciklama}
+                    onChange={e => setProductForm({ ...productForm, kisaAciklama: e.target.value })}
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">Renk Seçenekleri (Virgül ile ayırın)</label>
                   <textarea 
                     className="form-control" 
-                    placeholder="Gri, Mavi, Sarı"
+                    placeholder="Siyah, Beyaz, Kırmızı"
                     value={Array.isArray(productForm.renkSecenekleri) ? productForm.renkSecenekleri.join(', ') : ''}
                     onChange={e => setProductForm({ ...productForm, renkSecenekleri: e.target.value.split(/[,\n]/).map(s => s.trim()).filter(Boolean) })}
                   />
                 </div>
 
                 <div className="form-group">
-                  <label className="form-label">Ürün Açıklaması</label>
+                  <label className="form-label">Boyut / Beden Seçenekleri (Virgül ile ayırın)</label>
+                  <textarea 
+                    className="form-control" 
+                    placeholder="S, M, L, XL  veya  36, 37, 38, 39"
+                    value={Array.isArray(productForm.boyutSecenekleri) ? productForm.boyutSecenekleri.join(', ') : ''}
+                    onChange={e => setProductForm({ ...productForm, boyutSecenekleri: e.target.value.split(/[,\n]/).map(s => s.trim()).filter(Boolean) })}
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">Ürün Açıklaması (Detay Sayfası)</label>
                   <textarea 
                     className="form-control" value={productForm.aciklama}
                     onChange={e => setProductForm({ ...productForm, aciklama: e.target.value })}
+                    rows={4}
                   />
                 </div>
 
@@ -1241,6 +1387,14 @@ export default function App() {
                   <label className="form-check">
                     <input type="checkbox" checked={productForm.yeniUrun} onChange={e => setProductForm({ ...productForm, yeniUrun: e.target.checked })} />
                     <span>Yeni Ürün</span>
+                  </label>
+                  <label className="form-check">
+                    <input type="checkbox" checked={productForm.cokSatanlar} onChange={e => setProductForm({ ...productForm, cokSatanlar: e.target.checked })} />
+                    <span>Çok Satanlar</span>
+                  </label>
+                  <label className="form-check">
+                    <input type="checkbox" checked={productForm.iadeImkaniVar !== false} onChange={e => setProductForm({ ...productForm, iadeImkaniVar: e.target.checked })} />
+                    <span>İade İmkânı Var</span>
                   </label>
                 </div>
               </div>

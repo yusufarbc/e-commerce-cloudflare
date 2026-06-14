@@ -18,7 +18,8 @@ export class SettingsService {
             settings = await this.settingsRepository.createSettings({
                 kargoAgirlikCarpani: 15.00,
                 ucretsizKargoAltLimit: 5000.00,
-                maintenanceMode: false
+                maintenanceMode: false,
+                siteAdi: 'E-Market'
             });
         }
         return settings;
