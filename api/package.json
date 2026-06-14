@@ -16,8 +16,8 @@
   "dependencies": {
     "@prisma/adapter-d1": "5.22.0",
     "@prisma/client": "5.22.0",
-    "hono": "^4.12.23",
-    "soap": "^1.6.3",
+    "hono": "^4.12.25",
+    "soap": "^1.9.3",
     "zod": "^3.21.4"
   },
   "devDependencies": {
