@@ -65,6 +65,9 @@ export default function App() {
   const [settings, setSettings] = useState({
     kargoAgirlikCarpani: 15.00,
     ucretsizKargoAltLimit: 5000.00,
+    kargoPolitikaTuru: 'SABIT_UCRET',
+    kargoSabitUcret: 0,
+    kargoFiyatListesi: '[]',
     maintenanceMode: false,
     siteAdi: '',
     iletisimEmail: '',
@@ -84,6 +87,7 @@ export default function App() {
     activeProducts: 0,
     pendingReturns: 0
   });
+  const [copiedFeed, setCopiedFeed] = useState(false);
 
   // Loading States
   const [loading, setLoading] = useState(false);
@@ -1253,62 +1257,281 @@ export default function App() {
                       onChange={e => setSettings({ ...settings, youtubeUrl: e.target.value })}
                     />
                   </div>
-                  <div className="form-group" style={{ gridColumn: 'span 2' }}>
-                    <label className="form-label">Meta (Facebook) Pixel ID</label>
-                    <input 
-                      type="text" className="form-control" placeholder="Örn: 123456789012345"
-                      value={settings.metaPixelId || ''}
-                      onChange={e => setSettings({ ...settings, metaPixelId: e.target.value })}
-                    />
-                    <small style={{ color: 'var(--color-text-muted)', fontSize: '11px', marginTop: '4px', display: 'block' }}>
-                      Meta Pixel entegrasyonu için Pixel ID'nizi girin. Bu kod girildiğinde, mağazanızdaki ziyaretler, sepete eklemeler ve satın alım işlemleri otomatik olarak Meta Panel'e gönderilir.
-                    </small>
-                  </div>
                 </div>
+              </div>
+
+              {/* Entegrasyonlar */}
+              <div className="card">
+                <h3 style={{ marginBottom: '16px', fontSize: '16px', fontWeight: '600', borderBottom: '1px solid var(--color-border)', paddingBottom: '10px' }}>
+                  🔌 Entegrasyonlar ve Servisler
+                </h3>
+                <div className="form-group" style={{ marginBottom: '20px' }}>
+                  <label className="form-label">Meta (Facebook) Pixel ID</label>
+                  <input 
+                    type="text" className="form-control" placeholder="Örn: 123456789012345"
+                    value={settings.metaPixelId || ''}
+                    onChange={e => setSettings({ ...settings, metaPixelId: e.target.value })}
+                  />
+                  <small style={{ color: 'var(--color-text-muted)', fontSize: '11px', marginTop: '4px', display: 'block' }}>
+                    Meta Pixel entegrasyonu için Pixel ID'nizi girin. Bu kod girildiğinde, mağazanızdaki ziyaretler, sepete eklemeler ve satın alım işlemleri otomatik olarak Meta Panel'e gönderilir.
+                  </small>
+                </div>
+
+                <div className="form-group" style={{ marginBottom: '20px' }}>
+                  <label className="form-label" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span>Google Merchant Feed Token</span>
+                    <button
+                      type="button"
+                      className="btn btn-secondary btn-sm"
+                      style={{ fontSize: '11px', padding: '2px 8px', height: 'auto' }}
+                      onClick={() => {
+                        const randomToken = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+                        setSettings({ ...settings, googleMerchantToken: randomToken });
+                      }}
+                    >
+                      Güvenli Token Üret
+                    </button>
+                  </label>
+                  <input 
+                    type="text" className="form-control" placeholder="Örn: my-secure-token-xyz"
+                    value={settings.googleMerchantToken || ''}
+                    onChange={e => setSettings({ ...settings, googleMerchantToken: e.target.value })}
+                  />
+                  <small style={{ color: 'var(--color-text-muted)', fontSize: '11px', marginTop: '4px', display: 'block' }}>
+                    Google Alışveriş XML feed URL'sini korumak için bir güvenlik anahtarı belirleyin. Feed URL'sine bu anahtar ile erişilir.
+                  </small>
+                </div>
+
+                {settings.googleMerchantToken && (
+                  <div className="form-group" style={{ background: 'var(--color-bg-secondary)', padding: '12px', borderRadius: '6px', border: '1px solid var(--color-border)' }}>
+                    <label className="form-label" style={{ fontSize: '12px', fontWeight: '600', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span>Google Shopping XML Feed URL</span>
+                      <button
+                        type="button"
+                        className="btn btn-secondary btn-sm"
+                        style={{ fontSize: '11px', padding: '2px 8px', height: 'auto' }}
+                        onClick={() => {
+                          const feedUrl = `${API_URL}/api/v1/feeds/google?token=${settings.googleMerchantToken}`;
+                          navigator.clipboard.writeText(feedUrl);
+                          setCopiedFeed(true);
+                          setTimeout(() => setCopiedFeed(false), 2000);
+                        }}
+                      >
+                        {copiedFeed ? 'Kopyalandı! ✓' : 'URL Kopyala'}
+                      </button>
+                    </label>
+                    <div style={{ wordBreak: 'break-all', fontFamily: 'monospace', fontSize: '11px', padding: '6px', background: 'var(--color-bg-tertiary)', borderRadius: '4px', color: 'var(--color-text)', border: '1px solid var(--color-border)' }}>
+                      {`${API_URL}/api/v1/feeds/google?token=${settings.googleMerchantToken}`}
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Kargo Ayarları */}
               <div className="card">
                 <h3 style={{ marginBottom: '16px', fontSize: '16px', fontWeight: '600', borderBottom: '1px solid var(--color-border)', paddingBottom: '10px' }}>
-                  🚚 Kargo Ayarları
+                  🚚 Kargo Politikası ve Ayarları
                 </h3>
-                <div className="form-group">
-                  <label className="form-label">Kargo Ağırlık/Desi Çarpanı (₺)</label>
-                  <input 
-                    type="number" 
-                    className="form-control" 
-                    value={settings.kargoAgirlikCarpani}
-                    onChange={e => setSettings({ ...settings, kargoAgirlikCarpani: parseFloat(e.target.value) })}
-                    required
-                  />
-                  <small style={{ color: 'var(--color-text-muted)', fontSize: '11px', marginTop: '4px', display: 'block' }}>
-                    Desi fiyatlandırması hesaplanırken kullanılacak standart çarpan değeri.
-                  </small>
-                </div>
                 
                 <div className="form-group">
-                  <label className="form-label">Ücretsiz Kargo Alt Limiti (₺)</label>
-                  <input 
-                    type="number" 
-                    className="form-control" 
-                    value={settings.ucretsizKargoAltLimit || 0}
-                    onChange={e => setSettings({ ...settings, ucretsizKargoAltLimit: parseFloat(e.target.value) })}
-                    required
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label className="form-label">Kademeli Kargo Fiyat Listesi (JSON Format)</label>
-                  <textarea 
-                    className="form-control" 
-                    style={{ minHeight: '120px', fontFamily: 'monospace' }}
-                    value={typeof settings.kargoFiyatListesi === 'object' ? JSON.stringify(settings.kargoFiyatListesi, null, 2) : settings.kargoFiyatListesi || '[]'}
-                    onChange={e => setSettings({ ...settings, kargoFiyatListesi: e.target.value })}
-                  />
+                  <label className="form-label">Kargo Politikası Türü</label>
+                  <select 
+                    className="form-control"
+                    value={settings.kargoPolitikaTuru || 'SABIT_UCRET'}
+                    onChange={e => setSettings({ ...settings, kargoPolitikaTuru: e.target.value })}
+                  >
+                    <option value="UCRETSIZ">Ücretsiz Kargo</option>
+                    <option value="SABIT_UCRET">Sabit Ücret</option>
+                    <option value="SEPET_LIMITI">Sepet Limitli Ücretsiz Kargo</option>
+                    <option value="AGIRLIK_KADEMELI">Ağırlık/Desi Kademeli (Google Merchant Uyumlu)</option>
+                  </select>
                   <small style={{ color: 'var(--color-text-muted)', fontSize: '11px', marginTop: '4px', display: 'block' }}>
-                    {`Örn: [{"maxWeight": 1, "price": 50}]`}
+                    Google Merchant Center entegrasyonunun askıya alınmasını önlemek için, seçilen politikanın mağaza fiyatları ile feed fiyatlarını eşleştirmesi gerekir.
                   </small>
                 </div>
+
+                {/* Ücretsiz Kargo Politikası */}
+                {(settings.kargoPolitikaTuru === 'UCRETSIZ') && (
+                  <div style={{ padding: '12px', background: 'rgba(46, 204, 113, 0.1)', border: '1px dashed #2ecc71', borderRadius: '6px', color: '#27ae60', fontSize: '13px', marginBottom: '16px' }}>
+                    <strong>✓ Aktif Politika: Ücretsiz Kargo</strong> - Sitedeki tüm alışverişlerde müşteriye 0.00 TRY kargo yansıtılır. Google Shopping feed'inde de kargo ücretsiz olarak yayınlanır.
+                  </div>
+                )}
+
+                {/* Sabit Ücret Politikası */}
+                {(settings.kargoPolitikaTuru === 'SABIT_UCRET') && (
+                  <div className="form-group">
+                    <label className="form-label">Sabit Kargo Ücreti (₺)</label>
+                    <input 
+                      type="number" 
+                      className="form-control" 
+                      value={settings.kargoSabitUcret !== undefined ? settings.kargoSabitUcret : 0}
+                      onChange={e => setSettings({ ...settings, kargoSabitUcret: parseFloat(e.target.value) || 0 })}
+                      required
+                      min="0"
+                      step="0.01"
+                    />
+                    <small style={{ color: 'var(--color-text-muted)', fontSize: '11px', marginTop: '4px', display: 'block' }}>
+                      Tüm siparişlere eklenecek standart kargo bedeli.
+                    </small>
+                  </div>
+                )}
+
+                {/* Sepet Limitli Politikası */}
+                {(settings.kargoPolitikaTuru === 'SEPET_LIMITI') && (
+                  <div className="grid-2">
+                    <div className="form-group">
+                      <label className="form-label">Ücretsiz Kargo Alt Limiti (₺)</label>
+                      <input 
+                        type="number" 
+                        className="form-control" 
+                        value={settings.ucretsizKargoAltLimit !== undefined ? settings.ucretsizKargoAltLimit : 0}
+                        onChange={e => setSettings({ ...settings, ucretsizKargoAltLimit: parseFloat(e.target.value) || 0 })}
+                        required
+                        min="0"
+                        step="0.01"
+                      />
+                      <small style={{ color: 'var(--color-text-muted)', fontSize: '11px', marginTop: '4px', display: 'block' }}>
+                        Bu limit ve üzerindeki alışverişlerde kargo ücretsiz olur.
+                      </small>
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label">Limit Altı Kargo Ücreti (₺)</label>
+                      <input 
+                        type="number" 
+                        className="form-control" 
+                        value={settings.kargoSabitUcret !== undefined ? settings.kargoSabitUcret : 0}
+                        onChange={e => setSettings({ ...settings, kargoSabitUcret: parseFloat(e.target.value) || 0 })}
+                        required
+                        min="0"
+                        step="0.01"
+                      />
+                      <small style={{ color: 'var(--color-text-muted)', fontSize: '11px', marginTop: '4px', display: 'block' }}>
+                        Belirtilen limitin altındaki alışverişlerde uygulanacak standart kargo ücreti.
+                      </small>
+                    </div>
+                  </div>
+                )}
+
+                {/* Ağırlık Kademeli Politikası */}
+                {(settings.kargoPolitikaTuru === 'AGIRLIK_KADEMELI') && (
+                  <div>
+                    <div className="form-group">
+                      <label className="form-label">Kargo Ağırlık/Desi Çarpanı (₺)</label>
+                      <input 
+                        type="number" 
+                        className="form-control" 
+                        value={settings.kargoAgirlikCarpani !== undefined ? settings.kargoAgirlikCarpani : 0}
+                        onChange={e => setSettings({ ...settings, kargoAgirlikCarpani: parseFloat(e.target.value) || 0 })}
+                        required
+                        min="0"
+                        step="0.01"
+                      />
+                      <small style={{ color: 'var(--color-text-muted)', fontSize: '11px', marginTop: '4px', display: 'block' }}>
+                        Toplam desi/ağırlık en yüksek kademeyi aştığında, aşan her kg başına eklenecek ek ücret çarpanı.
+                      </small>
+                    </div>
+
+                    <div style={{ marginTop: '16px', marginBottom: '16px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                        <h4 style={{ fontSize: '14px', fontWeight: '600', margin: 0 }}>📦 Kargo Fiyat Kademeleri</h4>
+                        <button 
+                          type="button" 
+                          className="btn btn-secondary btn-sm"
+                          style={{ display: 'flex', alignItems: 'center', gap: '4px' }}
+                          onClick={() => {
+                            const currentList = (() => {
+                              try {
+                                return typeof settings.kargoFiyatListesi === 'string'
+                                  ? JSON.parse(settings.kargoFiyatListesi || '[]')
+                                  : (Array.isArray(settings.kargoFiyatListesi) ? settings.kargoFiyatListesi : []);
+                              } catch {
+                                return [];
+                              }
+                            })();
+                            const newList = [...currentList, { maxWeight: currentList.length > 0 ? Math.max(...currentList.map(t => t.maxWeight || 0)) + 5 : 5, price: 50 }];
+                            setSettings({ ...settings, kargoFiyatListesi: JSON.stringify(newList) });
+                          }}
+                        >
+                          <Plus size={14} /> Aralık Ekle
+                        </button>
+                      </div>
+
+                      {(() => {
+                        const currentList = (() => {
+                          try {
+                            return typeof settings.kargoFiyatListesi === 'string'
+                              ? JSON.parse(settings.kargoFiyatListesi || '[]')
+                              : (Array.isArray(settings.kargoFiyatListesi) ? settings.kargoFiyatListesi : []);
+                          } catch {
+                            return [];
+                          }
+                        })();
+
+                        if (currentList.length === 0) {
+                          return (
+                            <div style={{ padding: '16px', textAlign: 'center', border: '1px dashed var(--color-border)', borderRadius: '6px', color: 'var(--color-text-muted)', fontSize: '13px' }}>
+                              Henüz kademe eklenmemiş. Lütfen kargo kademesi ekleyin veya varsayılan baremleri kullanmak için boş bırakın.
+                            </div>
+                          );
+                        }
+
+                        return (
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                            {currentList.map((tier, idx) => (
+                              <div key={idx} style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                                <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                  <span style={{ fontSize: '13px', color: 'var(--color-text-muted)', minWidth: '40px' }}>{idx + 1}. Barem:</span>
+                                  <input 
+                                    type="number"
+                                    placeholder="Maks. Ağırlık (kg/Desi)"
+                                    className="form-control"
+                                    style={{ flex: 1 }}
+                                    value={tier.maxWeight}
+                                    min="0"
+                                    step="0.1"
+                                    onChange={e => {
+                                      const updatedList = [...currentList];
+                                      updatedList[idx] = { ...updatedList[idx], maxWeight: parseFloat(e.target.value) || 0 };
+                                      setSettings({ ...settings, kargoFiyatListesi: JSON.stringify(updatedList) });
+                                    }}
+                                  />
+                                </div>
+                                <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                  <span style={{ fontSize: '13px', color: 'var(--color-text-muted)' }}>Fiyat (₺):</span>
+                                  <input 
+                                    type="number"
+                                    placeholder="Fiyat (₺)"
+                                    className="form-control"
+                                    style={{ flex: 1 }}
+                                    value={tier.price}
+                                    min="0"
+                                    step="0.01"
+                                    onChange={e => {
+                                      const updatedList = [...currentList];
+                                      updatedList[idx] = { ...updatedList[idx], price: parseFloat(e.target.value) || 0 };
+                                      setSettings({ ...settings, kargoFiyatListesi: JSON.stringify(updatedList) });
+                                    }}
+                                  />
+                                </div>
+                                <button 
+                                  type="button" 
+                                  className="btn btn-danger btn-sm"
+                                  style={{ padding: '8px 10px', height: '38px', display: 'flex', alignItems: 'center' }}
+                                  onClick={() => {
+                                    const updatedList = currentList.filter((_, i) => i !== idx);
+                                    setSettings({ ...settings, kargoFiyatListesi: JSON.stringify(updatedList) });
+                                  }}
+                                >
+                                  <Trash2 size={14} />
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        );
+                      })()}
+                    </div>
+                  </div>
+                )}
 
                 <div className="form-group" style={{ margin: '10px 0' }}>
                   <label className="form-check">

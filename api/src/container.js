@@ -80,7 +80,7 @@ const brandController = new BrandController(brandService);
 const settingsController = new SettingsController(settingsService);
 const returnController = new ReturnController(returnService);
 const seoController = new SeoController(productRepository);
-const feedController = new FeedController(productRepository);
+const feedController = new FeedController(productRepository, settingsRepository);
 const uploadController = new UploadController();
 
 // === EXPORTS ===

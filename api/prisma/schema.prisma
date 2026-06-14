@@ -219,6 +219,8 @@ model SistemAyarlari {
   ambarEsikAgirlik      Int      @default(0) @map("ambarEsikDesi")
   ucretsizKargoAltLimit Float?   @default(0)
   kargoFiyatListesi     String?  // JSON string: [{maxWeight, price}]
+  kargoPolitikaTuru     String   @default("SABIT_UCRET") // UCRETSIZ, SABIT_UCRET, SEPET_LIMITI, AGIRLIK_KADEMELI
+  kargoSabitUcret       Float    @default(0)
   
   // Site Genel Ayarları
   siteAdi               String   @default("E-Market")
@@ -238,6 +240,7 @@ model SistemAyarlari {
   
   // Entegrasyonlar
   metaPixelId           String?
+  googleMerchantToken   String?
 
   // İçerik
   hakkindaMetni         String? // Hakkımızda sayfası metni

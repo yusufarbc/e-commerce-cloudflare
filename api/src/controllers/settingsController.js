@@ -32,6 +32,8 @@ export class SettingsController {
                 ? JSON.stringify(body.kargoFiyatListesi) 
                 : body.kargoFiyatListesi;
         }
+        if (body.kargoPolitikaTuru !== undefined) data.kargoPolitikaTuru = body.kargoPolitikaTuru;
+        if (body.kargoSabitUcret !== undefined) data.kargoSabitUcret = parseFloat(body.kargoSabitUcret);
         if (body.maintenanceMode !== undefined) data.maintenanceMode = !!body.maintenanceMode;
 
         // Site Genel Ayarları
@@ -51,6 +53,7 @@ export class SettingsController {
 
         // Entegrasyonlar
         if (body.metaPixelId !== undefined) data.metaPixelId = body.metaPixelId || null;
+        if (body.googleMerchantToken !== undefined) data.googleMerchantToken = body.googleMerchantToken || null;
 
         // İçerik
         if (body.hakkindaMetni !== undefined) data.hakkindaMetni = body.hakkindaMetni || null;

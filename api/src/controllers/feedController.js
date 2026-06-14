@@ -8,9 +8,11 @@ import { asyncHandler } from '../utils/asyncHandler.js';
 export class FeedController {
     /**
      * @param {import('../repositories/productRepository.js').ProductRepository} productRepository
+     * @param {import('../repositories/settingsRepository.js').SettingsRepository} settingsRepository
      */
-    constructor(productRepository) {
+    constructor(productRepository, settingsRepository) {
         this.productRepository = productRepository;
+        this.settingsRepository = settingsRepository;
     }
 
     /**
@@ -55,9 +57,12 @@ export class FeedController {
      * Endpoint: GET /api/v1/feeds/google
      */
     getGoogleShoppingFeed = asyncHandler(async (req, res, next) => {
+        // Fetch active settings for shipping calculation & token verification
+        const settings = await this.settingsRepository.getSettings();
+
         // Security check: Verify token
         const token = req.query.token;
-        const secretToken = config.googleMerchantToken;
+        const secretToken = settings?.googleMerchantToken || config.googleMerchantToken;
 
         if (secretToken && token !== secretToken) {
             return res.status(401).send('Unauthorized: Invalid or missing feed token');
@@ -116,6 +121,68 @@ export class FeedController {
                 ? Number(urun.fiyat).toFixed(2)
                 : price;
 
+            // Calculate dynamic single-item shipping fee
+            const policy = settings?.kargoPolitikaTuru || 'SABIT_UCRET';
+            const sabitUcret = settings?.kargoSabitUcret !== undefined ? Number(settings.kargoSabitUcret) : 0;
+            const ucretsizKargoAltLimit = settings?.ucretsizKargoAltLimit !== undefined ? Number(settings.ucretsizKargoAltLimit) : 5000.00;
+            const weightMultiplier = settings?.kargoAgirlikCarpani > 0 ? Number(settings.kargoAgirlikCarpani) : 15.00;
+            let itemShippingFee = 0;
+
+            const productPrice = Number(price);
+            const productWeight = Number(urun.agirlik || 1);
+
+            if (policy === 'UCRETSIZ') {
+                itemShippingFee = 0;
+            } else if (policy === 'SABIT_UCRET') {
+                itemShippingFee = sabitUcret;
+            } else if (policy === 'SEPET_LIMITI') {
+                if (productPrice >= ucretsizKargoAltLimit) {
+                    itemShippingFee = 0;
+                } else {
+                    itemShippingFee = sabitUcret;
+                }
+            } else if (policy === 'AGIRLIK_KADEMELI') {
+                let priceList = settings && settings.kargoFiyatListesi ? settings.kargoFiyatListesi : null;
+                if (typeof priceList === 'string') {
+                    try {
+                        priceList = JSON.parse(priceList);
+                    } catch (e) {
+                        priceList = null;
+                    }
+                }
+
+                if (Array.isArray(priceList) && priceList.length > 0) {
+                    const sortedList = [...priceList].sort((a, b) => a.maxWeight - b.maxWeight);
+                    const matchingTier = sortedList.find(tier => productWeight <= tier.maxWeight);
+
+                    if (matchingTier) {
+                        itemShippingFee = Number(matchingTier.price);
+                    } else {
+                        const lastTier = sortedList[sortedList.length - 1];
+                        const extraWeight = Math.ceil(productWeight - lastTier.maxWeight);
+                        itemShippingFee = Number(lastTier.price) + (extraWeight * weightMultiplier);
+                    }
+                } else {
+                    // Fallback
+                    if (productWeight <= 1) itemShippingFee = 65.00;
+                    else if (productWeight <= 2) itemShippingFee = 85.00;
+                    else if (productWeight <= 3) itemShippingFee = 105.00;
+                    else if (productWeight <= 4) itemShippingFee = 125.00;
+                    else if (productWeight <= 5) itemShippingFee = 145.00;
+                    else if (productWeight <= 10) itemShippingFee = 200.00;
+                    else if (productWeight <= 20) itemShippingFee = 350.00;
+                    else if (productWeight <= 35) itemShippingFee = 550.00;
+                    else if (productWeight <= 50) itemShippingFee = 800.00;
+                    else if (productWeight <= 75) itemShippingFee = 1200.00;
+                    else if (productWeight <= 100) itemShippingFee = 1600.00;
+                    else itemShippingFee = 1600.00 + (Math.ceil(productWeight - 100) * weightMultiplier);
+                }
+            } else {
+                itemShippingFee = sabitUcret;
+            }
+
+            const shippingFeeStr = Number(itemShippingFee).toFixed(2);
+
             xml += `
     <item>
       <g:id>${this._escapeXml(urun.id)}</g:id>
@@ -135,7 +202,7 @@ export class FeedController {
       <g:shipping>
         <g:country>TR</g:country>
         <g:service>Kargo</g:service>
-        <g:price>0 TRY</g:price>
+        <g:price>${shippingFeeStr} TRY</g:price>
       </g:shipping>
     </item>`;
         }

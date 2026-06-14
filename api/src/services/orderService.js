@@ -76,52 +76,69 @@ export class OrderService {
             throw new Error('Order total weight exceeds 100kg limit. Please contact satis@e-market.com or our WhatsApp line for bulk cargo shipping pricing.');
         }
 
-        // Shipping Fee Logic (Dynamic Tier Pricing)
+        // Shipping Fee Logic (Dynamic Multi-Policy Pricing)
         let settings = await prisma.sistemAyarlari.findUnique({ where: { id: 'global-settings' } });
-        const ucretsizKargoAltLimit = settings && settings.ucretsizKargoAltLimit ? Number(settings.ucretsizKargoAltLimit) : 5000.00;
+        const policy = settings?.kargoPolitikaTuru || 'SABIT_UCRET';
+        const sabitUcret = settings?.kargoSabitUcret !== undefined ? Number(settings.kargoSabitUcret) : 0;
+        const ucretsizKargoAltLimit = settings?.ucretsizKargoAltLimit !== undefined ? Number(settings.ucretsizKargoAltLimit) : 5000.00;
+        const weightMultiplier = settings?.kargoAgirlikCarpani > 0 ? Number(settings.kargoAgirlikCarpani) : 15.00;
         let shippingFee = 0;
 
-        // Dynamic price list tiers from dashboard settings
-        let priceList = settings && settings.kargoFiyatListesi ? settings.kargoFiyatListesi : null;
-        if (typeof priceList === 'string') {
-            try {
-                priceList = JSON.parse(priceList);
-            } catch (e) {
-                priceList = null;
-            }
-        }
-
-        if (Array.isArray(priceList) && priceList.length > 0) {
-            // Sort list by weight tier ascending
-            const sortedList = [...priceList].sort((a, b) => a.maxWeight - b.maxWeight);
-
-            // Find matching weight tier
-            const matchingTier = sortedList.find(tier => totalWeight <= tier.maxWeight);
-
-            if (matchingTier) {
-                shippingFee = Number(matchingTier.price);
+        if (policy === 'UCRETSIZ') {
+            shippingFee = 0;
+        } else if (policy === 'SABIT_UCRET') {
+            shippingFee = sabitUcret;
+        } else if (policy === 'SEPET_LIMITI') {
+            if (subTotal >= ucretsizKargoAltLimit) {
+                shippingFee = 0;
             } else {
-                // If weight exceeds the maximum tier, calculate base price plus surcharge per extra kg
-                const lastTier = sortedList[sortedList.length - 1];
-                const extraWeight = Math.ceil(totalWeight - lastTier.maxWeight);
-                shippingFee = Number(lastTier.price) + (extraWeight * 15.00);
+                shippingFee = sabitUcret;
+            }
+        } else if (policy === 'AGIRLIK_KADEMELI') {
+            // Dynamic price list tiers from dashboard settings
+            let priceList = settings && settings.kargoFiyatListesi ? settings.kargoFiyatListesi : null;
+            if (typeof priceList === 'string') {
+                try {
+                    priceList = JSON.parse(priceList);
+                } catch (e) {
+                    priceList = null;
+                }
+            }
+
+            if (Array.isArray(priceList) && priceList.length > 0) {
+                // Sort list by weight tier ascending
+                const sortedList = [...priceList].sort((a, b) => a.maxWeight - b.maxWeight);
+
+                // Find matching weight tier
+                const matchingTier = sortedList.find(tier => totalWeight <= tier.maxWeight);
+
+                if (matchingTier) {
+                    shippingFee = Number(matchingTier.price);
+                } else {
+                    // If weight exceeds the maximum tier, calculate base price plus surcharge per extra kg
+                    const lastTier = sortedList[sortedList.length - 1];
+                    const extraWeight = Math.ceil(totalWeight - lastTier.maxWeight);
+                    shippingFee = Number(lastTier.price) + (extraWeight * weightMultiplier);
+                }
+            } else {
+                // Fallback: Hardcoded default tiers if system configurations are missing
+                if (totalWeight <= 1) shippingFee = 65.00;
+                else if (totalWeight <= 2) shippingFee = 85.00;
+                else if (totalWeight <= 3) shippingFee = 105.00;
+                else if (totalWeight <= 4) shippingFee = 125.00;
+                else if (totalWeight <= 5) shippingFee = 145.00;
+                else if (totalWeight <= 10) shippingFee = 200.00;
+                else if (totalWeight <= 20) shippingFee = 350.00;
+                else if (totalWeight <= 35) shippingFee = 550.00;
+                else if (totalWeight <= 50) shippingFee = 800.00;
+                else if (totalWeight <= 75) shippingFee = 1200.00;
+                else if (totalWeight <= 100) shippingFee = 1600.00;
+                else {
+                    shippingFee = null;
+                }
             }
         } else {
-            // Fallback: Hardcoded default tiers if system configurations are missing
-            if (totalWeight <= 1) shippingFee = 65.00;
-            else if (totalWeight <= 2) shippingFee = 85.00;
-            else if (totalWeight <= 3) shippingFee = 105.00;
-            else if (totalWeight <= 4) shippingFee = 125.00;
-            else if (totalWeight <= 5) shippingFee = 145.00;
-            else if (totalWeight <= 10) shippingFee = 200.00;
-            else if (totalWeight <= 20) shippingFee = 350.00;
-            else if (totalWeight <= 35) shippingFee = 550.00;
-            else if (totalWeight <= 50) shippingFee = 800.00;
-            else if (totalWeight <= 75) shippingFee = 1200.00;
-            else if (totalWeight <= 100) shippingFee = 1600.00;
-            else {
-                shippingFee = null;
-            }
+            shippingFee = sabitUcret;
         }
 
         if (shippingFee === null) {
