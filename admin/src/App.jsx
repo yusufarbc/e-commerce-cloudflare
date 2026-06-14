@@ -121,18 +121,43 @@ export default function App() {
     });
   };
 
+  const handleLogout = () => {
+    localStorage.removeItem('admin_token');
+    setToken('');
+    setActiveTab('dashboard');
+  };
+
+  const adminRequest = async (url, options = {}) => {
+    const headers = {
+      ...options.headers,
+      'Authorization': `Bearer ${token}`
+    };
+    try {
+      const res = await fetch(url, { ...options, headers });
+      if (res.status === 401) {
+        handleLogout();
+        throw new Error('UNAUTHORIZED');
+      }
+      return res;
+    } catch (err) {
+      if (err.message === 'UNAUTHORIZED') {
+        throw err;
+      }
+      console.error('API request error:', err);
+      throw err;
+    }
+  };
+
   const fetchData = async () => {
     setLoading(true);
     try {
-      const headers = { 'Authorization': `Bearer ${token}` };
-      
       const [prodRes, catRes, brandRes, orderRes, returnRes, settingsRes] = await Promise.all([
-        fetch(`${API_URL}/api/v1/admin/products`, { headers }),
-        fetch(`${API_URL}/api/v1/admin/categories`, { headers }),
-        fetch(`${API_URL}/api/v1/admin/brands`, { headers }),
-        fetch(`${API_URL}/api/v1/admin/orders`, { headers }),
-        fetch(`${API_URL}/api/v1/admin/returns`, { headers }),
-        fetch(`${API_URL}/api/v1/admin/settings`, { headers })
+        adminRequest(`${API_URL}/api/v1/admin/products`),
+        adminRequest(`${API_URL}/api/v1/admin/categories`),
+        adminRequest(`${API_URL}/api/v1/admin/brands`),
+        adminRequest(`${API_URL}/api/v1/admin/orders`),
+        adminRequest(`${API_URL}/api/v1/admin/returns`),
+        adminRequest(`${API_URL}/api/v1/admin/settings`)
       ]);
 
       const prods = await prodRes.json();
@@ -153,7 +178,11 @@ export default function App() {
       if (setts.status === 'success') setSettings(setts.data);
 
     } catch (e) {
-      console.error('Veri yükleme hatası:', e);
+      if (e.message === 'UNAUTHORIZED') {
+        alert('Oturum süresi dolmuş veya geçersiz token! Lütfen tekrar giriş yapın.');
+      } else {
+        console.error('Veri yükleme hatası:', e);
+      }
     } finally {
       setLoading(false);
     }
@@ -190,12 +219,6 @@ export default function App() {
     }
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem('admin_token');
-    setToken('');
-    setActiveTab('dashboard');
-  };
-
   // Client-Side Canvas WebP Resizer & Direct R2 Upload
   const handleImageResizeAndUpload = async (e, type) => {
     const file = e.target.files[0];
@@ -222,9 +245,8 @@ export default function App() {
         formData.append('file', webpFile);
 
         try {
-          const res = await fetch(`${API_URL}/api/v1/admin/upload`, {
+          const res = await adminRequest(`${API_URL}/api/v1/admin/upload`, {
             method: 'POST',
-            headers: { 'Authorization': `Bearer ${token}` },
             body: formData
           });
           const data = await res.json();
@@ -236,8 +258,10 @@ export default function App() {
             alert('Görsel yüklenemedi: ' + data.errorMessage);
           }
         } catch (err) {
-          console.error(err);
-          alert('Görsel sunucuya yüklenirken bağlantı hatası oluştu!');
+          if (err.message !== 'UNAUTHORIZED') {
+            console.error(err);
+            alert('Görsel sunucuya yüklenirken bağlantı hatası oluştu!');
+          }
         } finally {
           setLoading(false);
         }
@@ -254,11 +278,10 @@ export default function App() {
     const method = editingProduct ? 'PUT' : 'POST';
 
     try {
-      const res = await fetch(url, {
+      const res = await adminRequest(url, {
         method,
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify(productForm)
       });
@@ -271,25 +294,28 @@ export default function App() {
         alert('Kaydetme hatası: ' + data.errorMessage);
       }
     } catch (err) {
-      console.error(err);
-      alert('İstek gönderilirken hata oluştu.');
+      if (err.message !== 'UNAUTHORIZED') {
+        console.error(err);
+        alert('İstek gönderilirken hata oluştu.');
+      }
     }
   };
 
   const deleteProduct = async (id) => {
     if (!confirm('Bu ürünü silmek istediğinize emin misiniz?')) return;
     try {
-      const res = await fetch(`${API_URL}/api/v1/admin/products/${id}`, {
-        method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${token}` }
+      const res = await adminRequest(`${API_URL}/api/v1/admin/products/${id}`, {
+        method: 'DELETE'
       });
       const data = await res.json();
       if (data.status === 'success') {
         fetchData();
       }
     } catch (err) {
-      console.error(err);
-      alert('Silme hatası.');
+      if (err.message !== 'UNAUTHORIZED') {
+        console.error(err);
+        alert('Silme hatası.');
+      }
     }
   };
 
@@ -302,11 +328,10 @@ export default function App() {
     const method = editingCategory ? 'PUT' : 'POST';
 
     try {
-      const res = await fetch(url, {
+      const res = await adminRequest(url, {
         method,
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify(categoryForm)
       });
@@ -316,22 +341,25 @@ export default function App() {
         fetchData();
       }
     } catch (err) {
-      console.error(err);
-      alert('Kategori kaydedilemedi.');
+      if (err.message !== 'UNAUTHORIZED') {
+        console.error(err);
+        alert('Kategori kaydedilemedi.');
+      }
     }
   };
 
   const deleteCategory = async (id) => {
     if (!confirm('Kategoriyi silmek istediğinizden emin misiniz?')) return;
     try {
-      await fetch(`${API_URL}/api/v1/admin/categories/${id}`, {
-        method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${token}` }
+      await adminRequest(`${API_URL}/api/v1/admin/categories/${id}`, {
+        method: 'DELETE'
       });
       fetchData();
     } catch (err) {
-      console.error(err);
-      alert('Kategori silinemedi.');
+      if (err.message !== 'UNAUTHORIZED') {
+        console.error(err);
+        alert('Kategori silinemedi.');
+      }
     }
   };
 
@@ -344,11 +372,10 @@ export default function App() {
     const method = editingBrand ? 'PUT' : 'POST';
 
     try {
-      const res = await fetch(url, {
+      const res = await adminRequest(url, {
         method,
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify(brandForm)
       });
@@ -358,22 +385,25 @@ export default function App() {
         fetchData();
       }
     } catch (err) {
-      console.error(err);
-      alert('Marka kaydedilemedi.');
+      if (err.message !== 'UNAUTHORIZED') {
+        console.error(err);
+        alert('Marka kaydedilemedi.');
+      }
     }
   };
 
   const deleteBrand = async (id) => {
     if (!confirm('Markayı silmek istediğinizden emin misiniz?')) return;
     try {
-      await fetch(`${API_URL}/api/v1/admin/brands/${id}`, {
-        method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${token}` }
+      await adminRequest(`${API_URL}/api/v1/admin/brands/${id}`, {
+        method: 'DELETE'
       });
       fetchData();
     } catch (err) {
-      console.error(err);
-      alert('Marka silinemedi.');
+      if (err.message !== 'UNAUTHORIZED') {
+        console.error(err);
+        alert('Marka silinemedi.');
+      }
     }
   };
 
@@ -394,11 +424,10 @@ export default function App() {
   const saveOrderStatus = async (e) => {
     e.preventDefault();
     try {
-      const res = await fetch(`${API_URL}/api/v1/admin/orders/${selectedOrder.id}`, {
+      const res = await adminRequest(`${API_URL}/api/v1/admin/orders/${selectedOrder.id}`, {
         method: 'PUT',
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify(orderStatusForm)
       });
@@ -407,8 +436,10 @@ export default function App() {
         fetchData();
       }
     } catch (err) {
-      console.error(err);
-      alert('Sipariş güncellenemedi.');
+      if (err.message !== 'UNAUTHORIZED') {
+        console.error(err);
+        alert('Sipariş güncellenemedi.');
+      }
     }
   };
 
@@ -426,11 +457,10 @@ export default function App() {
   const saveReturnStatus = async (e) => {
     e.preventDefault();
     try {
-      const res = await fetch(`${API_URL}/api/v1/admin/returns/${selectedReturn.id}`, {
+      const res = await adminRequest(`${API_URL}/api/v1/admin/returns/${selectedReturn.id}`, {
         method: 'PUT',
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify(returnStatusForm)
       });
@@ -439,8 +469,10 @@ export default function App() {
         fetchData();
       }
     } catch (err) {
-      console.error(err);
-      alert('İade talebi güncellenemedi.');
+      if (err.message !== 'UNAUTHORIZED') {
+        console.error(err);
+        alert('İade talebi güncellenemedi.');
+      }
     }
   };
 
@@ -448,11 +480,10 @@ export default function App() {
   const saveSettings = async (e) => {
     e.preventDefault();
     try {
-      const res = await fetch(`${API_URL}/api/v1/admin/settings`, {
+      const res = await adminRequest(`${API_URL}/api/v1/admin/settings`, {
         method: 'PUT',
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify(settings)
       });
@@ -461,8 +492,10 @@ export default function App() {
         fetchData();
       }
     } catch (err) {
-      console.error(err);
-      alert('Ayarlar kaydedilemedi.');
+      if (err.message !== 'UNAUTHORIZED') {
+        console.error(err);
+        alert('Ayarlar kaydedilemedi.');
+      }
     }
   };
 
