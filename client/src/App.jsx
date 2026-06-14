@@ -20,6 +20,7 @@ import { HelmetProvider } from 'react-helmet-async';
 import { SettingsProvider } from './context/SettingsContext';
 
 import { Shop } from './pages/Shop';
+import { WhatsAppButton } from './components/WhatsAppButton';
 import { useEffect } from 'react';
 import { initGTM } from './utils/analytics';
 
@@ -65,6 +66,7 @@ function App() {
                                     </main>
                                     <Footer />
                                     <CartSidebar />
+                                    <WhatsAppButton />
                                 </div>
                             </CartProvider>
                         </ToastProvider>

@@ -1,14 +1,26 @@
 import React from 'react';
 import { Mail, Phone, MapPin, Clock } from 'lucide-react';
 import SEO from '../components/SEO';
+import { useSettings } from '../context/SettingsContext';
 
 export function ContactPage() {
+    const { settings } = useSettings();
+    const siteTitle = settings.siteAdi || 'E-Market';
+    const email = settings.iletisimEmail || 'bilgi@e-market.com';
+    const rawNum = settings.whatsappNumarasi || '';
+    const cleanNum = rawNum.replace(/[^0-9]/g, '') || '908500000000';
+    const phone = settings.telefon || '0850 000 00 00';
+    const address = settings.adres || 'Karaköy, İstanbul';
+    const instagram = settings.instagramUrl || 'https://www.instagram.com/emarketltd/';
+    const facebook = settings.facebookUrl || 'https://www.facebook.com/emarketltd/';
+    const waText = encodeURIComponent('Merhaba, yardım almak istiyorum.');
+
     return (
         <div className="bg-bg-soft min-h-screen py-10">
             <SEO
                 title="İletişim"
-                description="E-Market ile iletişime geçin. Telefon, e-posta ve WhatsApp üzerinden 7/24 destek."
-                keywords="e-market iletişim, müşteri hizmetleri, destek"
+                description={`${siteTitle} ile iletişime geçin. Telefon, e-posta ve WhatsApp üzerinden 7/24 destek.`}
+                keywords={`${siteTitle.toLowerCase()} iletişim, müşteri hizmetleri, destek`}
             />
 
             <div className="max-w-6xl mx-auto px-4">
@@ -32,8 +44,8 @@ export function ContactPage() {
                                 </div>
                                 <div>
                                     <h3 className="font-bold text-corporate-black mb-1 text-lg">Telefon</h3>
-                                    <a href="tel:+908500000000" className="text-gray-600 hover:text-indigo-600 transition-colors block text-lg font-medium">
-                                        0850 000 00 00
+                                    <a href={`tel:${phone.replace(/[^0-9+]/g, '')}`} className="text-gray-600 hover:text-indigo-600 transition-colors block text-lg font-medium">
+                                        {phone}
                                     </a>
                                     <p className="text-sm text-gray-500 mt-1">Pazartesi - Cumartesi: 09:00 - 18:00</p>
                                 </div>
@@ -48,8 +60,8 @@ export function ContactPage() {
                                 </div>
                                 <div>
                                     <h3 className="font-bold text-corporate-black mb-1 text-lg">E-posta</h3>
-                                    <a href="mailto:bilgi@e-market.com" className="text-gray-600 hover:text-indigo-600 transition-colors block text-lg font-medium">
-                                        bilgi@e-market.com
+                                    <a href={`mailto:${email}`} className="text-gray-600 hover:text-indigo-600 transition-colors block text-lg font-medium">
+                                        {email}
                                     </a>
                                     <p className="text-sm text-gray-500 mt-1">24 saat içinde yanıt veriyoruz</p>
                                 </div>
@@ -64,7 +76,7 @@ export function ContactPage() {
                                 </div>
                                 <div>
                                     <h3 className="font-bold text-corporate-black mb-1 text-lg">Adres</h3>
-                                    <p className="text-gray-600 font-medium">Karaköy, İstanbul</p>
+                                    <p className="text-gray-600 font-medium">{address}</p>
                                     <p className="text-sm text-gray-500 mt-1">Türkiye</p>
                                 </div>
                             </div>
@@ -92,7 +104,7 @@ export function ContactPage() {
                             WhatsApp hattımız üzerinden müşteri temsilcilerimizle anında iletişime geçebilirsiniz.
                         </p>
                         <a
-                            href="https://wa.me/908500000000?text=Merhaba, yardım almak istiyorum."
+                            href={`https://wa.me/${cleanNum}?text=${waText}`}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="inline-flex items-center justify-center gap-3 bg-white text-green-600 px-8 py-4 rounded-xl font-black text-lg hover:bg-green-50 transition-all shadow-lg hover:shadow-white/20"
@@ -109,7 +121,7 @@ export function ContactPage() {
                         <h3 className="text-lg font-bold text-corporate-black mb-6 uppercase tracking-widest">Bizi Sosyal Medyada Takip Edin</h3>
                         <div className="flex justify-center gap-6">
                             <a
-                                href="https://www.facebook.com/emarketltd/"
+                                href={facebook}
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="w-16 h-16 rounded-2xl bg-white shadow-lg flex items-center justify-center text-blue-600 hover:bg-blue-600 hover:text-white transition-all transform hover:scale-110 group"
@@ -119,7 +131,7 @@ export function ContactPage() {
                                 </svg>
                             </a>
                             <a
-                                href="https://www.instagram.com/emarketltd/"
+                                href={instagram}
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="w-16 h-16 rounded-2xl bg-white shadow-lg flex items-center justify-center text-pink-600 hover:bg-gradient-to-tr hover:from-purple-600 hover:to-pink-600 hover:text-white transition-all transform hover:scale-110 group"

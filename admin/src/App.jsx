@@ -75,6 +75,7 @@ export default function App() {
     facebookUrl: '',
     twitterUrl: '',
     youtubeUrl: '',
+    metaPixelId: '',
     hakkindaMetni: ''
   });
   const [stats, setStats] = useState({
@@ -229,28 +230,125 @@ export default function App() {
     }
   };
 
-  // Client-Side Canvas WebP Resizer & Direct R2 Upload
-  const handleImageResizeAndUpload = async (e, type) => {
+  // Image Cropper States & Event Handlers
+  const [cropState, setCropState] = useState({
+    isOpen: false,
+    imageSrc: '',
+    type: '',
+    file: null
+  });
+  const [zoom, setZoom] = useState(1);
+  const [offset, setOffset] = useState({ x: 0, y: 0 });
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+
+  const handleCropMouseDown = (e) => {
+    setIsDragging(true);
+    setDragStart({
+      x: e.clientX - offset.x,
+      y: e.clientY - offset.y
+    });
+  };
+
+  const handleCropMouseMove = (e) => {
+    if (!isDragging) return;
+    setOffset({
+      x: e.clientX - dragStart.x,
+      y: e.clientY - dragStart.y
+    });
+  };
+
+  const handleCropMouseUp = () => {
+    setIsDragging(false);
+  };
+
+  const handleCropTouchStart = (e) => {
+    if (e.touches.length !== 1) return;
+    setIsDragging(true);
+    setDragStart({
+      x: e.touches[0].clientX - offset.x,
+      y: e.touches[0].clientY - offset.y
+    });
+  };
+
+  const handleCropTouchMove = (e) => {
+    if (!isDragging || e.touches.length !== 1) return;
+    setOffset({
+      x: e.touches[0].clientX - dragStart.x,
+      y: e.touches[0].clientY - dragStart.y
+    });
+  };
+
+  // Triggers the interactive Image Cropper Modal
+  const handleImageResizeAndUpload = (e, type) => {
     const file = e.target.files[0];
     if (!file) return;
+    
+    const reader = new FileReader();
+    reader.onload = () => {
+      setCropState({
+        isOpen: true,
+        imageSrc: reader.result,
+        type: type,
+        file: file
+      });
+      setZoom(1);
+      setOffset({ x: 0, y: 0 });
+    };
+    reader.readAsDataURL(file);
+    e.target.value = '';
+  };
 
+  // Performs actual canvas cropping & direct R2 upload
+  const executeCropAndUpload = () => {
+    if (!cropState.file) return;
     setLoading(true);
+    
     const img = new Image();
-    img.src = URL.createObjectURL(file);
+    img.src = cropState.imageSrc;
     img.onload = () => {
+      const boxSize = 300;
+      const canvasSize = 800;
+      
+      const naturalWidth = img.naturalWidth;
+      const naturalHeight = img.naturalHeight;
+      
+      let W, H;
+      if (naturalWidth > naturalHeight) {
+        W = boxSize;
+        H = boxSize * (naturalHeight / naturalWidth);
+      } else {
+        H = boxSize;
+        W = boxSize * (naturalWidth / naturalHeight);
+      }
+      
+      const X_start = (boxSize - W) / 2;
+      const Y_start = (boxSize - H) / 2;
+      
+      const W_s = W * zoom;
+      const H_s = H * zoom;
+      
+      const X_s = X_start + offset.x - (W_s - W) / 2;
+      const Y_s = Y_start + offset.y - (H_s - H) / 2;
+      
+      const scaleFactor = canvasSize / boxSize;
+      
+      const W_c = W_s * scaleFactor;
+      const H_c = H_s * scaleFactor;
+      const X_c = X_s * scaleFactor;
+      const Y_c = Y_s * scaleFactor;
+      
       const canvas = document.createElement('canvas');
-      canvas.width = 800;
-      canvas.height = 800;
+      canvas.width = canvasSize;
+      canvas.height = canvasSize;
       const ctx = canvas.getContext('2d');
       
-      // Cover crop calculations
-      const scale = Math.max(800 / img.width, 800 / img.height);
-      const x = (800 - img.width * scale) / 2;
-      const y = (800 - img.height * scale) / 2;
-      ctx.drawImage(img, x, y, img.width * scale, img.height * scale);
-
+      ctx.fillStyle = '#000000';
+      ctx.fillRect(0, 0, canvasSize, canvasSize);
+      ctx.drawImage(img, X_c, Y_c, W_c, H_c);
+      
       canvas.toBlob(async (blob) => {
-        const webpFile = new File([blob], file.name.replace(/\.[^/.]+$/, "") + ".webp", { type: 'image/webp' });
+        const webpFile = new File([blob], cropState.file.name.replace(/\.[^/.]+$/, "") + ".webp", { type: 'image/webp' });
         const formData = new FormData();
         formData.append('file', webpFile);
 
@@ -261,9 +359,10 @@ export default function App() {
           });
           const data = await res.json();
           if (data.status === 'success') {
-            if (type === 'product') setProductForm(prev => ({ ...prev, resimUrl: data.key }));
-            if (type === 'category') setCategoryForm(prev => ({ ...prev, resim: data.key }));
-            if (type === 'brand') setBrandForm(prev => ({ ...prev, logoUrl: data.key }));
+            if (cropState.type === 'product') setProductForm(prev => ({ ...prev, resimUrl: data.key }));
+            if (cropState.type === 'category') setCategoryForm(prev => ({ ...prev, resim: data.key }));
+            if (cropState.type === 'brand') setBrandForm(prev => ({ ...prev, logoUrl: data.key }));
+            setCropState(prev => ({ ...prev, isOpen: false }));
           } else {
             alert('Görsel yüklenemedi: ' + data.errorMessage);
           }
@@ -1154,6 +1253,17 @@ export default function App() {
                       onChange={e => setSettings({ ...settings, youtubeUrl: e.target.value })}
                     />
                   </div>
+                  <div className="form-group" style={{ gridColumn: 'span 2' }}>
+                    <label className="form-label">Meta (Facebook) Pixel ID</label>
+                    <input 
+                      type="text" className="form-control" placeholder="Örn: 123456789012345"
+                      value={settings.metaPixelId || ''}
+                      onChange={e => setSettings({ ...settings, metaPixelId: e.target.value })}
+                    />
+                    <small style={{ color: 'var(--color-text-muted)', fontSize: '11px', marginTop: '4px', display: 'block' }}>
+                      Meta Pixel entegrasyonu için Pixel ID'nizi girin. Bu kod girildiğinde, mağazanızdaki ziyaretler, sepete eklemeler ve satın alım işlemleri otomatik olarak Meta Panel'e gönderilir.
+                    </small>
+                  </div>
                 </div>
               </div>
 
@@ -1697,6 +1807,107 @@ export default function App() {
                 <button type="submit" className="btn btn-primary">Değerlendir</button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Image Cropper Modal */}
+      {cropState.isOpen && (
+        <div className="modal-overlay" style={{ zIndex: 200 }}>
+          <div className="modal-content" style={{ maxWidth: '420px' }}>
+            <div className="modal-header">
+              <h3>Görseli Kırp</h3>
+              <button className="btn btn-secondary btn-sm" onClick={() => setCropState(prev => ({ ...prev, isOpen: false }))}>
+                <X size={16} />
+              </button>
+            </div>
+            <div className="modal-body" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '20px' }}>
+              <p style={{ color: 'var(--color-text-muted)', fontSize: '13px', textAlign: 'center' }}>
+                Görseli sürükleyerek hizalayabilir, aşağıdaki sürgü ile yakınlaştırabilirsiniz.
+              </p>
+              
+              {/* Crop Container Box */}
+              <div 
+                style={{
+                  width: '300px',
+                  height: '300px',
+                  overflow: 'hidden',
+                  position: 'relative',
+                  borderRadius: '14px',
+                  border: '2px solid var(--color-primary)',
+                  backgroundColor: '#000',
+                  cursor: 'move',
+                  userSelect: 'none'
+                }}
+                onMouseDown={handleCropMouseDown}
+                onMouseMove={handleCropMouseMove}
+                onMouseUp={handleCropMouseUp}
+                onMouseLeave={handleCropMouseUp}
+                onTouchStart={handleCropTouchStart}
+                onTouchMove={handleCropTouchMove}
+                onTouchEnd={handleCropMouseUp}
+              >
+                <img
+                  src={cropState.imageSrc}
+                  alt="Kırpılacak görsel"
+                  style={{
+                    position: 'absolute',
+                    width: '100%',
+                    height: '100%',
+                    objectFit: 'contain',
+                    pointerEvents: 'none',
+                    transform: `translate(${offset.x}px, ${offset.y}px) scale(${zoom})`,
+                    transformOrigin: 'center center',
+                    transition: isDragging ? 'none' : 'transform 0.1s ease-out'
+                  }}
+                />
+                {/* Overlay mask to show square boundary */}
+                <div style={{
+                  position: 'absolute',
+                  inset: 0,
+                  border: '2px dashed rgba(255,255,255,0.4)',
+                  pointerEvents: 'none',
+                  borderRadius: '12px'
+                }} />
+              </div>
+
+              {/* Zoom Slider */}
+              <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: 'var(--color-text-muted)' }}>
+                  <span>Yakınlaştır</span>
+                  <span>{Math.round(zoom * 100)}%</span>
+                </div>
+                <input
+                  type="range"
+                  min="1"
+                  max="3"
+                  step="0.05"
+                  value={zoom}
+                  onChange={(e) => setZoom(parseFloat(e.target.value))}
+                  style={{
+                    width: '100%',
+                    accentColor: 'var(--color-primary)',
+                    cursor: 'pointer'
+                  }}
+                />
+              </div>
+            </div>
+            <div className="modal-footer">
+              <button 
+                type="button" 
+                className="btn btn-secondary" 
+                onClick={() => setCropState(prev => ({ ...prev, isOpen: false }))}
+              >
+                İptal
+              </button>
+              <button 
+                type="button" 
+                className="btn btn-primary" 
+                onClick={executeCropAndUpload}
+              >
+                Kırp ve Yükle
+              </button>
+            </div>
           </div>
         </div>
       )}

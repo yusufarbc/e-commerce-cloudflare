@@ -236,6 +236,9 @@ model SistemAyarlari {
   twitterUrl            String?
   youtubeUrl            String?
   
+  // Entegrasyonlar
+  metaPixelId           String?
+
   // İçerik
   hakkindaMetni         String? // Hakkımızda sayfası metni
 

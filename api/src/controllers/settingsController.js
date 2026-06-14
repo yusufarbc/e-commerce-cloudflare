@@ -49,6 +49,9 @@ export class SettingsController {
         if (body.twitterUrl !== undefined) data.twitterUrl = body.twitterUrl || null;
         if (body.youtubeUrl !== undefined) data.youtubeUrl = body.youtubeUrl || null;
 
+        // Entegrasyonlar
+        if (body.metaPixelId !== undefined) data.metaPixelId = body.metaPixelId || null;
+
         // İçerik
         if (body.hakkindaMetni !== undefined) data.hakkindaMetni = body.hakkindaMetni || null;
 

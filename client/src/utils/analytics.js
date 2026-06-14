@@ -56,6 +56,30 @@ export function initGTM(gtmId = DEFAULT_GTM_ID) {
 }
 
 /**
+ * Initializes Meta (Facebook) Pixel by injecting the fbevents script.
+ * @param {string} pixelId - Meta Pixel ID.
+ */
+export function initFacebookPixel(pixelId) {
+    if (typeof window === 'undefined' || !pixelId) return;
+    if (window.fbq) return;
+
+    /* eslint-disable */
+    !function(f,b,e,v,n,t,s)
+    {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+    n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+    if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+    n.queue=[];t=b.createElement(e);t.async=!0;
+    t.src=v;s=b.getElementsByTagName(e)[0];
+    s.parentNode.insertBefore(t,s)}(window, document,'script',
+    'https://connect.facebook.net/en_US/fbevents.js');
+    /* eslint-enable */
+
+    window.fbq('init', pixelId);
+    window.fbq('track', 'PageView');
+    console.log('[Telemetry] Initialized Meta (Facebook) Pixel: %s', pixelId);
+}
+
+/**
  * Safely pushes an event and ecommerce data to the global dataLayer.
  * @param {string} eventName - GA4 event name (e.g. 'view_item', 'add_to_cart').
  * @param {Object} [ecommerceData] - GA4 compliant ecommerce details.
@@ -101,6 +125,16 @@ export function trackViewItem(product) {
             quantity: 1
         }]
     });
+
+    if (typeof window !== 'undefined' && window.fbq) {
+        window.fbq('track', 'ViewContent', {
+            content_ids: [product.id],
+            content_name: product.ad,
+            content_type: 'product',
+            value: price,
+            currency: 'TRY'
+        });
+    }
 }
 
 /**
@@ -126,6 +160,16 @@ export function trackAddToCart(product, quantity, selectedColor) {
             item_variant: selectedColor || undefined
         }]
     });
+
+    if (typeof window !== 'undefined' && window.fbq) {
+        window.fbq('track', 'AddToCart', {
+            content_ids: [product.id],
+            content_name: product.ad,
+            content_type: 'product',
+            value: price * quantity,
+            currency: 'TRY'
+        });
+    }
 }
 
 /**
@@ -151,6 +195,15 @@ export function trackBeginCheckout(cartItems, totalValue) {
             };
         })
     });
+
+    if (typeof window !== 'undefined' && window.fbq) {
+        window.fbq('track', 'InitiateCheckout', {
+            content_ids: cartItems.map(item => item.id),
+            content_type: 'product',
+            value: Number(totalValue),
+            currency: 'TRY'
+        });
+    }
 }
 
 /**
@@ -180,4 +233,13 @@ export function trackPurchase(transactionId, cartItems, totalValue, shippingFee 
             };
         })
     });
+
+    if (typeof window !== 'undefined' && window.fbq) {
+        window.fbq('track', 'Purchase', {
+            content_ids: cartItems.map(item => item.id),
+            content_type: 'product',
+            value: Number(totalValue),
+            currency: 'TRY'
+        });
+    }
 }
