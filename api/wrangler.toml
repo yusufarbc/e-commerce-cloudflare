@@ -13,15 +13,27 @@ CDN_URL = "https://cdn.e-market-domain.com"
 GOOGLE_MERCHANT_TOKEN = "test-token"
 ADMIN_JWT_SECRET = "secure-admin-token-secret-12345"
 
-# Param POS credentials (Test API values as default)
-PARAM_CLIENT_CODE = "test"
-PARAM_CLIENT_USERNAME = "test"
-PARAM_CLIENT_PASSWORD = "test"
-PARAM_GUID = "00000000-0000-0000-0000-000000000000"
-PARAM_BASE_URL = "https://testposws.param.com.tr/turkpos.ws/service_turkpos_prod.asmx?wsdl"
+# ── Active Payment Provider ─────────────────────────────────────────────────
+# Options: "iyzico" | "param" | "paytr"
+PAYMENT_PROVIDER = "iyzico"
 
-# Brevo API credentials
-BREVO_API_KEY = "xkeysib-test-key"
+# ── iyzico credentials (development sandbox) ─────────────────────────────────
+# Secrets (API keys) must be set via: wrangler secret put IYZICO_API_KEY
+IYZICO_BASE_URL = "https://sandbox-api.iyzipay.com"
+
+# ── Param POS credentials (disabled - uncomment to switch provider) ──────────
+# PARAM_CLIENT_CODE = "test"
+# PARAM_CLIENT_USERNAME = "test"
+# PARAM_CLIENT_PASSWORD = "test"
+# PARAM_GUID = "00000000-0000-0000-0000-000000000000"
+# PARAM_BASE_URL = "https://testposws.param.com.tr/turkpos.ws/service_turkpos_prod.asmx?wsdl"
+
+# ── PayTR credentials (disabled - uncomment to switch provider) ──────────────
+# PAYTR_MERCHANT_ID = ""
+# PAYTR_MERCHANT_KEY = ""
+# PAYTR_MERCHANT_SALT = ""
+
+# ── E-posta (SMTP) ───────────────────────────────────────────────────────────
 SMTP_SENDER = "E-Market <siparis@e-market-domain.com>"
 SMTP_REPLY_TO = "bilgi@e-market-domain.com"
 
@@ -53,19 +65,34 @@ name = "e-commerce-cloudflare-staging"
 [env.staging.vars]
 NODE_ENV = "staging"
 CORS_ORIGIN = "*"
-CLIENT_URL = "https://test.ecommerce-storefront.pages.dev"
-PAYMENT_PROVIDER = "iyzico"
-API_URL = "https://e-commerce-cloudflare-staging.yusufarbc.workers.dev"
+CLIENT_URL = "https://ecommerce-storefront-dm5.pages.dev"
+API_URL = "https://e-commerce-cloudflare-staging.yusuftalhaarabaci-91d.workers.dev"
 ORDER_NOTIFICATION_EMAIL = "bilgi@e-market-domain.com"
 CDN_URL = "https://cdn.e-market-domain.com"
 GOOGLE_MERCHANT_TOKEN = "test-token"
 ADMIN_JWT_SECRET = "secure-admin-token-secret-12345"
-PARAM_CLIENT_CODE = "test"
-PARAM_CLIENT_USERNAME = "test"
-PARAM_CLIENT_PASSWORD = "test"
-PARAM_GUID = "00000000-0000-0000-0000-000000000000"
-PARAM_BASE_URL = "https://testposws.param.com.tr/turkpos.ws/service_turkpos_prod.asmx?wsdl"
-BREVO_API_KEY = "xkeysib-test-key"
+
+# ── Active Payment Provider ───────────────────────────────────────────────────
+PAYMENT_PROVIDER = "iyzico"
+
+# ── iyzico credentials ────────────────────────────────────────────────────────
+# Secrets: wrangler secret put IYZICO_API_KEY --env staging
+#          wrangler secret put IYZICO_SECRET_KEY --env staging
+IYZICO_BASE_URL = "https://sandbox-api.iyzipay.com"
+
+# ── Param POS (disabled) ──────────────────────────────────────────────────────
+# PARAM_CLIENT_CODE = ""
+# PARAM_CLIENT_USERNAME = ""
+# PARAM_CLIENT_PASSWORD = ""
+# PARAM_GUID = ""
+# PARAM_BASE_URL = "https://posws.param.com.tr/turkpos.ws/service_turkpos_prod.asmx?wsdl"
+
+# ── PayTR (disabled) ──────────────────────────────────────────────────────────
+# PAYTR_MERCHANT_ID = ""
+# PAYTR_MERCHANT_KEY = ""
+# PAYTR_MERCHANT_SALT = ""
+
+# ── E-posta (SMTP) ────────────────────────────────────────────────────────────
 SMTP_SENDER = "E-Market <siparis@e-market-domain.com>"
 SMTP_REPLY_TO = "bilgi@e-market-domain.com"
 
@@ -96,12 +123,28 @@ ORDER_NOTIFICATION_EMAIL = "bilgi@e-market-domain.com"
 CDN_URL = "https://cdn.e-market-domain.com"
 GOOGLE_MERCHANT_TOKEN = "test-token"
 ADMIN_JWT_SECRET = "secure-admin-token-secret-12345"
-PARAM_CLIENT_CODE = "test"
-PARAM_CLIENT_USERNAME = "test"
-PARAM_CLIENT_PASSWORD = "test"
-PARAM_GUID = "00000000-0000-0000-0000-000000000000"
-PARAM_BASE_URL = "https://testposws.param.com.tr/turkpos.ws/service_turkpos_prod.asmx?wsdl"
-BREVO_API_KEY = "xkeysib-test-key"
+
+# ── Active Payment Provider ───────────────────────────────────────────────────
+PAYMENT_PROVIDER = "iyzico"
+
+# ── iyzico credentials ────────────────────────────────────────────────────────
+# Secrets: wrangler secret put IYZICO_API_KEY --env production
+#          wrangler secret put IYZICO_SECRET_KEY --env production
+IYZICO_BASE_URL = "https://api.iyzipay.com"
+
+# ── Param POS (disabled) ──────────────────────────────────────────────────────
+# PARAM_CLIENT_CODE = ""
+# PARAM_CLIENT_USERNAME = ""
+# PARAM_CLIENT_PASSWORD = ""
+# PARAM_GUID = ""
+# PARAM_BASE_URL = "https://posws.param.com.tr/turkpos.ws/service_turkpos_prod.asmx?wsdl"
+
+# ── PayTR (disabled) ──────────────────────────────────────────────────────────
+# PAYTR_MERCHANT_ID = ""
+# PAYTR_MERCHANT_KEY = ""
+# PAYTR_MERCHANT_SALT = ""
+
+# ── E-posta (SMTP) ────────────────────────────────────────────────────────────
 SMTP_SENDER = "E-Market <siparis@e-market-domain.com>"
 SMTP_REPLY_TO = "bilgi@e-market-domain.com"
 
@@ -118,5 +161,3 @@ preview_bucket_name = "ecommerce-r2"
 
 [[env.production.send_email]]
 name = "EMAIL"
-
-

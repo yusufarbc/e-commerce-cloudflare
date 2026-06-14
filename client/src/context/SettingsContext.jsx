@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import api from '../lib/axios';
 import { MaintenancePage } from '../pages/MaintenancePage';
+import { initFacebookPixel, initGTM } from '../utils/analytics';
 
 const SettingsContext = createContext();
 
@@ -25,6 +26,12 @@ export function SettingsProvider({ children }) {
                     ucretsizKargoAltLimit: Number(response.data.ucretsizKargoAltLimit)
                 };
                 setSettings(formattedSettings);
+                if (formattedSettings.metaPixelId) {
+                    initFacebookPixel(formattedSettings.metaPixelId);
+                }
+                if (formattedSettings.gtmContainerId) {
+                    initGTM(formattedSettings.gtmContainerId);
+                }
             } catch (error) {
                 console.error('Settings Fetch Error:', error);
                 // Keep defaults on error

@@ -655,3 +655,52 @@ textarea.form-control {
   margin-bottom: 16px;
   box-shadow: 0 0 20px rgba(99, 102, 241, 0.4);
 }
+
+/* Custom Table Filters & Bulk Actions Styling */
+.filter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 20px;
+  align-items: center;
+  background: var(--bg-card);
+  padding: 14px 20px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-glass);
+}
+
+.filter-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.bulk-actions-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: rgba(99, 102, 241, 0.1);
+  border: 1px dashed var(--color-primary);
+  padding: 12px 20px;
+  border-radius: var(--radius-md);
+  margin-bottom: 20px;
+  animation: slideDown 0.2s ease-out;
+}
+
+.sortable-header {
+  cursor: pointer;
+  user-select: none;
+  position: relative;
+  transition: color var(--transition-smooth);
+}
+
+.sortable-header:hover {
+  color: var(--color-primary) !important;
+}
+
+.sort-indicator {
+  margin-left: 6px;
+  font-size: 10px;
+  display: inline-block;
+  vertical-align: middle;
+}

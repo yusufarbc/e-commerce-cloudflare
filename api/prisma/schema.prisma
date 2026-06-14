@@ -8,23 +8,20 @@ datasource db {
   url      = "file:./dev.db"
 }
 
-// --- ENUMLAR ---
-// SQLite üzerinde bu enumlar Prisma tarafından kısıtlanacaktır.
-
 model Urun {
   id                String          @id @default(uuid())
-  slug              String          @unique // SEO: bosch-matkap-v3
+  slug              String          @unique // SEO: nike-air-max-2024
   ad                String
   fiyat             Float
   indirimliFiyat    Float?
-  renkSecenekleri   String          @default("[]") // JSON Array string: ["Beyaz", "Gri"]
-  kartelaIcCephe    Boolean         @default(false)
-  kartelaDisCephe   Boolean         @default(false)
+  kisaAciklama      String?         // Ürün kart listelerinde gösterilecek kısa tanım
+  renkSecenekleri   String          @default("[]") // JSON Array string: ["Kırmızı", "Mavi"]
+  boyutSecenekleri  String          @default("[]") // JSON Array string: ["S", "M", "L"] veya ["36", "37", "38"]
   iadeImkaniVar     Boolean         @default(true)
 
   agirlik           Float           @default(1) @map("desi")
   aciklama          String?
-  resimUrl          String?         // Main image URL
+  resimUrl          String?         // Ana ürün resmi URL
   aktif             Boolean         @default(true)
 
   // Feature Flags - Manuel Seçim için
@@ -38,8 +35,8 @@ model Urun {
   satisAdedi        Int             @default(0) // Toplam satış adedi
 
   // Google Shopping Feed fields
-  stokAdedi         Int             @default(0) // Stock quantity for Google Merchant
-  varyantBasligi    String?         @map("varyant_basligi") // Title for variants (e.g., "Kum Boyutu")
+  stokAdedi         Int             @default(0) // Stok adedi (Google Merchant için de kullanılır)
+  varyantBasligi    String?         @map("varyant_basligi") // Varyant başlığı (örn. "Kum Boyutu", "Beden")
 
   kategoriId        String?
   kategori          Kategori?       @relation(fields: [kategoriId], references: [id])
@@ -47,16 +44,16 @@ model Urun {
   markaId           String?
   marka             Marka?          @relation(fields: [markaId], references: [id])
   
-  resimler          UrunResim[]     // Multiple image support
+  resimler          UrunResim[]     // Çoklu resim desteği
   siparisKalemleri  SiparisKalemi[]
   
   olusturulmaTarihi DateTime        @default(now())
   guncellenmeTarihi DateTime        @updatedAt
 
-  @@index([ad]) // Search performance
-  @@index([oneCikan, firsatUrunu, yeniUrun, cokSatanlar]) // Feature flags index
-  @@index([satisAdedi]) // Best sellers sorting
-  @@index([goruntulemeSayisi]) // Popular products sorting
+  @@index([ad]) // Arama performansı
+  @@index([oneCikan, firsatUrunu, yeniUrun, cokSatanlar]) // Feature flag index
+  @@index([satisAdedi]) // Çok satanlar sıralama
+  @@index([goruntulemeSayisi]) // Popüler ürünler sıralama
   @@map("urunler")
 }
 
@@ -69,24 +66,6 @@ model UrunResim {
   createdAt DateTime @default(now())
 
   @@map("urun_resimleri")
-}
-
-model RenkKartelasi {
-  id                String   @id @default(uuid())
-  section           String
-  code              String   @unique
-  name              String
-  hex               String
-  rgb               String
-  sourceFile        String?
-  aktif             Boolean  @default(true)
-  sira              Int      @default(0)
-  olusturulmaTarihi DateTime @default(now())
-  guncellenmeTarihi DateTime @updatedAt
-
-  @@index([section, sira])
-  @@index([name])
-  @@map("renk_kartelasi")
 }
 
 model Marka {
@@ -133,13 +112,13 @@ model Siparis {
   toplamTutar       Float
   kargoUcreti       Float           @default(0)
   kargoTakipNo      String?         // Kargo Takip Numarası
-  kargoFirmasi      String?         // Kargo Firması (Aras, Yurtici vs.)
+  kargoFirmasi      String?         // Kargo Firması (Aras, Yurtiçi vs.)
   durum             String          @default("BEKLEMEDE") // BEKLEMEDE, HAZIRLANIYOR, KARGOLANDI vb.
   faturaDurumu      String          @default("DUZENLENMEDI") // DUZENLENMEDI, DUZENLENDI, ODENDI
   faturaNo          String?         // E-Fatura Numarası
   faturaTarihi      DateTime?       // Fatura Kesim Tarihi
   
-  // Müşteri Bilgileri
+  // Müşteri Bilgileri (Üyeliksiz misafir sipariş)
   eposta            String
   ad                String
   soyad             String
@@ -156,21 +135,21 @@ model Siparis {
   vergiDairesi      String?
   vergiNumarasi     String?
   
-  // Ödeme (Param POS)
+  // Ödeme
   odemeId           String?         @unique 
-  odemeTokeni       String?         @unique 
+  odemeTokeni       String?         // Ödeme gateway token (unique kısıtı kaldırıldı - null değerler için)
   odemeDurumu       String?         @default("INIT") 
   
   teslimTarihi      DateTime?       // 14 gün iade süresi kontrolü için
 
   kalemler          SiparisKalemi[]
-  gecmis            SiparisGecmisi[] 
+  gecmis            IslemGecmisi[] 
   iadeTalebi        IadeTalebi?
 
   olusturulmaTarihi DateTime        @default(now())
   guncellenmeTarihi DateTime        @updatedAt
 
-  @@index([eposta]) // Admin sorguları için
+  @@index([eposta])
   @@index([siparisNumarasi])
   @@index([takipTokeni])
   @@map("siparisler")
@@ -187,7 +166,7 @@ model IadeTalebi {
   fotografUrls      String     @default("[]") // JSON Array string: ["url1", "url2"]
   resimUrl          String?    // Kanıt resmi
   
-  // Admin Fields
+  // Admin Alanları
   manuelIadeKodu    String?  
   kargoFirmasi      String?  
   adminNotu         String?  
@@ -208,7 +187,7 @@ model SiparisKalemi {
   urunId                String? 
   urun                  Urun?   @relation(fields: [urunId], references: [id])
   secilenRenk           String?
-  secilenBoyut          String?
+  secilenBoyut          String? // Seçilen boyut/beden
   iadeyeUygunMuSnapshot Boolean @default(true)
   adet                  Int
   fiyat                 Float
@@ -219,7 +198,7 @@ model SiparisKalemi {
   @@map("siparis_kalemleri")
 }
 
-model SiparisGecmisi {
+model IslemGecmisi {
   id                String        @id @default(uuid())
   siparisId         String
   siparis           Siparis       @relation(fields: [siparisId], references: [id])
@@ -229,16 +208,45 @@ model SiparisGecmisi {
   islemYapan        String        @default("SYSTEM") 
   tarih             DateTime      @default(now())
 
-  @@map("siparis_gecmisi")
+  @@map("islem_gecmisi")
 }
 
 model SistemAyarlari {
   id                    String   @id @default("global-settings")
+  
+  // Kargo Ayarları
   kargoAgirlikCarpani   Float    @default(0) @map("kargoDesiCarpani")
   ambarEsikAgirlik      Int      @default(0) @map("ambarEsikDesi")
   ucretsizKargoAltLimit Float?   @default(0)
-  kargoFiyatListesi     String?  // JSON string of maxWeight/price pairs
+  kargoFiyatListesi     String?  // JSON string: [{maxWeight, price}]
+  kargoPolitikaTuru     String   @default("SABIT_UCRET") // UCRETSIZ, SABIT_UCRET, SEPET_LIMITI, AGIRLIK_KADEMELI
+  kargoSabitUcret       Float    @default(0)
+  
+  // Site Genel Ayarları
+  siteAdi               String   @default("E-Market")
   maintenanceMode       Boolean  @default(false)
+  
+  // İletişim Bilgileri
+  iletisimEmail         String?
+  whatsappNumarasi      String?
+  telefon               String?
+  adres                 String?
+  
+  // Sosyal Medya
+  instagramUrl          String?
+  facebookUrl           String?
+  twitterUrl            String?
+  youtubeUrl            String?
+  
+  // Entegrasyonlar
+  metaPixelId           String?
+  googleMerchantToken   String?
+  gtmContainerId        String?
+  ga4MeasurementId      String?
+
+  // İçerik
+  hakkindaMetni         String? // Hakkımızda sayfası metni
+
   updatedAt             DateTime @updatedAt
 
   @@map("sistem_ayarlari")

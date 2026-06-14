@@ -80,10 +80,11 @@ export function CheckoutPage() {
     const [installmentsLoading, setInstallmentsLoading] = useState(false);
     const [showTestCards, setShowTestCards] = useState(false);
 
-    const isTestEnv = import.meta.env.DEV || 
-                      window.location.hostname.includes('test') || 
-                      window.location.hostname.includes('localhost') || 
-                      window.location.hostname.includes('staging');
+    // Show test helpers only in staging/dev — never in production
+    const isTestEnv = import.meta.env.DEV ||
+                      window.location.hostname === 'localhost' ||
+                      window.location.hostname.includes('ecommerce-storefront-dm5') ||
+                      window.location.hostname.includes('ecommerce-admin-v4s');
 
     const handleSelectTestCard = async (cardNumber) => {
         const formattedCardNumber = cardNumber.match(/.{1,4}/g)?.join(' ') || cardNumber;
@@ -100,7 +101,7 @@ export function CheckoutPage() {
         const bin = cardNumber.replace(/\s/g, '').slice(0, 6);
         setInstallmentsLoading(true);
         try {
-            const response = await api.get(`/api/v1/payment/param/installments?bin=${bin}&amount=${displayTotal}`);
+            const response = await api.get(`/api/v1/payment/installments?bin=${bin}&amount=${displayTotal}`);
             if (response.data.status === 'success' && response.data.installments) {
                 setInstallments(response.data.installments);
             } else {
@@ -210,7 +211,7 @@ export function CheckoutPage() {
                 if (cardInfo.cardNumber.replace(/\s/g, '').slice(0, 6) !== bin) {
                     setInstallmentsLoading(true);
                     try {
-                        const response = await api.get(`/api/v1/payment/param/installments?bin=${bin}&amount=${displayTotal}`);
+                        const response = await api.get(`/api/v1/payment/installments?bin=${bin}&amount=${displayTotal}`);
                         if (response.data.status === 'success' && response.data.installments) {
                             setInstallments(response.data.installments);
                         } else {
@@ -317,8 +318,8 @@ export function CheckoutPage() {
 
             const { orderId } = orderResponse.data;
 
-            // 2. Initiate Param Payment
-            const paymentResponse = await api.post('/api/v1/payment/param/initiate', {
+            // 2. Initiate payment via active provider
+            const paymentResponse = await api.post('/api/v1/payment/initiate', {
                 orderId,
                 cardInfo: {
                     cardNumber: cardInfo.cardNumber.replace(/\s/g, ''),
@@ -631,21 +632,10 @@ export function CheckoutPage() {
                             {/* Step 3: Payment Info */}
                             {currentStep === 3 && (
                                 <div className="space-y-6 animate-in fade-in duration-300">
-                                    <div className="flex items-center justify-between">
-                                        <h2 className="text-xl font-bold text-corporate-black flex items-center gap-2">
-                                            <CreditCard size={24} className="text-indigo-600" />
-                                            Ödeme Bilgileri
-                                        </h2>
-                                        {isTestEnv && (
-                                            <button 
-                                                type="button"
-                                                onClick={() => setShowTestCards(true)}
-                                                className="text-xs bg-indigo-50 text-indigo-600 hover:bg-indigo-100 font-bold px-3 py-1.5 rounded-lg border border-indigo-200 transition-colors"
-                                            >
-                                                🧪 Test Kartları
-                                            </button>
-                                        )}
-                                    </div>
+                                    <h2 className="text-xl font-bold text-corporate-black flex items-center gap-2">
+                                        <CreditCard size={24} className="text-indigo-600" />
+                                        Ödeme Bilgileri
+                                    </h2>
 
                                     {loading ? (
                                         <div className="text-center py-12">
@@ -716,18 +706,16 @@ export function CheckoutPage() {
 
                                                 <div>
                                                     <label className="block text-sm font-medium text-gray-700 mb-1">CVV / CVC</label>
-                                                    <div className="relative">
-                                                        <input
-                                                            type="text"
-                                                            name="cardCvc"
-                                                            value={cardInfo.cardCvc}
-                                                            onChange={handleCardChange}
-                                                            placeholder="000"
-                                                            className={`w-full border-2 p-2.5 md:p-3 rounded-xl pl-10 ${errors.cardCvc ? 'border-red-500' : 'border-gray-200'}`}
-                                                            maxLength={3}
-                                                        />
-                                                        <Lock className="absolute left-3 top-2.5 md:top-3.5 text-gray-400" size={18} />
-                                                    </div>
+                                                    <input
+                                                        type="text"
+                                                        name="cardCvc"
+                                                        value={cardInfo.cardCvc}
+                                                        onChange={handleCardChange}
+                                                        placeholder="000"
+                                                        className={`w-full border-2 p-2.5 md:p-3 rounded-xl text-center tracking-widest font-mono ${errors.cardCvc ? 'border-red-500' : 'border-gray-200'}`}
+                                                        maxLength={3}
+                                                        inputMode="numeric"
+                                                    />
                                                     {errors.cardCvc && <p className="text-red-500 text-xs mt-1">{errors.cardCvc}</p>}
                                                 </div>
                                             </div>
@@ -993,6 +981,21 @@ export function CheckoutPage() {
                             </div>
                         </div>
                     </div>
+                </div>
+            )}
+            {isTestEnv && (
+                <div className="fixed bottom-6 right-6 z-40">
+                    <button
+                        type="button"
+                        onClick={() => setShowTestCards(true)}
+                        className="bg-gradient-to-br from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white font-extrabold px-6 py-4 rounded-2xl shadow-[0_8px_30px_rgba(99,91,255,0.45)] hover:shadow-[0_8px_40px_rgba(99,91,255,0.65)] active:scale-95 transition-all duration-200 flex items-center gap-3 border-2 border-white/20"
+                    >
+                        <span className="text-xl">🧪</span>
+                        <div className="flex flex-col items-start leading-tight">
+                            <span className="text-sm font-black tracking-wide">Test Kartları</span>
+                            <span className="text-[10px] font-medium text-indigo-200 uppercase tracking-widest">Staging Ortamı</span>
+                        </div>
+                    </button>
                 </div>
             )}
         </div >

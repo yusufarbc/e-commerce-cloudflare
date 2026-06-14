@@ -1,5 +1,5 @@
-import prisma from '../prisma.js';
 import { config } from '../config.js';
+import prisma from '../prisma.js';
 
 /**
  * Service for managing order processing and checkout operations.
@@ -42,26 +42,18 @@ export class OrderService {
                 const productColors = Array.isArray(product.renkSecenekleri)
                     ? product.renkSecenekleri.filter(Boolean)
                     : [];
-                const selectedColor = typeof item.selectedColor === 'string' ? item.selectedColor.trim() : '';
+                let selectedColor = typeof item.selectedColor === 'string' ? item.selectedColor.trim() : '';
 
                 if (productColors.length > 0 && !selectedColor) {
-                    throw new Error(`Color selection is required for ${product.ad}.`);
+                    selectedColor = productColors[0];
                 }
 
                 if (selectedColor && !productColors.includes(selectedColor)) {
                     throw new Error(`Selected color for ${product.ad} is invalid.`);
                 }
 
-                // Resolve color code from palette if available
-                let finalColorName = selectedColor;
-                if (selectedColor) {
-                    const colorRecord = await prisma.renkKartelasi.findFirst({
-                        where: { name: selectedColor, aktif: true }
-                    });
-                    if (colorRecord) {
-                        finalColorName = `${selectedColor} (${colorRecord.code})`;
-                    }
-                }
+                // Use the selected color name directly
+                const finalColorName = selectedColor;
 
                 subTotal += unitPrice * item.quantity;
                 totalWeight += Number(product.agirlik || 1) * item.quantity;
@@ -85,52 +77,67 @@ export class OrderService {
             throw new Error('Order total weight exceeds 100kg limit. Please contact satis@e-market.com or our WhatsApp line for bulk cargo shipping pricing.');
         }
 
-        // Shipping Fee Logic (Dynamic Tier Pricing)
+        // Shipping Fee Logic (Dynamic Multi-Policy Pricing)
         let settings = await prisma.sistemAyarlari.findUnique({ where: { id: 'global-settings' } });
-        const ucretsizKargoAltLimit = settings && settings.ucretsizKargoAltLimit ? Number(settings.ucretsizKargoAltLimit) : 5000.00;
+        const policy = settings?.kargoPolitikaTuru || 'SABIT_UCRET';
+        const sabitUcret = settings?.kargoSabitUcret !== undefined ? Number(settings.kargoSabitUcret) : 0;
+        const ucretsizKargoAltLimit = settings?.ucretsizKargoAltLimit !== undefined ? Number(settings.ucretsizKargoAltLimit) : 5000.00;
+        const weightMultiplier = settings?.kargoAgirlikCarpani > 0 ? Number(settings.kargoAgirlikCarpani) : 15.00;
         let shippingFee = 0;
 
-        // Dynamic price list tiers from dashboard settings
-        let priceList = settings && settings.kargoFiyatListesi ? settings.kargoFiyatListesi : null;
-        if (typeof priceList === 'string') {
-            try {
-                priceList = JSON.parse(priceList);
-            } catch (e) {
-                priceList = null;
-            }
-        }
-
-        if (Array.isArray(priceList) && priceList.length > 0) {
-            // Sort list by weight tier ascending
-            const sortedList = [...priceList].sort((a, b) => a.maxWeight - b.maxWeight);
-
-            // Find matching weight tier
-            const matchingTier = sortedList.find(tier => totalWeight <= tier.maxWeight);
-
-            if (matchingTier) {
-                shippingFee = Number(matchingTier.price);
+        if (policy === 'UCRETSIZ') {
+            shippingFee = 0;
+        } else if (policy === 'SABIT_UCRET') {
+            shippingFee = sabitUcret;
+        } else if (policy === 'SEPET_LIMITI') {
+            if (subTotal >= ucretsizKargoAltLimit) {
+                shippingFee = 0;
             } else {
-                // If weight exceeds the maximum tier, calculate base price plus surcharge per extra kg
-                const lastTier = sortedList[sortedList.length - 1];
-                const extraWeight = Math.ceil(totalWeight - lastTier.maxWeight);
-                shippingFee = Number(lastTier.price) + (extraWeight * 15.00);
+                shippingFee = totalWeight * weightMultiplier;
+            }
+        } else if (policy === 'AGIRLIK_KADEMELI') {
+            // Dynamic price list tiers from dashboard settings
+            let priceList = settings && settings.kargoFiyatListesi ? settings.kargoFiyatListesi : null;
+            if (typeof priceList === 'string') {
+                try {
+                    priceList = JSON.parse(priceList);
+                } catch {
+                    priceList = null;
+                }
+            }
+
+            if (Array.isArray(priceList) && priceList.length > 0) {
+                // Sort list by weight tier ascending
+                const sortedList = [...priceList].sort((a, b) => a.maxWeight - b.maxWeight);
+
+                // Find matching weight tier
+                const matchingTier = sortedList.find(tier => totalWeight <= tier.maxWeight);
+
+                if (matchingTier) {
+                    shippingFee = Number(matchingTier.price);
+                } else {
+                    // Exceeds max weight logic - no multiplier allowed!
+                    shippingFee = null;
+                }
+            } else {
+                // Fallback: Hardcoded default tiers if system configurations are missing
+                if (totalWeight <= 1) shippingFee = 65.00;
+                else if (totalWeight <= 2) shippingFee = 85.00;
+                else if (totalWeight <= 3) shippingFee = 105.00;
+                else if (totalWeight <= 4) shippingFee = 125.00;
+                else if (totalWeight <= 5) shippingFee = 145.00;
+                else if (totalWeight <= 10) shippingFee = 200.00;
+                else if (totalWeight <= 20) shippingFee = 350.00;
+                else if (totalWeight <= 35) shippingFee = 550.00;
+                else if (totalWeight <= 50) shippingFee = 800.00;
+                else if (totalWeight <= 75) shippingFee = 1200.00;
+                else if (totalWeight <= 100) shippingFee = 1600.00;
+                else {
+                    shippingFee = null;
+                }
             }
         } else {
-            // Fallback: Hardcoded default tiers if system configurations are missing
-            if (totalWeight <= 1) shippingFee = 65.00;
-            else if (totalWeight <= 2) shippingFee = 85.00;
-            else if (totalWeight <= 3) shippingFee = 105.00;
-            else if (totalWeight <= 4) shippingFee = 125.00;
-            else if (totalWeight <= 5) shippingFee = 145.00;
-            else if (totalWeight <= 10) shippingFee = 200.00;
-            else if (totalWeight <= 20) shippingFee = 350.00;
-            else if (totalWeight <= 35) shippingFee = 550.00;
-            else if (totalWeight <= 50) shippingFee = 800.00;
-            else if (totalWeight <= 75) shippingFee = 1200.00;
-            else if (totalWeight <= 100) shippingFee = 1600.00;
-            else {
-                shippingFee = null;
-            }
+            shippingFee = sabitUcret;
         }
 
         if (shippingFee === null) {
@@ -199,11 +206,17 @@ export class OrderService {
     }
 
     /**
-     * Initiates payment gateway session with card details using the active strategy.
-     * @param {string} orderId - Order UUID.
-     * @param {Object} cardInfo - Card details (cardNumber, cardExpMonth, cardExpYear, cardCvc).
-     * @param {Object} buyerInfo - Buyer details (IP address, etc.).
-     * @returns {Promise<Object>} 3D secure redirect HTML or error object.
+     * Initiates a payment gateway session using the active provider strategy.
+     *
+     * Retrieves the pending order, validates its state, builds the buyer payload,
+     * and delegates to PaymentService (which dispatches to iyzico / Param / PayTR).
+     * Stores the provider's transaction reference token on the order record.
+     *
+     * @param {string} orderId     - UUID of the pending order.
+     * @param {Object} cardInfo    - Card details: { cardNumber, cardExpMonth, cardExpYear, cardCvc, cardHolderName }.
+     * @param {Object} buyerInfo   - Supplementary buyer data (e.g. { ip }).
+     * @returns {Promise<Object>}  { status: 'success', ucdHtml: string, orderId } on success,
+     *                             { status: 'failure', errorMessage: string } on error.
      */
     async initiatePayment(orderId, cardInfo, buyerInfo) {
         const siparis = await this.orderRepository.getOrderById(orderId);
@@ -225,6 +238,7 @@ export class OrderService {
                 cardExpMonth: cardInfo.cardExpMonth,
                 cardExpYear: cardInfo.cardExpYear,
                 cardCvc: cardInfo.cardCvc,
+                cardHolderName: cardInfo.cardHolderName,
                 ip: buyerInfo.ip || '127.0.0.1'
             };
 
@@ -255,10 +269,16 @@ export class OrderService {
     }
 
     /**
-     * Completes and finalizes payment after successful 3D secure callback.
-     * @param {Object} callbackData - Callback parameters sent from gateway.
-     * @param {string} [provider] - Specific provider callback identifier.
-     * @returns {Promise<Object>} Payment completion results.
+     * Completes and finalises a payment after a successful 3D Secure gateway callback.
+     *
+     * Verifies the callback with the active provider, finalises the order status,
+     * releases stock holds, and dispatches order confirmation emails.
+     *
+     * @param {Object} callbackData - Raw callback payload from the payment gateway.
+     * @param {string} [provider]   - Explicit provider identifier ('iyzico', 'param', 'paytr').
+     *                               Falls back to the active PAYMENT_PROVIDER config if omitted.
+     * @returns {Promise<Object>}   { status, orderId, orderNumber, trackingToken } on success,
+     *                             { status: 'failure', errorMessage, orderNumber } on error.
      */
     async completePayment(callbackData, provider) {
         try {

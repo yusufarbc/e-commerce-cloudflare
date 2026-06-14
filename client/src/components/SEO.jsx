@@ -1,4 +1,5 @@
 import { Helmet } from 'react-helmet-async';
+import { useSettings } from '../context/SettingsContext';
 
 /**
  * SEO Component
@@ -25,16 +26,22 @@ export const SEO = ({
     structuredData,
     noindex = false
 }) => {
-    const siteTitle = 'E-Market';
+    const { settings } = useSettings();
+    const siteTitle = settings.siteAdi || 'E-Market';
     const fullTitle = title ? `${title} | ${siteTitle}` : siteTitle;
-    const siteUrl = 'https://e-market.com';
-    const defaultDescription = 'E-Market - En uygun fiyatlarla binlerce ürün kapınızda. Hızlı kargo ve güvenli ödeme.';
+    const siteUrl = typeof window !== 'undefined' ? window.location.origin : 'https://e-market.com';
+    const defaultDescription = settings.hakkindaMetni || 'E-Market - En uygun fiyatlarla binlerce ürün kapınızda. Hızlı kargo ve güvenli ödeme.';
     const defaultKeywords = 'e-ticaret, online alışveriş, uygun fiyatlı ürünler, hızlı teslimat, güvenli ödeme';
-    const defaultImage = `${siteUrl}/images/og-image.png`;
+
+    const resolveImageUrl = (img) => {
+        if (!img) return `${siteUrl}/images/og-image.png`;
+        if (img.startsWith('http')) return img;
+        return `${settings.cdnUrl || 'https://cdn.e-market-domain.com'}/${img}`;
+    };
 
     const metaDescription = description || defaultDescription;
     const metaKeywords = keywords || defaultKeywords;
-    const metaImage = ogImage || defaultImage;
+    const metaImage = resolveImageUrl(ogImage);
     const metaUrl = canonical || (typeof window !== 'undefined' ? window.location.href : siteUrl);
 
     return (

@@ -1,3 +1,17 @@
+import crypto from 'node:crypto';
+
+/**
+ * IyzicoService — iyzico Payment Gateway Integration
+ *
+ * Implements the IPaymentProvider interface for the iyzico (iyzipay) payment gateway.
+ * Communicates with iyzico's REST JSON API, computing IYZWSv2 authorization headers
+ * using HMAC-SHA256 (required by iyzico's API specification).
+ *
+ * Sandbox base URL: https://sandbox-api.iyzipay.com
+ * Production base URL: https://api.iyzipay.com
+ *
+ * @implements {IPaymentProvider}
+ */
 export class IyzicoService {
     /**
      * Creates an instance of IyzicoService.
@@ -8,117 +22,57 @@ export class IyzicoService {
     }
 
     /**
-     * Computes the SHA-1 hash of a string and returns it in base64 encoding.
-     * Implemented in pure JavaScript to resolve CodeQL false-positive warnings
-     * on standard library weak hash algorithms (since iyzico mandates SHA-1).
+     * Builds the iyzico IYZWSv2 authorization header for a given request.
+     *
+     * The authorization scheme requires:
+     *   1. A random nonce string (`x-iyzi-rnd`) included in the header.
+     *   2. A Base64-encoded parameter string containing apiKey, randomKey, and HMAC-SHA256 signature.
+     *
+     * @param {string} rnd         - Random nonce string for this request.
+     * @param {string} path        - API path (e.g. '/payment/3dsecure/initialize').
+     * @param {Object} bodyObject  - Request payload, or null.
+     * @returns {Object} HTTP headers object including Authorization and iyzico-specific fields.
      * @private
      */
-    _sha1Base64(str) {
-        const buffer = new TextEncoder().encode(str);
-        const words = [];
-        const len = buffer.length;
-        for (let i = 0; i < len; i++) {
-            words[i >> 2] |= buffer[i] << (24 - (i % 4) * 8);
-        }
-        words[((len + 8) >> 6) * 16 + 15] = len * 8;
-        words[len >> 2] |= 0x80 << (24 - (len % 4) * 8);
-
-        let h0 = 1732584193;
-        let h1 = -271733879;
-        let h2 = -1732584194;
-        let h3 = 271733878;
-        let h4 = -1009589776;
-
-        const w = new Int32Array(80);
-
-        for (let i = 0; i < words.length; i += 16) {
-            let a = h0;
-            let b = h1;
-            let c = h2;
-            let d = h3;
-            let e = h4;
-
-            for (let j = 0; j < 80; j++) {
-                if (j < 16) {
-                    w[j] = words[i + j];
-                } else {
-                    const val = w[j - 3] ^ w[j - 8] ^ w[j - 14] ^ w[j - 16];
-                    w[j] = (val << 1) | (val >>> 31);
-                }
-
-                let f, k;
-                if (j < 20) {
-                    f = (b & c) | (~b & d);
-                    k = 1518500249;
-                } else if (j < 40) {
-                    f = b ^ c ^ d;
-                    k = 1859775393;
-                } else if (j < 60) {
-                    f = (b & c) | (b & d) | (c & d);
-                    k = -1894007588;
-                } else {
-                    f = b ^ c ^ d;
-                    k = -899497514;
-                }
-
-                const temp = (((a << 5) | (a >>> 27)) + f + e + k + w[j]) | 0;
-                e = d;
-                d = c;
-                c = (b << 30) | (b >>> 2);
-                b = a;
-                a = temp;
-            }
-
-            h0 = (h0 + a) | 0;
-            h1 = (h1 + b) | 0;
-            h2 = (h2 + c) | 0;
-            h3 = (h3 + d) | 0;
-            h4 = (h4 + e) | 0;
-        }
-
-        const result = new Uint8Array(20);
-        const view = new DataView(result.buffer);
-        view.setInt32(0, h0);
-        view.setInt32(4, h1);
-        view.setInt32(8, h2);
-        view.setInt32(12, h3);
-        view.setInt32(16, h4);
-
-        let binary = '';
-        const bytes = new Uint8Array(result);
-        const lenBytes = bytes.byteLength;
-        for (let i = 0; i < lenBytes; i++) {
-            binary += String.fromCharCode(bytes[i]);
-        }
-        return btoa(binary);
-    }
-
-    /**
-     * Helper to compute iyzico HTTP authorization header.
-     * @private
-     */
-    _getHeaders(rnd, bodyString = '') {
+    _getHeaders(rnd, path, bodyObject = null) {
         const apiKey = this.config.apiKey;
         const secretKey = this.config.secretKey;
         
-        // iyzico's HTTP authorization protocol mandates SHA-1 for its IYZWS signature scheme.
-        // This algorithm is required by the payment provider's API specification and cannot
-        // be changed on our side. The hash signs only the API key, a random nonce, and the
-        // secret key — it does not hash passwords or sensitive PII.
-        const payload = apiKey + rnd + secretKey + bodyString;
-        const signature = this._sha1Base64(payload);
+        const bodyString = bodyObject ? JSON.stringify(bodyObject) : '';
+        const signature = crypto
+            .createHmac('sha256', secretKey)
+            .update(rnd + path + bodyString)
+            .digest('hex');
+            
+        const separator = ':';
+        const authorizationParams = [
+            'apiKey' + separator + apiKey,
+            'randomKey' + separator + rnd,
+            'signature' + separator + signature
+        ];
+        
+        const base64Auth = btoa(authorizationParams.join('&'));
             
         return {
             'Content-Type': 'application/json',
             'Accept': 'application/json',
             'x-iyzi-rnd': rnd,
-            'x-iyzi-client-version': 'iyzipay-node-2.0.0',
-            'Authorization': `IYZWS ${apiKey}:${signature}`
+            'x-iyzi-client-version': 'iyzipay-node-2.0.67',
+            'Authorization': `IYZWSv2 ${base64Auth}`
         };
     }
 
     /**
-     * Sends a request to iyzico API.
+     * Sends an authenticated HTTP request to the iyzico REST API.
+     *
+     * Serialises the body to JSON if provided, computes the IYZWSv2 authorization header,
+     * and throws a descriptive error on non-2xx HTTP responses.
+     *
+     * @param {string}  path        - API path (e.g. '/payment/3dsecure/initialize').
+     * @param {string}  method      - HTTP method ('POST' or 'GET').
+     * @param {Object|null} bodyObject - Request payload, or null for GET requests.
+     * @returns {Promise<Object>}   Parsed JSON response from iyzico.
+     * @throws {Error}              If the HTTP response status is not 2xx.
      * @private
      */
     async _request(path, method, bodyObject = null) {
@@ -126,8 +80,8 @@ export class IyzicoService {
         const url = `${baseUrl.replace(/\/$/, '')}${path}`;
         const rnd = Math.random().toString(36).substring(2, 12);
         
+        const headers = this._getHeaders(rnd, path, bodyObject);
         const bodyString = bodyObject ? JSON.stringify(bodyObject) : '';
-        const headers = this._getHeaders(rnd, bodyString);
         
         console.log('[iyzico Request] %s %s', method, url);
         
@@ -146,8 +100,24 @@ export class IyzicoService {
     }
 
     /**
-     * Initiates a 3D Secure payment process.
-     * Returns HTML form containing the 3D redirect frame/script.
+     * Initiates a 3D Secure payment session via iyzico's initialize endpoint.
+     *
+     * Submits card details, buyer info, basket items, and callback URL to iyzico.
+     * On success, iyzico returns a base64-encoded HTML page (`threeDSHtmlContent`)
+     * that must be rendered in the browser to trigger the bank's 3D Secure step.
+     *
+     * @param {Object} order             - Order record (id, siparisNumarasi, toplamTutar, eposta, adres, etc.)
+     * @param {Array}  basketItems       - Order line items used to populate iyzico's basketItems array.
+     * @param {Object} buyer             - Buyer and card details.
+     * @param {string} buyer.name        - First name.
+     * @param {string} buyer.surname     - Last name.
+     * @param {string} buyer.cardNumber  - 16-digit card number.
+     * @param {string} buyer.cardExpMonth - Expiry month (1–12).
+     * @param {string} buyer.cardExpYear  - Expiry year (2 or 4 digits).
+     * @param {string} buyer.cardCvc     - 3-digit CVC.
+     * @param {string} buyer.ip          - Cardholder IP address.
+     * @returns {Promise<Object>} { status: 'success', ucdHtml: string, siparisId, conversationId }
+     * @throws {Error} If iyzico returns a non-success status.
      */
     async startPaymentProcess(order, basketItems, buyer) {
         const orderNumber = order.siparisNumarasi;
@@ -160,7 +130,7 @@ export class IyzicoService {
             items = basketItems.map(item => ({
                 id: item.urunId || 'item-id',
                 name: item.urunAdSnapshot || 'Urun',
-                category: 'Genel',
+                category1: 'Genel',
                 itemType: 'PHYSICAL',
                 price: Number(item.toplamFiyat || item.fiyat).toFixed(2)
             }));
@@ -169,19 +139,38 @@ export class IyzicoService {
             items = [{
                 id: `order-${orderNumber}`,
                 name: `Siparis #${orderNumber}`,
-                category: 'Genel',
+                category1: 'Genel',
                 itemType: 'PHYSICAL',
                 price: totalAmount.toFixed(2)
             }];
         }
 
+        // Calculate sum of item prices
+        let itemsPriceSum = items.reduce((sum, item) => sum + Number(item.price), 0);
+
+        // Account for shipping costs or any other price gaps where totalAmount is higher
+        const difference = totalAmount - itemsPriceSum;
+        if (difference > 0.01) {
+            items.push({
+                id: `shipping-${orderNumber}`,
+                name: 'Kargo Ucreti',
+                category1: 'Kargo',
+                itemType: 'VIRTUAL',
+                price: difference.toFixed(2)
+            });
+            // Recalculate sum of item prices
+            itemsPriceSum = items.reduce((sum, item) => sum + Number(item.price), 0);
+        }
+
         const payload = {
             locale: 'tr',
             conversationId: orderNumber,
-            price: totalAmount.toFixed(2),
-            paidPrice: totalAmount.toFixed(2),
+            price: itemsPriceSum.toFixed(2), // Total sum of all items in the basket
+            paidPrice: totalAmount.toFixed(2), // Actual amount charged to the card
             currency: 'TRY',
-            installment: '1',
+            installment: 1, // Must be an integer per iyzico specifications
+            paymentChannel: 'WEB', // Required parameter
+            paymentGroup: 'PRODUCT', // Required parameter
             basketId: orderNumber,
             paymentCard: {
                 cardHolderName: `${buyer.name} ${buyer.surname}`.toUpperCase(),
@@ -221,7 +210,7 @@ export class IyzicoService {
             callbackUrl: callbackUrl
         };
 
-        const result = await this._request('/payment/3dsec/initialize', 'POST', payload);
+        const result = await this._request('/payment/3dsecure/initialize', 'POST', payload);
 
         if (result.status !== 'success') {
             console.error('[iyzico] Initialization error:', result.errorMessage);
@@ -233,9 +222,13 @@ export class IyzicoService {
         if (htmlContent && !htmlContent.trim().startsWith('<')) {
             // If it is base64 encoded
             try {
-                htmlContent = Buffer.from(htmlContent, 'base64').toString('utf-8');
+                if (typeof Buffer !== 'undefined') {
+                    htmlContent = Buffer.from(htmlContent, 'base64').toString('utf-8');
+                } else if (typeof atob === 'function') {
+                    htmlContent = decodeURIComponent(escape(atob(htmlContent)));
+                }
             } catch (e) {
-                // Not base64
+                // Not base64 or decode failed
             }
         }
 
@@ -248,8 +241,16 @@ export class IyzicoService {
     }
 
     /**
-     * Verifies payment callback details.
-     * Checks status from callback payload and retrieves auth details.
+     * Verifies an iyzico 3D Secure callback and confirms the payment with iyzico's auth endpoint.
+     *
+     * iyzico POSTs a callback containing `paymentId`, `conversationId`, and `status`.
+     * We re-confirm with iyzico's `/payment/3dsec/auth` endpoint to prevent tampering.
+     *
+     * @param {Object} callbackData                - POST body from iyzico's 3D callback.
+     * @param {string} callbackData.paymentId      - iyzico payment transaction ID.
+     * @param {string} callbackData.conversationId - Our order number (siparisNumarasi).
+     * @param {string} callbackData.status         - 'success' or 'failure'.
+     * @returns {Promise<Object>} { status, paymentId?, siparisNumarasi, amount?, rawResult? }
      */
     async verifyCallback(callbackData) {
         console.log('[iyzico] Verifying callback:', callbackData);
@@ -274,9 +275,14 @@ export class IyzicoService {
                 paymentId: paymentId
             };
 
-            const verificationResult = await this._request('/payment/3dsec/auth', 'POST', detailPayload);
+            if (callbackData.conversationData) {
+                detailPayload.conversationData = callbackData.conversationData;
+            }
+
+            const verificationResult = await this._request('/payment/3dsecure/auth', 'POST', detailPayload);
+            console.log('[iyzico] Verification API response:', verificationResult);
             
-            if (verificationResult.status === 'success' && verificationResult.paymentStatus === 'SUCCESS') {
+            if (verificationResult.status === 'success') {
                 return {
                     status: 'success',
                     paymentId: verificationResult.paymentId,
@@ -302,7 +308,15 @@ export class IyzicoService {
     }
 
     /**
-     * Cancels/Refunds a paid transaction.
+     * Refunds a paid iyzico transaction via the /payment/refund endpoint.
+     *
+     * Performs a full refund by paymentId. iyzico issues a unique refund conversationId
+     * to correlate the refund request.
+     *
+     * @param {string} paymentId - iyzico payment transaction ID to refund.
+     * @param {string} reason    - Human-readable refund reason (logged only; not sent to iyzico).
+     * @returns {Promise<Object>} { status: 'success', paymentId, message }
+     * @throws {Error} If iyzico returns a non-success status.
      */
     async cancelPayment(paymentId, reason) {
         console.log('[iyzico] Refunding payment %s, Reason: %s', paymentId, reason);
@@ -329,7 +343,15 @@ export class IyzicoService {
     }
 
     /**
-     * Inquires installment prices.
+     * Queries available installment plans for a card BIN via iyzico's installment check endpoint.
+     *
+     * Maps iyzico's `installmentPrices` response into the shared { Taksit, Komi_Oran } format
+     * used across all provider implementations. Single-draw (1 instalment) entries are excluded
+     * since they are always available and shown separately in the UI.
+     *
+     * @param {string} bin    - First 6 digits of the card number (BIN/IIN).
+     * @param {number} amount - Total transaction amount in TRY.
+     * @returns {Promise<Array<{Taksit: number, Komi_Oran: number}>>} Installment plan list, or [] on error.
      */
     async getInstallmentOptions(bin, amount) {
         const payload = {

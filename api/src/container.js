@@ -64,7 +64,7 @@ const paymentService = new PaymentService(paramService, iyzicoService, paytrServ
 const emailService = new EmailService(config.brevo.smtp);
 
 // Domain Services
-const productService = new ProductService(productRepository, categoryRepository, prisma);
+const productService = new ProductService(productRepository, categoryRepository);
 const categoryService = new CategoryService(categoryRepository);
 const settingsService = new SettingsService(settingsRepository);
 const returnService = new ReturnService(returnRepository, orderRepository);
@@ -80,7 +80,7 @@ const brandController = new BrandController(brandService);
 const settingsController = new SettingsController(settingsService);
 const returnController = new ReturnController(returnService);
 const seoController = new SeoController(productRepository);
-const feedController = new FeedController(productRepository);
+const feedController = new FeedController(productRepository, settingsRepository);
 const uploadController = new UploadController();
 
 // === EXPORTS ===

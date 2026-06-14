@@ -173,7 +173,7 @@ const productsData = [
 
 async function main() {
   console.log('Starting DB cleanup...');
-  await prisma.siparisGecmisi.deleteMany({});
+  await prisma.islemGecmisi.deleteMany({});
   await prisma.iadeTalebi.deleteMany({});
   await prisma.siparisKalemi.deleteMany({});
   await prisma.siparis.deleteMany({});

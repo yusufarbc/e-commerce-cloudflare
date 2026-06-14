@@ -1,19 +1,32 @@
 /**
- * Service for handling Param POS payment gateway integrations inside Cloudflare Workers.
- * Uses native fetch with raw XML SOAP envelopes instead of Node-dependent 'soap' library.
+ * ParamService — Param POS Payment Gateway Integration
+ *
+ * Implements the IPaymentProvider interface for the Param POS (TurkPOS) gateway.
+ * Uses raw SOAP XML over native fetch — no external 'soap' library dependency —
+ * making this suitable for Cloudflare Workers (which lack Node.js built-ins).
+ *
+ * @implements {IPaymentProvider}
  */
 export class ParamService {
     /**
      * Creates an instance of ParamService.
-     * @param {Object} config - Configuration object.
+     *
+     * @param {Object} config                  - Application configuration object.
+     * @param {string} config.clientCode        - Param POS client code.
+     * @param {string} config.clientUsername    - Param POS client username.
+     * @param {string} config.clientPassword    - Param POS client password.
+     * @param {string} config.guid              - Param POS GUID (36-char UUID format).
+     * @param {string} config.baseUrl           - Param ASMX WSDL endpoint URL.
+     * @param {string} config.callbackUrl       - Base URL for 3D Secure callback redirects.
      */
     constructor(config) {
         this.config = config;
     }
 
     /**
-     * Resolves the ASMX service endpoint from the config baseUrl.
-     * Strips '?wsdl' if present.
+     * Resolves the SOAP ASMX service endpoint URL, stripping any `?wsdl` suffix.
+     *
+     * @returns {string} Clean endpoint URL for direct SOAP calls.
      * @private
      */
     _getEndpointUrl() {
@@ -22,13 +35,20 @@ export class ParamService {
     }
 
     /**
-     * Helper to extract the value of a specific XML tag from a SOAP response string.
+     * Extracts the inner text value of a named XML element from a SOAP response string.
+     *
+     * Simple string-based extraction avoids a full XML parser dependency,
+     * which is acceptable given the predictable Param SOAP response structure.
+     *
+     * @param {string} xml      - Full SOAP XML response string.
+     * @param {string} tagName  - XML element name to extract (without angle brackets).
+     * @returns {string|null}   The trimmed inner text, or null if the tag is not found.
      * @private
      */
     _extractTag(xml, tagName) {
         if (!xml || !tagName) return null;
         const startTag = `<${tagName}>`;
-        const endTag = `</${tagName}>`;
+        const endTag   = `</${tagName}>`;
         const startIndex = xml.indexOf(startTag);
         if (startIndex === -1) return null;
         const endIndex = xml.indexOf(endTag, startIndex + startTag.length);
@@ -37,7 +57,11 @@ export class ParamService {
     }
 
     /**
-     * Formats amount to Param's expected format (comma as decimal separator).
+     * Formats a numeric amount into the Param-expected string format.
+     * Param requires comma as the decimal separator (e.g. "1500,00").
+     *
+     * @param {number|string} amount - Numeric amount.
+     * @returns {string} Amount string with comma decimal separator.
      * @private
      */
     _formatAmount(amount) {
@@ -45,7 +69,13 @@ export class ParamService {
     }
 
     /**
-     * Validates GUID format (should be 36 characters with dashes).
+     * Validates that the configured GUID is a well-formed UUID v4 string.
+     *
+     * Param rejects requests with malformed GUIDs, so we validate early to
+     * produce a clear error message rather than an opaque SOAP fault.
+     *
+     * @param {string} guid - The GUID string to validate.
+     * @returns {boolean}   True if valid, false otherwise.
      * @private
      */
     _validateGuid(guid) {
@@ -58,7 +88,14 @@ export class ParamService {
     }
 
     /**
-     * Sends a raw SOAP request via fetch.
+     * Sends a raw SOAP envelope to the Param ASMX endpoint via fetch.
+     *
+     * Builds a standards-compliant SOAP 1.1 envelope and sets the required
+     * SOAPAction header. Throws on non-2xx HTTP responses.
+     *
+     * @param {string} actionName     - SOAP action name (used in SOAPAction header and element namespace).
+     * @param {string} soapBodyContent - Pre-formatted XML content to embed inside <soap:Body>.
+     * @returns {Promise<string>}     Raw XML response text from Param.
      * @private
      */
     async _sendSoapRequest(actionName, soapBodyContent) {
@@ -70,7 +107,7 @@ export class ParamService {
   </soap:Body>
 </soap:Envelope>`;
 
-        console.log('[Param SOAP] Sending request for action: %s to %s', actionName, endpoint);
+        console.log('[Param SOAP] Sending action: %s to %s', actionName, endpoint);
 
         const response = await fetch(endpoint, {
             method: 'POST',
@@ -90,32 +127,54 @@ export class ParamService {
     }
 
     /**
-     * Initiates a 3D Secure payment process.
-     * Returns HTML form for 3D redirect.
+     * Initiates a 3D Secure payment session using the TP_WMD_UCD SOAP action.
+     *
+     * Builds an HMAC-SHA1 hash over key transaction fields (required by Param's
+     * anti-tampering scheme), then submits card and order details to Param's SOAP API.
+     * On success, returns the UCD_HTML form that the browser must render to trigger
+     * the bank's 3D Secure verification page.
+     *
+     * @param {Object} order            - Order record (id, siparisNumarasi, toplamTutar, adres, etc.)
+     * @param {Array}  basketItems      - Order line items (not used by Param but kept for interface compatibility).
+     * @param {Object} buyer            - Buyer details.
+     * @param {string} buyer.name       - Cardholder first name.
+     * @param {string} buyer.surname    - Cardholder last name.
+     * @param {string} buyer.phone      - Cardholder GSM number.
+     * @param {string} buyer.cardNumber - 16-digit card number (no spaces).
+     * @param {string} buyer.cardExpMonth - Card expiry month (1–12).
+     * @param {string} buyer.cardExpYear  - Card expiry year (2-digit or 4-digit).
+     * @param {string} buyer.cardCvc    - 3-digit CVC code.
+     * @param {string} buyer.ip         - Cardholder IP address.
+     * @returns {Promise<Object>} { status: 'success', ucdHtml: string, dekontId: string, siparisId: string }
+     * @throws {Error} If GUID is invalid or Param returns a non-success result code.
      */
     async startPaymentProcess(order, basketItems, buyer) {
         if (!this._validateGuid(this.config.guid)) {
-            throw new Error('Param GUID yapılandırması geçersiz.');
+            throw new Error('Param GUID configuration is invalid.');
         }
 
-        const islemTutar = this._formatAmount(order.toplamTutar);
+        const islemTutar  = this._formatAmount(order.toplamTutar);
         const toplamTutar = this._formatAmount(order.toplamTutar);
-        const taksit = 1;
-        const orderId = order.siparisNumarasi;
+        const taksit      = 1; // Single payment — installments handled separately
+        const orderId     = order.siparisNumarasi;
 
-        const errorUrl = `${this.config.callbackUrl}/api/v1/payment/param/error`;
-        const successUrl = `${this.config.callbackUrl}/api/v1/payment/param/success`;
+        // Callback URLs use the provider-specific path (Param redirects via browser POST)
+        const errorUrl   = `${this.config.callbackUrl}/api/v1/payment/callback/param/error`;
+        const successUrl = `${this.config.callbackUrl}/api/v1/payment/callback/param/success`;
 
-        const hashDataString = `${this.config.clientCode}${this.config.guid}${taksit}${islemTutar}${toplamTutar}${orderId}`;
-        
-        // Calculate SHA-1 hash using native Web Crypto API
-        const encoder = new TextEncoder();
-        const hashDataBytes = encoder.encode(hashDataString);
-        const hashBuffer = await crypto.subtle.digest('SHA-1', hashDataBytes);
-        const hash = btoa(String.fromCharCode(...new Uint8Array(hashBuffer)));
+        // Build the hash string: clientCode + guid + taksit + islemTutar + toplamTutar + orderId
+        // Then compute SHA-1 via Web Crypto API (native in Workers — no Node.js crypto needed)
+        const hashDataString  = `${this.config.clientCode}${this.config.guid}${taksit}${islemTutar}${toplamTutar}${orderId}`;
+        const encoder         = new TextEncoder();
+        const hashDataBytes   = encoder.encode(hashDataString);
+        const hashBuffer      = await crypto.subtle.digest('SHA-1', hashDataBytes);
+        const hash            = btoa(String.fromCharCode(...new Uint8Array(hashBuffer)));
 
+        // Strip non-digits from GSM number; Param expects digits only
         const cardHolderGSM = buyer.phone?.replace(/\D/g, '') || '';
-        const cardExpYear = buyer.cardExpYear.length === 2 ? `20${buyer.cardExpYear}` : buyer.cardExpYear;
+
+        // Normalise expiry year to 4-digit format
+        const cardExpYear  = buyer.cardExpYear.length === 2 ? `20${buyer.cardExpYear}` : buyer.cardExpYear;
         const cardExpMonth = buyer.cardExpMonth.padStart(2, '0');
 
         const bodyContent = `
@@ -152,58 +211,73 @@ export class ParamService {
     </TP_WMD_UCD>`;
 
         const responseXml = await this._sendSoapRequest('TP_WMD_UCD', bodyContent);
-        
-        const sonuc = this._extractTag(responseXml, 'Sonuc');
+
+        // Param returns Sonuc='1' on success; any other value is an error
+        const sonuc    = this._extractTag(responseXml, 'Sonuc');
         const sonucStr = this._extractTag(responseXml, 'Sonuc_Str');
-        const ucdHtml = this._extractTag(responseXml, 'UCD_HTML');
+        const ucdHtml  = this._extractTag(responseXml, 'UCD_HTML');
         const dekontId = this._extractTag(responseXml, 'Dekont_ID');
 
         if (sonuc !== '1') {
-            console.error('[Param] API Error:', sonucStr);
-            throw new Error(sonucStr || 'Ödeme başlatılamadı');
+            console.error('[Param] API error:', sonucStr);
+            throw new Error(sonucStr || 'Ödeme başlatılamadı.');
         }
 
         return {
-            status: 'success',
-            ucdHtml: ucdHtml,
-            dekontId: dekontId,
+            status:    'success',
+            ucdHtml:   ucdHtml,
+            dekontId:  dekontId,
             siparisId: order.id
         };
     }
 
     /**
-     * Verifies payment callback from Param.
+     * Verifies the 3D Secure callback POST data received from Param.
+     *
+     * Param sends mdStatus='1' for a successful 3D authentication.
+     * All other mdStatus values indicate failure or cancellation.
+     *
+     * @param {Object} callbackData            - POST body from Param's browser redirect.
+     * @param {string} callbackData.mdStatus   - 3D Secure result code ('1' = success).
+     * @param {string} callbackData.orderId    - Order reference number.
+     * @param {string} callbackData.islemGUID  - Param transaction GUID (used as paymentId).
+     * @returns {Object} { status, paymentId?, siparisNumarasi, errorMessage?, amount?, rawResult }
      */
     verifyCallback(callbackData) {
         console.log('[Param] Verifying callback:', callbackData);
 
-        const mdStatus = callbackData.mdStatus || callbackData.md_status;
-        const isSuccess = mdStatus === '1';
+        const mdStatus        = callbackData.mdStatus || callbackData.md_status;
+        const isSuccess       = mdStatus === '1';
         const siparisNumarasi = callbackData.orderId || callbackData.siparis_id || callbackData.Siparis_ID;
 
         if (!isSuccess) {
             return {
-                status: 'failure',
-                errorCode: mdStatus,
-                errorMessage: callbackData.md_errormessage || 'Ödeme doğrulaması başarısız',
-                siparisNumarasi: siparisNumarasi
+                status:        'failure',
+                errorCode:     mdStatus,
+                errorMessage:  callbackData.md_errormessage || 'Ödeme doğrulaması başarısız.',
+                siparisNumarasi
             };
         }
 
         return {
-            status: 'success',
-            paymentId: callbackData.islemGUID || callbackData.dekont_id || callbackData.Dekont_ID,
-            siparisNumarasi: siparisNumarasi,
-            amount: callbackData.transactionAmount || callbackData.islem_tutar || callbackData.Islem_Tutar,
-            rawResult: callbackData
+            status:         'success',
+            paymentId:      callbackData.islemGUID || callbackData.dekont_id || callbackData.Dekont_ID,
+            siparisNumarasi,
+            amount:         callbackData.transactionAmount || callbackData.islem_tutar || callbackData.Islem_Tutar,
+            rawResult:      callbackData
         };
     }
 
     /**
-     * Cancels/refunds a payment.
+     * Cancels or refunds a Param POS transaction via the TP_Islem_Iptal_Iade SOAP action.
+     *
+     * @param {string} dekontId - Param Dekont_ID (receipt ID) of the transaction to cancel.
+     * @param {string} reason   - Human-readable cancellation reason (logged only; not sent to Param).
+     * @returns {Promise<Object>} { status: 'success', dekontId, message }
+     * @throws {Error} If Param returns a non-success result code.
      */
     async cancelPayment(dekontId, reason) {
-        console.log('[Param] Cancelling payment %s, Reason: %s', dekontId, reason);
+        console.log('[Param] Cancelling payment %s — reason: %s', dekontId, reason);
 
         const bodyContent = `
     <TP_Islem_Iptal_Iade xmlns="https://turkpos.com.tr/">
@@ -220,23 +294,31 @@ export class ParamService {
     </TP_Islem_Iptal_Iade>`;
 
         const responseXml = await this._sendSoapRequest('TP_Islem_Iptal_Iade', bodyContent);
-        
-        const sonuc = this._extractTag(responseXml, 'Sonuc');
+
+        const sonuc    = this._extractTag(responseXml, 'Sonuc');
         const sonucStr = this._extractTag(responseXml, 'Sonuc_Str');
 
         if (sonuc !== '1') {
-            throw new Error(sonucStr || 'İptal işlemi başarısız');
+            throw new Error(sonucStr || 'İptal işlemi başarısız.');
         }
 
         return {
-            status: 'success',
+            status:   'success',
             dekontId: dekontId,
-            message: 'Ödeme iptal edildi'
+            message:  'Payment successfully cancelled.'
         };
     }
 
     /**
-     * Gets installment options for a card BIN.
+     * Retrieves available installment plans for a card BIN using TP_Ozel_Oran_SK_Liste.
+     *
+     * Parses <Temp> blocks from the SOAP response dataset to extract installment count
+     * and commission rate per plan. Returns only plans with more than 1 instalment.
+     *
+     * @param {string} bin    - First 6 digits of the card number (BIN/IIN).
+     * @param {number} amount - Total transaction amount in TRY.
+     * @returns {Promise<Array<{Taksit: number, Komi_Oran: number}>>}
+     *   Sorted array of installment options, or [] on error / no options available.
      */
     async getInstallmentOptions(bin, amount) {
         const formattedAmount = this._formatAmount(amount);
@@ -257,27 +339,29 @@ export class ParamService {
             const responseXml = await this._sendSoapRequest('TP_Ozel_Oran_SK_Liste', bodyContent);
             const sonuc = this._extractTag(responseXml, 'Sonuc');
 
-            if (sonuc !== '1') {
-                return [];
-            }
+            if (sonuc !== '1') return [];
 
-            // Extract all <Temp> records containing installment data from the dataset
+            // Extract all <Temp> blocks — each represents one installment option in the dataset
             const tempBlocks = responseXml.match(/<Temp>([\s\S]*?)<\/Temp>/g) || [];
-            
-            const installments = tempBlocks.map(block => {
-                const taksitMatch = block.match(/<Taksit_Sayisi>(.*?)<\/Taksit_Sayisi>/) || block.match(/<Taksit>(.*?)<\/Taksit>/);
-                const komiMatch = block.match(/<Komi_Oran>(.*?)<\/Komi_Oran>/) || block.match(/<Oran>(.*?)<\/Oran>/);
 
-                return {
-                    Taksit: taksitMatch ? parseInt(taksitMatch[1].trim(), 10) : 1,
-                    Komi_Oran: komiMatch ? parseFloat(komiMatch[1].trim().replace(',', '.')) : 0
-                };
-            }).filter(inst => inst.Taksit > 1); // Only return installments (> 1)
+            const installments = tempBlocks
+                .map(block => {
+                    const taksitMatch = block.match(/<Taksit_Sayisi>(.*?)<\/Taksit_Sayisi>/)
+                                     || block.match(/<Taksit>(.*?)<\/Taksit>/);
+                    const komiMatch   = block.match(/<Komi_Oran>(.*?)<\/Komi_Oran>/)
+                                     || block.match(/<Oran>(.*?)<\/Oran>/);
 
-            // Sort installments by number of payments
+                    return {
+                        Taksit:    taksitMatch ? parseInt(taksitMatch[1].trim(), 10) : 1,
+                        Komi_Oran: komiMatch   ? parseFloat(komiMatch[1].trim().replace(',', '.')) : 0
+                    };
+                })
+                .filter(inst => inst.Taksit > 1); // Single-draw is always available; only surface multi-instalment plans
+
+            // Return sorted ascending by instalment count for UI display order
             return installments.sort((a, b) => a.Taksit - b.Taksit);
         } catch (error) {
-            console.error('[Param] Installment Options fetch failed:', error);
+            console.error('[Param] Installment fetch failed:', error);
             return [];
         }
     }

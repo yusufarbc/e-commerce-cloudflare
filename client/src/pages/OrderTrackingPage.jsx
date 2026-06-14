@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import api from '../lib/axios';
-import { CheckCircle, Clock, Package, AlertCircle, Phone, XCircle } from 'lucide-react';
+import { CheckCircle, Clock, Package, AlertCircle, Phone, XCircle, MapPin } from 'lucide-react';
 import { FeaturesSection } from '../components/FeaturesSection';
 
 import { useTranslation } from 'react-i18next';
@@ -113,7 +113,7 @@ export function OrderTrackingPage() {
         }
 
         return (
-            <div className="max-w-3xl mx-auto px-4 py-10 relative">
+            <div className="max-w-6xl mx-auto px-4 py-10 relative">
                 <div className="bg-white rounded-xl shadow-lg overflow-hidden border border-gray-100">
                     {/* Header */}
                     <div className="bg-gradient-to-r from-primary-600 to-primary-800 text-white p-6">
@@ -191,49 +191,78 @@ export function OrderTrackingPage() {
                         </div>
                     </div>
 
-                    {/* Order Details */}
-                    <div className="p-6">
-                        <h2 className="text-lg font-semibold mb-4 text-gray-800 border-b pb-2">Sipariş Detayları</h2>
+                    {/* Order Details Grid */}
+                    <div className="grid grid-cols-1 lg:grid-cols-3 divide-y lg:divide-y-0 lg:divide-x divide-gray-150">
+                        {/* Left Side: Order Items */}
+                        <div className="p-6 lg:col-span-2 space-y-6">
+                            <h2 className="text-lg font-bold text-gray-800 border-b pb-2 flex items-center gap-2">
+                                <Package className="text-primary-600" size={20} />
+                                Sipariş Detayları
+                            </h2>
 
-                        <div className="space-y-4">
-                            {(order.kalemler || []).map((item, index) => (
-                                <div key={index} className="flex justify-between items-center py-2">
-                                    <div className="flex items-center space-x-4">
-                                        <div className="bg-gray-100 p-2 rounded text-gray-400">
-                                            <Package size={20} />
-                                        </div>
-                                        <div>
-                                            <p className="font-medium text-gray-800">{item.urunAd}</p>
-                                            <p className="text-sm text-gray-500">{item.adet} Adet x ₺{Number(item.birimFiyat).toFixed(2)}</p>
-                                            {item.secilenRenk && (
-                                                <p className="text-xs text-gray-500">{item.urun?.varyantBasligi || 'Renk'}: {item.secilenRenk}</p>
+                            <div className="divide-y divide-gray-100 space-y-4">
+                                {(order.kalemler || []).map((item, index) => (
+                                    <div key={index} className="flex justify-between items-center py-4 first:pt-0 last:pb-0">
+                                        <div className="flex items-center space-x-4">
+                                            {item.resimUrl ? (
+                                                <div className="w-16 h-16 rounded-xl overflow-hidden border border-gray-100 flex-shrink-0 bg-white shadow-sm">
+                                                    <img 
+                                                        src={item.resimUrl} 
+                                                        alt={item.urunAd} 
+                                                        className="w-full h-full object-cover"
+                                                    />
+                                                </div>
+                                            ) : (
+                                                <div className="bg-gray-100 p-4 rounded-xl text-gray-400 flex-shrink-0 shadow-sm">
+                                                    <Package size={24} />
+                                                </div>
                                             )}
+                                            <div>
+                                                <p className="font-semibold text-gray-850">{item.urunAd}</p>
+                                                <p className="text-sm text-gray-500 mt-0.5">{item.adet} Adet x ₺{Number(item.birimFiyat).toFixed(2)}</p>
+                                                {item.secilenRenk && (
+                                                    <p className="text-xs text-gray-550 mt-1 bg-gray-100 px-2.5 py-1 rounded-full inline-block font-semibold">
+                                                        {item.varyantBasligi || 'Renk'}: {item.secilenRenk}
+                                                    </p>
+                                                )}
+                                            </div>
+                                        </div>
+                                        <span className="font-bold text-gray-900">₺{(Number(item.birimFiyat) * item.adet).toFixed(2)}</span>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Right Side: Order Summary & Shipping */}
+                        <div className="p-6 bg-gray-50/40 flex flex-col justify-between space-y-6">
+                            <div className="space-y-6">
+                                <div>
+                                    <h3 className="text-lg font-bold text-gray-850 border-b pb-2">Ödeme Özeti</h3>
+                                    
+                                    <div className="mt-4 space-y-3">
+                                        <div className="flex justify-between items-center text-gray-650 font-medium">
+                                            <span>Ara Toplam</span>
+                                            <span>₺{(Number(order.toplamTutar) - Number(order.kargoUcreti)).toFixed(2)}</span>
+                                        </div>
+                                        <div className="flex justify-between items-center text-gray-650 font-medium">
+                                            <span>Kargo Ücreti</span>
+                                            <span>₺{Number(order.kargoUcreti || 0).toFixed(2)}</span>
+                                        </div>
+                                        <div className="flex justify-between items-center text-xl font-extrabold text-gray-900 border-t pt-3 mt-3">
+                                            <span>Toplam Tutar</span>
+                                            <span className="text-primary-700">₺{Number(order.toplamTutar).toFixed(2)}</span>
                                         </div>
                                     </div>
-                                    <span className="font-bold text-gray-800">₺{(Number(item.birimFiyat) * item.adet).toFixed(2)}</span>
                                 </div>
-                            ))}
-                        </div>
 
-                        <div className="mt-8 border-t pt-4 space-y-2">
-                            <div className="flex justify-between items-center text-gray-600">
-                                <span>Ara Toplam</span>
-                                <span>₺{(Number(order.toplamTutar) - Number(order.kargoUcreti)).toFixed(2)}</span>
+                                <div className="bg-primary-50/70 p-5 rounded-2xl border border-primary-100">
+                                    <h4 className="font-bold text-primary-900 mb-2 flex items-center gap-1.5 text-sm uppercase tracking-wider">
+                                        <MapPin size={16} /> Teslimat Adresi
+                                    </h4>
+                                    <p className="text-primary-850 font-semibold text-sm">{order.teslimatAdresi?.ilce || ''}, {order.teslimatAdresi?.sehir || ''}</p>
+                                    <p className="text-xs text-primary-600 mt-2 font-medium leading-relaxed">* Güvenlik nedeniyle tam adres gizlenmiştir.</p>
+                                </div>
                             </div>
-                            <div className="flex justify-between items-center text-gray-600">
-                                <span>Kargo Ücreti</span>
-                                <span>₺{Number(order.kargoUcreti || 0).toFixed(2)}</span>
-                            </div>
-                            <div className="flex justify-between items-center text-xl font-bold text-gray-900 border-t pt-2 mt-2">
-                                <span>Toplam Tutar</span>
-                                <span>₺{Number(order.toplamTutar).toFixed(2)}</span>
-                            </div>
-                        </div>
-
-                        <div className="mt-8 bg-primary-50 p-4 rounded-lg">
-                            <h3 className="font-semibold text-primary-900 mb-2">Teslimat Adresi</h3>
-                            <p className="text-primary-800">{order.teslimatAdresi?.ilce || ''}, {order.teslimatAdresi?.sehir || ''}</p>
-                            <p className="text-sm text-primary-600 mt-1">* Güvenlik nedeniyle tam adres gizlenmiştir.</p>
                         </div>
                     </div>
 

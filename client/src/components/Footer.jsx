@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Truck, Phone, Mail, MapPin, Shield, CreditCard, Headphones, ChevronRight, MessageCircle } from 'lucide-react';
+import { useSettings } from '../context/SettingsContext';
 
 // Social media SVG icons
 const InstagramIcon = () => (
@@ -50,6 +51,15 @@ const TroyIcon = () => (
 );
 
 export function Footer() {
+    const { settings } = useSettings();
+    const siteTitle = settings.siteAdi || 'E-Market';
+    const email = settings.iletisimEmail || 'bilgi@e-market.com';
+    const instagram = settings.instagramUrl || 'https://www.instagram.com/emarketltd/';
+    const facebook = settings.facebookUrl || 'https://www.facebook.com/emarketltd/';
+    const rawNum = settings.whatsappNumarasi || '';
+    const cleanNum = rawNum.replace(/[^0-9]/g, '') || '908500000000';
+    const waText = encodeURIComponent(`Merhaba, ${siteTitle} üzerinden size ulaşıyorum.`);
+
     return (
         <footer className="bg-corporate-black text-white pt-16 pb-8 border-t-2 border-indigo-600/20">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -59,7 +69,7 @@ export function Footer() {
                         <Link to="/" className="inline-block group">
                             <img
                                 src="/images/logo-dark.svg"
-                                alt="E-Market"
+                                alt={siteTitle}
                                 className="h-20 w-auto object-contain hover:opacity-90 transition-opacity duration-300"
                             />
                         </Link>
@@ -67,13 +77,13 @@ export function Footer() {
                             Güvenilir ve hızlı alışverişin adresi. En kaliteli ürünler, en uygun fiyatlarla burada.
                         </p>
                         <div className="space-y-4 pt-2">
-                            <a href="mailto:bilgi@e-market.com" className="flex items-center gap-3 text-gray-300 hover:text-indigo-600 transition-colors bg-white/5 p-4 rounded-lg border border-white/10 hover:border-indigo-600/30">
+                            <a href={`mailto:${email}`} className="flex items-center gap-3 text-gray-300 hover:text-indigo-600 transition-colors bg-white/5 p-4 rounded-lg border border-white/10 hover:border-indigo-600/30">
                                 <Mail size={22} />
-                                <span className="text-base font-medium">bilgi@e-market.com</span>
+                                <span className="text-base font-medium">{email}</span>
                             </a>
                             <div className="flex gap-3">
                                 <a
-                                    href="https://www.instagram.com/emarketltd/"
+                                    href={instagram}
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     className="w-10 h-10 rounded-lg bg-white/5 flex items-center justify-center text-gray-400 hover:bg-gradient-to-tr hover:from-purple-600 hover:to-pink-600 hover:text-white transition-all hover:scale-110"
@@ -82,7 +92,7 @@ export function Footer() {
                                     <InstagramIcon />
                                 </a>
                                 <a
-                                    href="https://www.facebook.com/emarketltd/"
+                                    href={facebook}
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     className="w-10 h-10 rounded-lg bg-white/5 flex items-center justify-center text-gray-400 hover:bg-blue-600 hover:text-white transition-all hover:scale-110"
@@ -91,7 +101,7 @@ export function Footer() {
                                     <FacebookIcon />
                                 </a>
                                 <a
-                                    href="https://wa.me/908500000000?text=Merhaba%2C%20e-market.com%20%C3%BCzerinden%20size%20ula%C5%9F%C4%B1yorum."
+                                    href={`https://wa.me/${cleanNum}?text=${waText}`}
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     className="w-10 h-10 rounded-lg bg-white/5 flex items-center justify-center text-gray-400 hover:bg-green-500 hover:text-white transition-all hover:scale-110"
@@ -184,10 +194,10 @@ export function Footer() {
                 <div className="pt-6 border-t border-white/5 flex flex-col md:flex-row justify-between items-center gap-4">
                     <div className="text-center md:text-left">
                         <p className="text-xs text-gray-500 leading-relaxed">
-                            &copy; {new Date().getFullYear()} E-Market. Tüm Hakları Saklıdır.
+                            &copy; {new Date().getFullYear()} {siteTitle}. Tüm Hakları Saklıdır.
                         </p>
                         <p className="text-[11px] text-gray-700 mt-0.5">
-                            E-Market Teknoloji ve Ticaret Limited Şirketi | MERSİS: 0123456789012345
+                            {siteTitle} Teknoloji ve Ticaret Limited Şirketi | MERSİS: 0123456789012345
                         </p>
                     </div>
 
@@ -195,7 +205,10 @@ export function Footer() {
                         <VisaIcon />
                         <MastercardIcon />
                         <TroyIcon />
-                        <span className="text-white font-bold tracking-widest text-xs ml-1 opacity-70">Param</span>
+                        <div className="h-4 w-px bg-white/20 mx-1" />
+                        <span className="text-white font-black tracking-widest text-[10px] uppercase bg-white/10 px-2.5 py-1 rounded-sm border border-white/10">iyzico</span>
+                        <span className="text-white font-black tracking-widest text-[10px] uppercase bg-white/10 px-2.5 py-1 rounded-sm border border-white/10">PayTR</span>
+                        <span className="text-white font-black tracking-widest text-[10px] uppercase bg-white/10 px-2.5 py-1 rounded-sm border border-white/10">Param</span>
                     </div>
                 </div>
             </div>

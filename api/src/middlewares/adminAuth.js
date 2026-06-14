@@ -13,7 +13,7 @@ export const adminAuth = async (c, next) => {
 
     const token = authHeader.split(' ')[1];
     try {
-        const payload = await verify(token, config.adminJwtSecret);
+        const payload = await verify(token, config.adminJwtSecret, 'HS256');
         c.set('adminUser', payload);
         await next();
     } catch (e) {

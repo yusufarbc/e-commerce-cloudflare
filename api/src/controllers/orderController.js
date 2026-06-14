@@ -64,7 +64,9 @@ export class OrderController {
                     adet: item.adet,
                     birimFiyat: item.urunFiyatSnapshot,
                     toplamFiyat: item.toplamFiyat,
-                    iadeyeUygunMu: item.iadeyeUygunMuSnapshot
+                    iadeyeUygunMu: item.iadeyeUygunMuSnapshot,
+                    resimUrl: item.urun?.resimUrl || null,
+                    varyantBasligi: item.urun?.varyantBasligi || null
                 })),
 
                 // Safe Location Info ONLY

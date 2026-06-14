@@ -21,14 +21,7 @@ import { SettingsProvider } from './context/SettingsContext';
 
 import { Shop } from './pages/Shop';
 import { WhatsAppButton } from './components/WhatsAppButton';
-import { useEffect } from 'react';
-import { initGTM } from './utils/analytics';
-
 function App() {
-    useEffect(() => {
-        initGTM();
-    }, []);
-
     return (
         <ErrorBoundary>
             <HelmetProvider>
@@ -65,8 +58,8 @@ function App() {
                                         </Routes>
                                     </main>
                                     <Footer />
-                                    <WhatsAppButton />
                                     <CartSidebar />
+                                    <WhatsAppButton />
                                 </div>
                             </CartProvider>
                         </ToastProvider>
