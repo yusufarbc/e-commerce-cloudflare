@@ -183,7 +183,7 @@ export class OrderRepository extends BaseRepository {
      * @param {Object} historyData
      */
     async createOrderHistory(historyData) {
-        return this.prisma.siparisGecmisi.create({
+        return this.prisma.islemGecmisi.create({
             data: {
                 siparisId: historyData.siparisId,
                 eskiDurum: historyData.eskiDurum,

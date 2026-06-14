@@ -143,7 +143,7 @@ model Siparis {
   teslimTarihi      DateTime?       // 14 gün iade süresi kontrolü için
 
   kalemler          SiparisKalemi[]
-  gecmis            SiparisGecmisi[] 
+  gecmis            IslemGecmisi[] 
   iadeTalebi        IadeTalebi?
 
   olusturulmaTarihi DateTime        @default(now())
@@ -198,7 +198,7 @@ model SiparisKalemi {
   @@map("siparis_kalemleri")
 }
 
-model SiparisGecmisi {
+model IslemGecmisi {
   id                String        @id @default(uuid())
   siparisId         String
   siparis           Siparis       @relation(fields: [siparisId], references: [id])
@@ -208,7 +208,7 @@ model SiparisGecmisi {
   islemYapan        String        @default("SYSTEM") 
   tarih             DateTime      @default(now())
 
-  @@map("siparis_gecmisi")
+  @@map("islem_gecmisi")
 }
 
 model SistemAyarlari {
@@ -241,6 +241,8 @@ model SistemAyarlari {
   // Entegrasyonlar
   metaPixelId           String?
   googleMerchantToken   String?
+  gtmContainerId        String?
+  ga4MeasurementId      String?
 
   // İçerik
   hakkindaMetni         String? // Hakkımızda sayfası metni

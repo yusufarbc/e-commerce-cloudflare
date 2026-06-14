@@ -54,6 +54,8 @@ export class SettingsController {
         // Entegrasyonlar
         if (body.metaPixelId !== undefined) data.metaPixelId = body.metaPixelId || null;
         if (body.googleMerchantToken !== undefined) data.googleMerchantToken = body.googleMerchantToken || null;
+        if (body.gtmContainerId !== undefined) data.gtmContainerId = body.gtmContainerId || null;
+        if (body.ga4MeasurementId !== undefined) data.ga4MeasurementId = body.ga4MeasurementId || null;
 
         // İçerik
         if (body.hakkindaMetni !== undefined) data.hakkindaMetni = body.hakkindaMetni || null;

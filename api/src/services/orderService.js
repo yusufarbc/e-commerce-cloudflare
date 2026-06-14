@@ -92,7 +92,7 @@ export class OrderService {
             if (subTotal >= ucretsizKargoAltLimit) {
                 shippingFee = 0;
             } else {
-                shippingFee = sabitUcret;
+                shippingFee = totalWeight * weightMultiplier;
             }
         } else if (policy === 'AGIRLIK_KADEMELI') {
             // Dynamic price list tiers from dashboard settings
@@ -100,7 +100,7 @@ export class OrderService {
             if (typeof priceList === 'string') {
                 try {
                     priceList = JSON.parse(priceList);
-                } catch (e) {
+                } catch {
                     priceList = null;
                 }
             }
@@ -115,10 +115,8 @@ export class OrderService {
                 if (matchingTier) {
                     shippingFee = Number(matchingTier.price);
                 } else {
-                    // If weight exceeds the maximum tier, calculate base price plus surcharge per extra kg
-                    const lastTier = sortedList[sortedList.length - 1];
-                    const extraWeight = Math.ceil(totalWeight - lastTier.maxWeight);
-                    shippingFee = Number(lastTier.price) + (extraWeight * weightMultiplier);
+                    // Exceeds max weight logic - no multiplier allowed!
+                    shippingFee = null;
                 }
             } else {
                 // Fallback: Hardcoded default tiers if system configurations are missing

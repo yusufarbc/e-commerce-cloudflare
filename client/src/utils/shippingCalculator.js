@@ -44,7 +44,7 @@ export const calculateShippingFee = ({ cartTotal, totalWeight, settings }) => {
             shippingFee = 0;
             isFreeShipping = true;
         } else {
-            shippingFee = sabitUcret;
+            shippingFee = totalWeight * weightMultiplier;
             isFreeShipping = (shippingFee === 0);
         }
     } else if (policy === 'AGIRLIK_KADEMELI') {
@@ -53,7 +53,7 @@ export const calculateShippingFee = ({ cartTotal, totalWeight, settings }) => {
         if (typeof priceList === 'string') {
             try {
                 priceList = JSON.parse(priceList);
-            } catch (e) {
+            } catch {
                 priceList = null;
             }
         }
@@ -66,10 +66,9 @@ export const calculateShippingFee = ({ cartTotal, totalWeight, settings }) => {
             if (matchingTier) {
                 shippingFee = Number(matchingTier.price);
             } else {
-                // Exceeds max weight logic
-                const lastTier = sortedList[sortedList.length - 1];
-                const extraWeight = Math.ceil(totalWeight - lastTier.maxWeight);
-                shippingFee = Number(lastTier.price) + (extraWeight * weightMultiplier);
+                // Exceeds max weight logic - no multiplier allowed!
+                shippingFee = null;
+                weightError = true;
             }
         } else {
             // Fallback check (Hardcoded if no settings or empty tiers)

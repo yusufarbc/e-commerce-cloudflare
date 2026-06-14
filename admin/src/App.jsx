@@ -79,6 +79,9 @@ export default function App() {
     twitterUrl: '',
     youtubeUrl: '',
     metaPixelId: '',
+    gtmContainerId: '',
+    ga4MeasurementId: '',
+    googleMerchantToken: '',
     hakkindaMetni: ''
   });
   const [stats, setStats] = useState({
@@ -110,6 +113,47 @@ export default function App() {
   const [showBrandModal, setShowBrandModal] = useState(false);
   const [editingBrand, setEditingBrand] = useState(null);
   const [brandForm, setBrandForm] = useState({ ad: '', logoUrl: '', sira: 0, aktif: true });
+
+  // --- New UX/UI Table States (Sorting, Filtering, Selection) ---
+  // Sort configs
+  const [productSort, setProductSort] = useState({ key: 'ad', direction: 'asc' });
+  const [categorySort, setCategorySort] = useState({ key: 'sira', direction: 'asc' });
+  const [brandSort, setBrandSort] = useState({ key: 'sira', direction: 'asc' });
+  const [orderSort, setOrderSort] = useState({ key: 'olusturulmaTarihi', direction: 'desc' });
+  const [returnSort, setReturnSort] = useState({ key: 'olusturulmaTarihi', direction: 'desc' });
+
+  // Filtering / Search configs
+  const [productSearch, setProductSearch] = useState('');
+  const [productFilterCategory, setProductFilterCategory] = useState('');
+  const [productFilterBrand, setProductFilterBrand] = useState('');
+  const [productFilterStatus, setProductFilterStatus] = useState('');
+
+  const [categorySearch, setCategorySearch] = useState('');
+  const [categoryFilterStatus, setCategoryFilterStatus] = useState('');
+
+  const [brandSearch, setBrandSearch] = useState('');
+  const [brandFilterStatus, setBrandFilterStatus] = useState('');
+
+  const [orderSearch, setOrderSearch] = useState('');
+  const [orderFilterStatus, setOrderFilterStatus] = useState('');
+  const [orderFilterFatura, setOrderFilterFatura] = useState('');
+
+  const [returnSearch, setReturnSearch] = useState('');
+  const [returnFilterStatus, setReturnFilterStatus] = useState('');
+
+  // Multi-Selection states
+  const [selectedProductIds, setSelectedProductIds] = useState([]);
+  const [selectedCategoryIds, setSelectedCategoryIds] = useState([]);
+  const [selectedBrandIds, setSelectedBrandIds] = useState([]);
+
+  // Clear selections on tab change
+  useEffect(() => {
+    /* eslint-disable react-hooks/set-state-in-effect */
+    setSelectedProductIds([]);
+    setSelectedCategoryIds([]);
+    setSelectedBrandIds([]);
+    /* eslint-enable react-hooks/set-state-in-effect */
+  }, [activeTab]);
 
   const [showOrderModal, setShowOrderModal] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState(null);
@@ -414,6 +458,110 @@ export default function App() {
     }
   };
 
+  // --- UX/UI Sorting & Filtering Helpers ---
+  const handleSort = (key, currentSort, setSort) => {
+    let direction = 'asc';
+    if (currentSort.key === key && currentSort.direction === 'asc') {
+      direction = 'desc';
+    }
+    setSort({ key, direction });
+  };
+
+  const getSortedData = (data, sortConfig, resolveNestedVal = null) => {
+    if (!sortConfig.key) return data;
+    
+    return [...data].sort((a, b) => {
+      let valA = a[sortConfig.key];
+      let valB = b[sortConfig.key];
+
+      if (resolveNestedVal) {
+        valA = resolveNestedVal(a, sortConfig.key);
+        valB = resolveNestedVal(b, sortConfig.key);
+      }
+
+      if (valA === undefined || valA === null) valA = '';
+      if (valB === undefined || valB === null) valB = '';
+
+      if (typeof valA === 'string') {
+        return sortConfig.direction === 'asc'
+          ? valA.localeCompare(valB, 'tr-TR')
+          : valB.localeCompare(valA, 'tr-TR');
+      } else {
+        return sortConfig.direction === 'asc'
+          ? (valA > valB ? 1 : -1)
+          : (valA < valB ? 1 : -1);
+      }
+    });
+  };
+
+  const renderSortIndicator = (currentSort, key) => {
+    if (currentSort.key !== key) return <span className="sort-indicator">↕</span>;
+    return currentSort.direction === 'asc' 
+      ? <span className="sort-indicator" style={{ color: 'var(--color-primary)' }}>▲</span>
+      : <span className="sort-indicator" style={{ color: 'var(--color-primary)' }}>▼</span>;
+  };
+
+  // --- Bulk Deletion Actions ---
+  const bulkDeleteProducts = async (ids) => {
+    if (!confirm(`Seçilen ${ids.length} ürünü silmek istediğinize emin misiniz?`)) return;
+    setLoading(true);
+    try {
+      const deletePromises = ids.map(id => 
+        adminRequest(`${API_URL}/api/v1/admin/products/${id}`, { method: 'DELETE' })
+      );
+      await Promise.all(deletePromises);
+      setSelectedProductIds([]);
+      fetchData();
+    } catch (err) {
+      if (err.message !== 'UNAUTHORIZED') {
+        console.error(err);
+        alert('Toplu silme sırasında bir hata oluştu.');
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const bulkDeleteCategories = async (ids) => {
+    if (!confirm(`Seçilen ${ids.length} kategoriyi silmek istediğinize emin misiniz?`)) return;
+    setLoading(true);
+    try {
+      const deletePromises = ids.map(id => 
+        adminRequest(`${API_URL}/api/v1/admin/categories/${id}`, { method: 'DELETE' })
+      );
+      await Promise.all(deletePromises);
+      setSelectedCategoryIds([]);
+      fetchData();
+    } catch (err) {
+      if (err.message !== 'UNAUTHORIZED') {
+        console.error(err);
+        alert('Toplu silme sırasında bir hata oluştu.');
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const bulkDeleteBrands = async (ids) => {
+    if (!confirm(`Seçilen ${ids.length} markayı silmek istediğinize emin misiniz?`)) return;
+    setLoading(true);
+    try {
+      const deletePromises = ids.map(id => 
+        adminRequest(`${API_URL}/api/v1/admin/brands/${id}`, { method: 'DELETE' })
+      );
+      await Promise.all(deletePromises);
+      setSelectedBrandIds([]);
+      fetchData();
+    } catch (err) {
+      if (err.message !== 'UNAUTHORIZED') {
+        console.error(err);
+        alert('Toplu silme sırasında bir hata oluştu.');
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const deleteProduct = async (id) => {
     if (!confirm('Bu ürünü silmek istediğinize emin misiniz?')) return;
     try {
@@ -522,16 +670,30 @@ export default function App() {
 
   // Order Detail & Update
   const viewOrder = async (order) => {
-    setSelectedOrder(order);
-    setOrderStatusForm({
-      durum: order.durum,
-      kargoTakipNo: order.kargoTakipNo || '',
-      kargoFirmasi: order.kargoFirmasi || '',
-      faturaNo: order.faturaNo || '',
-      faturaDurumu: order.faturaDurumu || 'DUZENLENMEDI',
-      adminNotu: ''
-    });
-    setShowOrderModal(true);
+    try {
+      const res = await adminRequest(`${API_URL}/api/v1/admin/orders/${order.id}`);
+      const data = await res.json();
+      if (data.status === 'success') {
+        const fullOrder = data.data;
+        setSelectedOrder(fullOrder);
+        setOrderStatusForm({
+          durum: fullOrder.durum,
+          kargoTakipNo: fullOrder.kargoTakipNo || '',
+          kargoFirmasi: fullOrder.kargoFirmasi || '',
+          faturaNo: fullOrder.faturaNo || '',
+          faturaDurumu: fullOrder.faturaDurumu || 'DUZENLENMEDI',
+          adminNotu: ''
+        });
+        setShowOrderModal(true);
+      } else {
+        alert('Sipariş detayları yüklenemedi: ' + data.errorMessage);
+      }
+    } catch (err) {
+      if (err.message !== 'UNAUTHORIZED') {
+        console.error(err);
+        alert('Sipariş detayları yüklenirken hata oluştu.');
+      }
+    }
   };
 
   const saveOrderStatus = async (e) => {
@@ -813,334 +975,850 @@ export default function App() {
         )}
 
         {/* Tab 2: Products */}
-        {activeTab === 'products' && (
-          <div>
-            <div className="content-header">
-              <h1 className="content-title">Ürün Kataloğu</h1>
-              <button className="btn btn-primary" onClick={() => {
-                setEditingProduct(null);
-                setProductForm({
-                  ad: '', fiyat: '', indirimliFiyat: '', kisaAciklama: '',
-                  renkSecenekleri: [], boyutSecenekleri: [], agirlik: 1,
-                  aciklama: '', resimUrl: '', stokAdedi: 0, varyantBasligi: '',
-                  kategoriId: categories[0]?.id || '', markaId: brands[0]?.id || '', aktif: true, oneCikan: false,
-                  firsatUrunu: false, yeniUrun: false, cokSatanlar: false
-                });
-                setShowProductModal(true);
-              }}>
-                <Plus size={16} /> Yeni Ürün Ekle
-              </button>
-            </div>
+        {activeTab === 'products' && (() => {
+          const filteredProducts = products.filter(prod => {
+            const matchesSearch = !productSearch || 
+              prod.ad.toLowerCase().includes(productSearch.toLowerCase()) ||
+              (prod.aciklama && prod.aciklama.toLowerCase().includes(productSearch.toLowerCase()));
+            const matchesCategory = !productFilterCategory || prod.kategoriId === productFilterCategory;
+            const matchesBrand = !productFilterBrand || prod.markaId === productFilterBrand;
+            const matchesStatus = !productFilterStatus || 
+              (productFilterStatus === 'active' ? prod.aktif : !prod.aktif);
+            return matchesSearch && matchesCategory && matchesBrand && matchesStatus;
+          });
 
-            <div className="card">
-              <div className="table-container">
-                <table className="admin-table">
-                  <thead>
-                    <tr>
-                      <th>Görsel</th>
-                      <th>Ürün Adı</th>
-                      <th>Marka</th>
-                      <th>Kategori</th>
-                      <th>Fiyat</th>
-                      <th>Stok</th>
-                      <th>Durum</th>
-                      <th style={{ width: '120px' }}>İşlem</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {products.map(prod => {
-                      const imageCdnUrl = prod.resimUrl && !prod.resimUrl.startsWith('http') 
-                        ? `${settings.cdnUrl || config.cdnUrl}/${prod.resimUrl}` 
-                        : prod.resimUrl;
-                      
-                      return (
-                        <tr key={prod.id}>
-                          <td>
-                            <img 
-                              src={imageCdnUrl || 'https://via.placeholder.com/50x50?text=Yok'} 
-                              alt="" 
-                              style={{ width: '40px', height: '40px', objectFit: 'contain', borderRadius: '4px', background: 'rgba(255,255,255,0.05)', padding: '2px' }}
+          const sortedProducts = getSortedData(filteredProducts, productSort, (prod, key) => {
+            if (key === 'marka') return prod.marka?.ad || '';
+            if (key === 'kategori') return prod.kategori?.ad || '';
+            return prod[key];
+          });
+
+          const toggleSelectAllProducts = () => {
+            if (filteredProducts.length === 0) return;
+            if (selectedProductIds.length === filteredProducts.length) {
+              setSelectedProductIds([]);
+            } else {
+              setSelectedProductIds(filteredProducts.map(p => p.id));
+            }
+          };
+
+          const toggleSelectProduct = (id) => {
+            setSelectedProductIds(prev => 
+              prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
+            );
+          };
+
+          return (
+            <div>
+              <div className="content-header">
+                <h1 className="content-title">Ürün Kataloğu</h1>
+                <button className="btn btn-primary" onClick={() => {
+                  setEditingProduct(null);
+                  setProductForm({
+                    ad: '', fiyat: '', indirimliFiyat: '', kisaAciklama: '',
+                    renkSecenekleri: [], boyutSecenekleri: [], agirlik: 1,
+                    aciklama: '', resimUrl: '', stokAdedi: 0, varyantBasligi: '',
+                    kategoriId: categories[0]?.id || '', markaId: brands[0]?.id || '', aktif: true, oneCikan: false,
+                    firsatUrunu: false, yeniUrun: false, cokSatanlar: false
+                  });
+                  setShowProductModal(true);
+                }}>
+                  <Plus size={16} /> Yeni Ürün Ekle
+                </button>
+              </div>
+
+              {/* Filter Bar */}
+              <div className="filter-bar">
+                <div style={{ flex: 1, minWidth: '200px' }}>
+                  <input 
+                    type="text" 
+                    className="form-control" 
+                    placeholder="Ürün adı veya açıklama ara..." 
+                    value={productSearch}
+                    onChange={e => setProductSearch(e.target.value)}
+                  />
+                </div>
+                <div className="filter-group">
+                  <select 
+                    className="form-control"
+                    value={productFilterCategory}
+                    onChange={e => setProductFilterCategory(e.target.value)}
+                    style={{ width: '160px' }}
+                  >
+                    <option value="">Tüm Kategoriler</option>
+                    {categories.map(c => <option key={c.id} value={c.id}>{c.ad}</option>)}
+                  </select>
+                  <select 
+                    className="form-control"
+                    value={productFilterBrand}
+                    onChange={e => setProductFilterBrand(e.target.value)}
+                    style={{ width: '160px' }}
+                  >
+                    <option value="">Tüm Markalar</option>
+                    {brands.map(b => <option key={b.id} value={b.id}>{b.ad}</option>)}
+                  </select>
+                  <select 
+                    className="form-control"
+                    value={productFilterStatus}
+                    onChange={e => setProductFilterStatus(e.target.value)}
+                    style={{ width: '120px' }}
+                  >
+                    <option value="">Tüm Durumlar</option>
+                    <option value="active">Aktif</option>
+                    <option value="inactive">Gizli</option>
+                  </select>
+                  {(productSearch || productFilterCategory || productFilterBrand || productFilterStatus) && (
+                    <button 
+                      className="btn btn-secondary btn-sm"
+                      onClick={() => {
+                        setProductSearch('');
+                        setProductFilterCategory('');
+                        setProductFilterBrand('');
+                        setProductFilterStatus('');
+                      }}
+                    >
+                      Sıfırla
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Bulk Actions Panel */}
+              {selectedProductIds.length > 0 && (
+                <div className="bulk-actions-bar">
+                  <div style={{ fontSize: '13px', fontWeight: '600' }}>
+                    📦 {selectedProductIds.length} ürün seçildi
+                  </div>
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    <button 
+                      className="btn btn-danger btn-sm"
+                      onClick={() => bulkDeleteProducts(selectedProductIds)}
+                    >
+                      Seçilenleri Sil
+                    </button>
+                    <button 
+                      className="btn btn-secondary btn-sm"
+                      onClick={() => setSelectedProductIds([])}
+                    >
+                      Seçimi Temizle
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              <div className="card">
+                <div className="table-container">
+                  <table className="admin-table">
+                    <thead>
+                      <tr>
+                        <th style={{ width: '40px', paddingRight: 0 }}>
+                          <input 
+                            type="checkbox" 
+                            checked={filteredProducts.length > 0 && selectedProductIds.length === filteredProducts.length} 
+                            onChange={toggleSelectAllProducts} 
+                          />
+                        </th>
+                        <th>Görsel</th>
+                        <th className="sortable-header" onClick={() => handleSort('ad', productSort, setProductSort)}>
+                          Ürün Adı {renderSortIndicator(productSort, 'ad')}
+                        </th>
+                        <th className="sortable-header" onClick={() => handleSort('marka', productSort, setProductSort)}>
+                          Marka {renderSortIndicator(productSort, 'marka')}
+                        </th>
+                        <th className="sortable-header" onClick={() => handleSort('kategori', productSort, setProductSort)}>
+                          Kategori {renderSortIndicator(productSort, 'kategori')}
+                        </th>
+                        <th className="sortable-header" onClick={() => handleSort('fiyat', productSort, setProductSort)}>
+                          Fiyat {renderSortIndicator(productSort, 'fiyat')}
+                        </th>
+                        <th className="sortable-header" onClick={() => handleSort('stokAdedi', productSort, setProductSort)}>
+                          Stok {renderSortIndicator(productSort, 'stokAdedi')}
+                        </th>
+                        <th className="sortable-header" onClick={() => handleSort('aktif', productSort, setProductSort)}>
+                          Durum {renderSortIndicator(productSort, 'aktif')}
+                        </th>
+                        <th style={{ width: '120px' }}>İşlem</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {sortedProducts.map(prod => {
+                        const imageCdnUrl = prod.resimUrl && !prod.resimUrl.startsWith('http') 
+                          ? `${settings.cdnUrl || config.cdnUrl}/${prod.resimUrl}` 
+                          : prod.resimUrl;
+                        
+                        return (
+                          <tr key={prod.id}>
+                            <td style={{ paddingRight: 0 }}>
+                              <input 
+                                type="checkbox" 
+                                checked={selectedProductIds.includes(prod.id)} 
+                                onChange={() => toggleSelectProduct(prod.id)} 
+                              />
+                            </td>
+                            <td>
+                              <img 
+                                src={imageCdnUrl || 'https://via.placeholder.com/50x50?text=Yok'} 
+                                alt="" 
+                                style={{ width: '40px', height: '40px', objectFit: 'contain', borderRadius: '4px', background: 'rgba(255,255,255,0.05)', padding: '2px' }}
+                              />
+                            </td>
+                            <td style={{ fontWeight: '600' }}>{prod.ad}</td>
+                            <td>{prod.marka?.ad || '-'}</td>
+                            <td>{prod.kategori?.ad || '-'}</td>
+                            <td>
+                              {prod.indirimliFiyat ? (
+                                <div>
+                                  <span style={{ textDecoration: 'line-through', color: 'var(--color-text-dimmed)', fontSize: '12px', marginRight: '6px' }}>₺{prod.fiyat}</span>
+                                  <span style={{ color: 'var(--color-primary)', fontWeight: 'bold' }}>₺{prod.indirimliFiyat}</span>
+                                </div>
+                              ) : (
+                                <span>₺{prod.fiyat}</span>
+                              )}
+                            </td>
+                            <td>{prod.stokAdedi}</td>
+                            <td>
+                              <span className={`badge ${prod.aktif ? 'badge-success' : 'badge-error'}`}>
+                                {prod.aktif ? 'Aktif' : 'Gizli'}
+                              </span>
+                            </td>
+                            <td>
+                              <div className="flex-gap">
+                                <button className="btn btn-secondary btn-sm" onClick={() => {
+                                  setEditingProduct(prod);
+                                  setProductForm({
+                                    ad: prod.ad, fiyat: prod.fiyat, indirimliFiyat: prod.indirimliFiyat || '',
+                                    kisaAciklama: prod.kisaAciklama || '',
+                                    renkSecenekleri: prod.renkSecenekleri || [],
+                                    boyutSecenekleri: prod.boyutSecenekleri || [],
+                                    agirlik: prod.agirlik, aciklama: prod.aciklama || '', resimUrl: prod.resimUrl || '',
+                                    stokAdedi: prod.stokAdedi, varyantBasligi: prod.varyantBasligi || '',
+                                    kategoriId: prod.kategoriId || '', markaId: prod.markaId || '',
+                                    aktif: prod.aktif, oneCikan: prod.oneCikan, firsatUrunu: prod.firsatUrunu,
+                                    yeniUrun: prod.yeniUrun, cokSatanlar: prod.cokSatanlar
+                                  });
+                                  setShowProductModal(true);
+                                }}>
+                                  <Edit2 size={12} />
+                                </button>
+                                <button className="btn btn-danger btn-sm" onClick={() => deleteProduct(prod.id)}>
+                                  <Trash2 size={12} />
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                      {sortedProducts.length === 0 && (
+                        <tr>
+                          <td colSpan="9" style={{ textAlign: 'center', padding: '30px', color: 'var(--color-text-muted)' }}>
+                            Aradığınız kriterlere uygun ürün bulunamadı.
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          );
+        })()}
+
+        {/* Tab 3: Categories */}
+        {activeTab === 'categories' && (() => {
+          const filteredCategories = categories.filter(cat => {
+            const matchesSearch = !categorySearch || cat.ad.toLowerCase().includes(categorySearch.toLowerCase());
+            const matchesStatus = !categoryFilterStatus || 
+              (categoryFilterStatus === 'active' ? cat.aktif : !cat.aktif);
+            return matchesSearch && matchesStatus;
+          });
+
+          const sortedCategories = getSortedData(filteredCategories, categorySort);
+
+          const toggleSelectAllCategories = () => {
+            if (filteredCategories.length === 0) return;
+            if (selectedCategoryIds.length === filteredCategories.length) {
+              setSelectedCategoryIds([]);
+            } else {
+              setSelectedCategoryIds(filteredCategories.map(c => c.id));
+            }
+          };
+
+          const toggleSelectCategory = (id) => {
+            setSelectedCategoryIds(prev => 
+              prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
+            );
+          };
+
+          return (
+            <div>
+              <div className="content-header">
+                <h1 className="content-title">Kategoriler</h1>
+                <button className="btn btn-primary" onClick={() => {
+                  setEditingCategory(null);
+                  setCategoryForm({ ad: '', resim: '', sira: 0, aktif: true });
+                  setShowCategoryModal(true);
+                }}>
+                  <Plus size={16} /> Yeni Kategori Ekle
+                </button>
+              </div>
+
+              {/* Filter Bar */}
+              <div className="filter-bar">
+                <div style={{ flex: 1, minWidth: '200px' }}>
+                  <input 
+                    type="text" 
+                    className="form-control" 
+                    placeholder="Kategori adı ara..." 
+                    value={categorySearch}
+                    onChange={e => setCategorySearch(e.target.value)}
+                  />
+                </div>
+                <div className="filter-group">
+                  <select 
+                    className="form-control"
+                    value={categoryFilterStatus}
+                    onChange={e => setCategoryFilterStatus(e.target.value)}
+                    style={{ width: '120px' }}
+                  >
+                    <option value="">Tüm Durumlar</option>
+                    <option value="active">Aktif</option>
+                    <option value="inactive">Gizli</option>
+                  </select>
+                  {(categorySearch || categoryFilterStatus) && (
+                    <button 
+                      className="btn btn-secondary btn-sm"
+                      onClick={() => {
+                        setCategorySearch('');
+                        setCategoryFilterStatus('');
+                      }}
+                    >
+                      Sıfırla
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Bulk Actions Panel */}
+              {selectedCategoryIds.length > 0 && (
+                <div className="bulk-actions-bar">
+                  <div style={{ fontSize: '13px', fontWeight: '600' }}>
+                    📁 {selectedCategoryIds.length} kategori seçildi
+                  </div>
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    <button 
+                      className="btn btn-danger btn-sm"
+                      onClick={() => bulkDeleteCategories(selectedCategoryIds)}
+                    >
+                      Seçilenleri Sil
+                    </button>
+                    <button 
+                      className="btn btn-secondary btn-sm"
+                      onClick={() => setSelectedCategoryIds([])}
+                    >
+                      Seçimi Temizle
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              <div className="card" style={{ maxWidth: '800px' }}>
+                <div className="table-container">
+                  <table className="admin-table">
+                    <thead>
+                      <tr>
+                        <th style={{ width: '40px', paddingRight: 0 }}>
+                          <input 
+                            type="checkbox" 
+                            checked={filteredCategories.length > 0 && selectedCategoryIds.length === filteredCategories.length} 
+                            onChange={toggleSelectAllCategories} 
+                          />
+                        </th>
+                        <th className="sortable-header" onClick={() => handleSort('sira', categorySort, setCategorySort)}>
+                          Sıra {renderSortIndicator(categorySort, 'sira')}
+                        </th>
+                        <th className="sortable-header" onClick={() => handleSort('ad', categorySort, setCategorySort)}>
+                          Kategori Adı {renderSortIndicator(categorySort, 'ad')}
+                        </th>
+                        <th className="sortable-header" onClick={() => handleSort('aktif', categorySort, setCategorySort)}>
+                          Durum {renderSortIndicator(categorySort, 'aktif')}
+                        </th>
+                        <th style={{ width: '120px' }}>İşlem</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {sortedCategories.map(cat => (
+                        <tr key={cat.id}>
+                          <td style={{ paddingRight: 0 }}>
+                            <input 
+                              type="checkbox" 
+                              checked={selectedCategoryIds.includes(cat.id)} 
+                              onChange={() => toggleSelectCategory(cat.id)} 
                             />
                           </td>
-                          <td style={{ fontWeight: '600' }}>{prod.ad}</td>
-                          <td>{prod.marka?.ad || '-'}</td>
-                          <td>{prod.kategori?.ad || '-'}</td>
+                          <td>{cat.sira}</td>
+                          <td style={{ fontWeight: '600' }}>{cat.ad}</td>
                           <td>
-                            {prod.indirimliFiyat ? (
-                              <div>
-                                <span style={{ textDecoration: 'line-through', color: 'var(--color-text-dimmed)', fontSize: '12px', marginRight: '6px' }}>₺{prod.fiyat}</span>
-                                <span style={{ color: 'var(--color-primary)', fontWeight: 'bold' }}>₺{prod.indirimliFiyat}</span>
-                              </div>
-                            ) : (
-                              <span>₺{prod.fiyat}</span>
-                            )}
-                          </td>
-                          <td>{prod.stokAdedi}</td>
-                          <td>
-                            <span className={`badge ${prod.aktif ? 'badge-success' : 'badge-error'}`}>
-                              {prod.aktif ? 'Aktif' : 'Gizli'}
+                            <span className={`badge ${cat.aktif ? 'badge-success' : 'badge-error'}`}>
+                              {cat.aktif ? 'Aktif' : 'Gizli'}
                             </span>
                           </td>
                           <td>
                             <div className="flex-gap">
                               <button className="btn btn-secondary btn-sm" onClick={() => {
-                                setEditingProduct(prod);
-                                setProductForm({
-                                  ad: prod.ad, fiyat: prod.fiyat, indirimliFiyat: prod.indirimliFiyat || '',
-                                  kisaAciklama: prod.kisaAciklama || '',
-                                  renkSecenekleri: prod.renkSecenekleri || [],
-                                  boyutSecenekleri: prod.boyutSecenekleri || [],
-                                  agirlik: prod.agirlik, aciklama: prod.aciklama || '', resimUrl: prod.resimUrl || '',
-                                  stokAdedi: prod.stokAdedi, varyantBasligi: prod.varyantBasligi || '',
-                                  kategoriId: prod.kategoriId || '', markaId: prod.markaId || '',
-                                  aktif: prod.aktif, oneCikan: prod.oneCikan, firsatUrunu: prod.firsatUrunu,
-                                  yeniUrun: prod.yeniUrun, cokSatanlar: prod.cokSatanlar
-                                });
-                                setShowProductModal(true);
+                                setEditingCategory(cat);
+                                setCategoryForm({ ad: cat.ad, resim: cat.resim || '', sira: cat.sira, aktif: cat.aktif });
+                                setShowCategoryModal(true);
                               }}>
                                 <Edit2 size={12} />
                               </button>
-                              <button className="btn btn-danger btn-sm" onClick={() => deleteProduct(prod.id)}>
+                              <button className="btn btn-danger btn-sm" onClick={() => deleteCategory(cat.id)}>
                                 <Trash2 size={12} />
                               </button>
                             </div>
                           </td>
                         </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
+                      ))}
+                      {sortedCategories.length === 0 && (
+                        <tr>
+                          <td colSpan="5" style={{ textAlign: 'center', padding: '30px', color: 'var(--color-text-muted)' }}>
+                            Kategori bulunamadı.
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </div>
-          </div>
-        )}
-
-        {/* Tab 3: Categories */}
-        {activeTab === 'categories' && (
-          <div>
-            <div className="content-header">
-              <h1 className="content-title">Kategoriler</h1>
-              <button className="btn btn-primary" onClick={() => {
-                setEditingCategory(null);
-                setCategoryForm({ ad: '', resim: '', sira: 0, aktif: true });
-                setShowCategoryModal(true);
-              }}>
-                <Plus size={16} /> Yeni Kategori Ekle
-              </button>
-            </div>
-
-            <div className="card" style={{ maxWidth: '800px' }}>
-              <div className="table-container">
-                <table className="admin-table">
-                  <thead>
-                    <tr>
-                      <th>Sıra</th>
-                      <th>Kategori Adı</th>
-                      <th>Durum</th>
-                      <th style={{ width: '120px' }}>İşlem</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {categories.map(cat => (
-                      <tr key={cat.id}>
-                        <td>{cat.sira}</td>
-                        <td style={{ fontWeight: '600' }}>{cat.ad}</td>
-                        <td>
-                          <span className={`badge ${cat.aktif ? 'badge-success' : 'badge-error'}`}>
-                            {cat.aktif ? 'Aktif' : 'Gizli'}
-                          </span>
-                        </td>
-                        <td>
-                          <div className="flex-gap">
-                            <button className="btn btn-secondary btn-sm" onClick={() => {
-                              setEditingCategory(cat);
-                              setCategoryForm({ ad: cat.ad, resim: cat.resim || '', sira: cat.sira, aktif: cat.aktif });
-                              setShowCategoryModal(true);
-                            }}>
-                              <Edit2 size={12} />
-                            </button>
-                            <button className="btn btn-danger btn-sm" onClick={() => deleteCategory(cat.id)}>
-                              <Trash2 size={12} />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-        )}
+          );
+        })()}
 
         {/* Tab 4: Brands */}
-        {activeTab === 'brands' && (
-          <div>
-            <div className="content-header">
-              <h1 className="content-title">Markalar</h1>
-              <button className="btn btn-primary" onClick={() => {
-                setEditingBrand(null);
-                setBrandForm({ ad: '', logoUrl: '', sira: 0, aktif: true });
-                setShowBrandModal(true);
-              }}>
-                <Plus size={16} /> Yeni Marka Ekle
-              </button>
-            </div>
+        {activeTab === 'brands' && (() => {
+          const filteredBrands = brands.filter(brand => {
+            const matchesSearch = !brandSearch || brand.ad.toLowerCase().includes(brandSearch.toLowerCase());
+            const matchesStatus = !brandFilterStatus || 
+              (brandFilterStatus === 'active' ? brand.aktif : !brand.aktif);
+            return matchesSearch && matchesStatus;
+          });
 
-            <div className="card" style={{ maxWidth: '800px' }}>
-              <div className="table-container">
-                <table className="admin-table">
-                  <thead>
-                    <tr>
-                      <th>Sıra</th>
-                      <th>Marka Adı</th>
-                      <th>Durum</th>
-                      <th style={{ width: '120px' }}>İşlem</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {brands.map(brand => (
-                      <tr key={brand.id}>
-                        <td>{brand.sira}</td>
-                        <td style={{ fontWeight: '600' }}>{brand.ad}</td>
-                        <td>
-                          <span className={`badge ${brand.aktif ? 'badge-success' : 'badge-error'}`}>
-                            {brand.aktif ? 'Aktif' : 'Gizli'}
-                          </span>
-                        </td>
-                        <td>
-                          <div className="flex-gap">
-                            <button className="btn btn-secondary btn-sm" onClick={() => {
-                              setEditingBrand(brand);
-                              setBrandForm({ ad: brand.ad, logoUrl: brand.logoUrl || '', sira: brand.sira, aktif: brand.aktif });
-                              setShowBrandModal(true);
-                            }}>
-                              <Edit2 size={12} />
-                            </button>
-                            <button className="btn btn-danger btn-sm" onClick={() => deleteBrand(brand.id)}>
-                              <Trash2 size={12} />
-                            </button>
-                          </div>
-                        </td>
+          const sortedBrands = getSortedData(filteredBrands, brandSort);
+
+          const toggleSelectAllBrands = () => {
+            if (filteredBrands.length === 0) return;
+            if (selectedBrandIds.length === filteredBrands.length) {
+              setSelectedBrandIds([]);
+            } else {
+              setSelectedBrandIds(filteredBrands.map(b => b.id));
+            }
+          };
+
+          const toggleSelectBrand = (id) => {
+            setSelectedBrandIds(prev => 
+              prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
+            );
+          };
+
+          return (
+            <div>
+              <div className="content-header">
+                <h1 className="content-title">Markalar</h1>
+                <button className="btn btn-primary" onClick={() => {
+                  setEditingBrand(null);
+                  setBrandForm({ ad: '', logoUrl: '', sira: 0, aktif: true });
+                  setShowBrandModal(true);
+                }}>
+                  <Plus size={16} /> Yeni Marka Ekle
+                </button>
+              </div>
+
+              {/* Filter Bar */}
+              <div className="filter-bar">
+                <div style={{ flex: 1, minWidth: '200px' }}>
+                  <input 
+                    type="text" 
+                    className="form-control" 
+                    placeholder="Marka adı ara..." 
+                    value={brandSearch}
+                    onChange={e => setBrandSearch(e.target.value)}
+                  />
+                </div>
+                <div className="filter-group">
+                  <select 
+                    className="form-control"
+                    value={brandFilterStatus}
+                    onChange={e => setBrandFilterStatus(e.target.value)}
+                    style={{ width: '120px' }}
+                  >
+                    <option value="">Tüm Durumlar</option>
+                    <option value="active">Aktif</option>
+                    <option value="inactive">Gizli</option>
+                  </select>
+                  {(brandSearch || brandFilterStatus) && (
+                    <button 
+                      className="btn btn-secondary btn-sm"
+                      onClick={() => {
+                        setBrandSearch('');
+                        setBrandFilterStatus('');
+                      }}
+                    >
+                      Sıfırla
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Bulk Actions Panel */}
+              {selectedBrandIds.length > 0 && (
+                <div className="bulk-actions-bar">
+                  <div style={{ fontSize: '13px', fontWeight: '600' }}>
+                    🏷️ {selectedBrandIds.length} marka seçildi
+                  </div>
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    <button 
+                      className="btn btn-danger btn-sm"
+                      onClick={() => bulkDeleteBrands(selectedBrandIds)}
+                    >
+                      Seçilenleri Sil
+                    </button>
+                    <button 
+                      className="btn btn-secondary btn-sm"
+                      onClick={() => setSelectedBrandIds([])}
+                    >
+                      Seçimi Temizle
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              <div className="card" style={{ maxWidth: '800px' }}>
+                <div className="table-container">
+                  <table className="admin-table">
+                    <thead>
+                      <tr>
+                        <th style={{ width: '40px', paddingRight: 0 }}>
+                          <input 
+                            type="checkbox" 
+                            checked={filteredBrands.length > 0 && selectedBrandIds.length === filteredBrands.length} 
+                            onChange={toggleSelectAllBrands} 
+                          />
+                        </th>
+                        <th className="sortable-header" onClick={() => handleSort('sira', brandSort, setBrandSort)}>
+                          Sıra {renderSortIndicator(brandSort, 'sira')}
+                        </th>
+                        <th className="sortable-header" onClick={() => handleSort('ad', brandSort, setBrandSort)}>
+                          Marka Adı {renderSortIndicator(brandSort, 'ad')}
+                        </th>
+                        <th className="sortable-header" onClick={() => handleSort('aktif', brandSort, setBrandSort)}>
+                          Durum {renderSortIndicator(brandSort, 'aktif')}
+                        </th>
+                        <th style={{ width: '120px' }}>İşlem</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody>
+                      {sortedBrands.map(brand => (
+                        <tr key={brand.id}>
+                          <td style={{ paddingRight: 0 }}>
+                            <input 
+                              type="checkbox" 
+                              checked={selectedBrandIds.includes(brand.id)} 
+                              onChange={() => toggleSelectBrand(brand.id)} 
+                            />
+                          </td>
+                          <td>{brand.sira}</td>
+                          <td style={{ fontWeight: '600' }}>{brand.ad}</td>
+                          <td>
+                            <span className={`badge ${brand.aktif ? 'badge-success' : 'badge-error'}`}>
+                              {brand.aktif ? 'Aktif' : 'Gizli'}
+                            </span>
+                          </td>
+                          <td>
+                            <div className="flex-gap">
+                              <button className="btn btn-secondary btn-sm" onClick={() => {
+                                setEditingBrand(brand);
+                                setBrandForm({ ad: brand.ad, logoUrl: brand.logoUrl || '', sira: brand.sira, aktif: brand.aktif });
+                                setShowBrandModal(true);
+                              }}>
+                                <Edit2 size={12} />
+                              </button>
+                              <button className="btn btn-danger btn-sm" onClick={() => deleteBrand(brand.id)}>
+                                <Trash2 size={12} />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                      {sortedBrands.length === 0 && (
+                        <tr>
+                          <td colSpan="5" style={{ textAlign: 'center', padding: '30px', color: 'var(--color-text-muted)' }}>
+                            Marka bulunamadı.
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </div>
-          </div>
-        )}
+          );
+        })()}
 
         {/* Tab 5: Orders */}
-        {activeTab === 'orders' && (
-          <div>
-            <div className="content-header">
-              <h1 className="content-title">Sipariş Yönetimi</h1>
-            </div>
+        {activeTab === 'orders' && (() => {
+          const filteredOrders = orders.filter(order => {
+            const matchesSearch = !orderSearch || 
+              order.siparisNumarasi.toLowerCase().includes(orderSearch.toLowerCase()) ||
+              `${order.ad} ${order.soyad}`.toLowerCase().includes(orderSearch.toLowerCase()) ||
+              (order.telefon && order.telefon.toLowerCase().includes(orderSearch.toLowerCase())) ||
+              (order.eposta && order.eposta.toLowerCase().includes(orderSearch.toLowerCase()));
+            const matchesStatus = !orderFilterStatus || order.durum === orderFilterStatus;
+            const matchesFatura = !orderFilterFatura || order.faturaDurumu === orderFilterFatura;
+            return matchesSearch && matchesStatus && matchesFatura;
+          });
 
-            <div className="card">
-              <div className="table-container">
-                <table className="admin-table">
-                  <thead>
-                    <tr>
-                      <th>Sipariş No</th>
-                      <th>Müşteri</th>
-                      <th>Tarih</th>
-                      <th>Tutar</th>
-                      <th>Kargo</th>
-                      <th>Fatura</th>
-                      <th>Durum</th>
-                      <th>İşlem</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {orders.map(order => (
-                      <tr key={order.id}>
-                        <td style={{ fontWeight: 'bold' }}>#{order.siparisNumarasi}</td>
-                        <td>{order.ad} {order.soyad}</td>
-                        <td>{new Date(order.olusturulmaTarihi).toLocaleDateString('tr-TR')}</td>
-                        <td>₺{order.toplamTutar.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}</td>
-                        <td>{order.kargoFirmasi || '-'}</td>
-                        <td>
-                          <span style={{ fontSize: '11px', fontWeight: 'bold', color: order.faturaDurumu === 'ODENDI' ? 'var(--status-success)' : 'var(--color-text-dimmed)' }}>
-                            {order.faturaDurumu}
-                          </span>
-                        </td>
-                        <td>
-                          <span className={`badge badge-${order.durum === 'BEKLEMEDE' ? 'pending' : order.durum === 'TESLIM_EDILDI' || order.durum === 'TAMAMLANDI' ? 'success' : order.durum === 'KARGOLANDI' ? 'shipped' : 'error'}`}>
-                            {order.durum}
-                          </span>
-                        </td>
-                        <td>
-                          <button className="btn btn-secondary btn-sm" onClick={() => viewOrder(order)}>
-                            <Eye size={12} /> İncele
-                          </button>
-                        </td>
+          const sortedOrders = getSortedData(filteredOrders, orderSort);
+
+          return (
+            <div>
+              <div className="content-header">
+                <h1 className="content-title">Sipariş Yönetimi</h1>
+              </div>
+
+              {/* Filter Bar */}
+              <div className="filter-bar">
+                <div style={{ flex: 1, minWidth: '200px' }}>
+                  <input 
+                    type="text" 
+                    className="form-control" 
+                    placeholder="Sipariş no, müşteri adı, e-posta veya telefon ara..." 
+                    value={orderSearch}
+                    onChange={e => setOrderSearch(e.target.value)}
+                  />
+                </div>
+                <div className="filter-group">
+                  <select 
+                    className="form-control"
+                    value={orderFilterStatus}
+                    onChange={e => setOrderFilterStatus(e.target.value)}
+                    style={{ width: '160px' }}
+                  >
+                    <option value="">Tüm Durumlar</option>
+                    <option value="BEKLEMEDE">BEKLEMEDE</option>
+                    <option value="HAZIRLANIYOR">HAZIRLANIYOR</option>
+                    <option value="KARGOLANDI">KARGOLANDI</option>
+                    <option value="TESLIM_EDILDI">TESLIM_EDILDI</option>
+                    <option value="TAMAMLANDI">TAMAMLANDI</option>
+                    <option value="IPTAL_EDILDI">IPTAL_EDILDI</option>
+                  </select>
+                  <select 
+                    className="form-control"
+                    value={orderFilterFatura}
+                    onChange={e => setOrderFilterFatura(e.target.value)}
+                    style={{ width: '160px' }}
+                  >
+                    <option value="">Tüm Fatura Durumları</option>
+                    <option value="DUZENLENMEDI">DUZENLENMEDI</option>
+                    <option value="DUZENLENDI">DUZENLENDI</option>
+                    <option value="ODENDI">ODENDI</option>
+                  </select>
+                  {(orderSearch || orderFilterStatus || orderFilterFatura) && (
+                    <button 
+                      className="btn btn-secondary btn-sm"
+                      onClick={() => {
+                        setOrderSearch('');
+                        setOrderFilterStatus('');
+                        setOrderFilterFatura('');
+                      }}
+                    >
+                      Sıfırla
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              <div className="card">
+                <div className="table-container">
+                  <table className="admin-table">
+                    <thead>
+                      <tr>
+                        <th className="sortable-header" onClick={() => handleSort('siparisNumarasi', orderSort, setOrderSort)}>
+                          Sipariş No {renderSortIndicator(orderSort, 'siparisNumarasi')}
+                        </th>
+                        <th className="sortable-header" onClick={() => handleSort('ad', orderSort, setOrderSort)}>
+                          Müşteri {renderSortIndicator(orderSort, 'ad')}
+                        </th>
+                        <th className="sortable-header" onClick={() => handleSort('olusturulmaTarihi', orderSort, setOrderSort)}>
+                          Tarih {renderSortIndicator(orderSort, 'olusturulmaTarihi')}
+                        </th>
+                        <th className="sortable-header" onClick={() => handleSort('toplamTutar', orderSort, setOrderSort)}>
+                          Tutar {renderSortIndicator(orderSort, 'toplamTutar')}
+                        </th>
+                        <th>Kargo</th>
+                        <th className="sortable-header" onClick={() => handleSort('faturaDurumu', orderSort, setOrderSort)}>
+                          Fatura {renderSortIndicator(orderSort, 'faturaDurumu')}
+                        </th>
+                        <th className="sortable-header" onClick={() => handleSort('durum', orderSort, setOrderSort)}>
+                          Durum {renderSortIndicator(orderSort, 'durum')}
+                        </th>
+                        <th>İşlem</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody>
+                      {sortedOrders.map(order => (
+                        <tr key={order.id}>
+                          <td style={{ fontWeight: 'bold' }}>#{order.siparisNumarasi}</td>
+                          <td>{order.ad} {order.soyad}</td>
+                          <td>{new Date(order.olusturulmaTarihi).toLocaleDateString('tr-TR')}</td>
+                          <td>₺{order.toplamTutar.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}</td>
+                          <td>{order.kargoFirmasi || '-'}</td>
+                          <td>
+                            <span style={{ fontSize: '11px', fontWeight: 'bold', color: order.faturaDurumu === 'ODENDI' ? 'var(--status-success)' : 'var(--color-text-dimmed)' }}>
+                              {order.faturaDurumu}
+                            </span>
+                          </td>
+                          <td>
+                            <span className={`badge badge-${order.durum === 'BEKLEMEDE' ? 'pending' : order.durum === 'TESLIM_EDILDI' || order.durum === 'TAMAMLANDI' ? 'success' : order.durum === 'KARGOLANDI' ? 'shipped' : 'error'}`}>
+                              {order.durum}
+                            </span>
+                          </td>
+                          <td>
+                            <button className="btn btn-secondary btn-sm" onClick={() => viewOrder(order)}>
+                              <Eye size={12} /> İncele
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                      {sortedOrders.length === 0 && (
+                        <tr>
+                          <td colSpan="8" style={{ textAlign: 'center', padding: '30px', color: 'var(--color-text-muted)' }}>
+                            Kayıtlı sipariş bulunmamaktadır.
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </div>
-          </div>
-        )}
+          );
+        })()}
 
         {/* Tab 6: Returns */}
-        {activeTab === 'returns' && (
-          <div>
-            <div className="content-header">
-              <h1 className="content-title">İade Talepleri</h1>
-            </div>
+        {activeTab === 'returns' && (() => {
+          const filteredReturns = returns.filter(ret => {
+            const matchesSearch = !returnSearch || 
+              (ret.siparis && ret.siparis.siparisNumarasi.toLowerCase().includes(returnSearch.toLowerCase())) ||
+              (ret.siparis && `${ret.siparis.ad} ${ret.siparis.soyad}`.toLowerCase().includes(returnSearch.toLowerCase()));
+            const matchesStatus = !returnFilterStatus || ret.durum === returnFilterStatus;
+            return matchesSearch && matchesStatus;
+          });
 
-            <div className="card">
-              <div className="table-container">
-                <table className="admin-table">
-                  <thead>
-                    <tr>
-                      <th>Tarih</th>
-                      <th>Sipariş No</th>
-                      <th>Müşteri</th>
-                      <th>İade Tipi</th>
-                      <th>Açıklama</th>
-                      <th>Durum</th>
-                      <th>İşlem</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {returns.map(ret => (
-                      <tr key={ret.id}>
-                        <td>{new Date(ret.olusturulmaTarihi).toLocaleDateString('tr-TR')}</td>
-                        <td style={{ fontWeight: 'bold' }}>#{ret.siparis?.siparisNumarasi || '-'}</td>
-                        <td>{ret.siparis?.ad} {ret.siparis?.soyad}</td>
-                        <td style={{ fontSize: '12px', fontWeight: 'bold' }}>{ret.talepTipi}</td>
-                        <td style={{ maxWidth: '250px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                          {ret.aciklama}
-                        </td>
-                        <td>
-                          <span className={`badge badge-${ret.durum === 'ONAY_BEKLENIYOR' ? 'pending' : ret.durum === 'ONAYLANDI' ? 'success' : 'error'}`}>
-                            {ret.durum}
-                          </span>
-                        </td>
-                        <td>
-                          <button className="btn btn-secondary btn-sm" onClick={() => viewReturn(ret)}>
-                            <Eye size={12} /> Detay
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                    {returns.length === 0 && (
+          const sortedReturns = getSortedData(filteredReturns, returnSort, (ret, key) => {
+            if (key === 'siparisNumarasi') return ret.siparis?.siparisNumarasi || '';
+            return ret[key];
+          });
+
+          return (
+            <div>
+              <div className="content-header">
+                <h1 className="content-title">İade Talepleri</h1>
+              </div>
+
+              {/* Filter Bar */}
+              <div className="filter-bar">
+                <div style={{ flex: 1, minWidth: '200px' }}>
+                  <input 
+                    type="text" 
+                    className="form-control" 
+                    placeholder="Sipariş no veya müşteri adı ara..." 
+                    value={returnSearch}
+                    onChange={e => setReturnSearch(e.target.value)}
+                  />
+                </div>
+                <div className="filter-group">
+                  <select 
+                    className="form-control"
+                    value={returnFilterStatus}
+                    onChange={e => setReturnFilterStatus(e.target.value)}
+                    style={{ width: '200px' }}
+                  >
+                    <option value="">Tüm Durumlar</option>
+                    <option value="ONAY_BEKLENIYOR">ONAY BEKLENİYOR</option>
+                    <option value="ONAYLANDI">ONAYLANDI</option>
+                    <option value="REDDEDILDI">REDDEDİLDİ</option>
+                    <option value="MUSTERI_GONDERIMI_BEKLENIYOR">Müşteri Gönderimi Bekleniyor</option>
+                    <option value="IADE_TAMAMLANDI">İade İşlemi Tamamlandı</option>
+                  </select>
+                  {(returnSearch || returnFilterStatus) && (
+                    <button 
+                      className="btn btn-secondary btn-sm"
+                      onClick={() => {
+                        setReturnSearch('');
+                        setReturnFilterStatus('');
+                      }}
+                    >
+                      Sıfırla
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              <div className="card">
+                <div className="table-container">
+                  <table className="admin-table">
+                    <thead>
                       <tr>
-                        <td colSpan="7" style={{ textAlign: 'center', padding: '30px', color: 'var(--color-text-muted)' }}>
-                          Kayıtlı iade talebi bulunmamaktadır.
-                        </td>
+                        <th className="sortable-header" onClick={() => handleSort('olusturulmaTarihi', returnSort, setReturnSort)}>
+                          Tarih {renderSortIndicator(returnSort, 'olusturulmaTarihi')}
+                        </th>
+                        <th className="sortable-header" onClick={() => handleSort('siparisNumarasi', returnSort, setReturnSort)}>
+                          Sipariş No {renderSortIndicator(returnSort, 'siparisNumarasi')}
+                        </th>
+                        <th>Müşteri</th>
+                        <th>İade Tipi</th>
+                        <th>Açıklama</th>
+                        <th className="sortable-header" onClick={() => handleSort('durum', returnSort, setReturnSort)}>
+                          Durum {renderSortIndicator(returnSort, 'durum')}
+                        </th>
+                        <th>İşlem</th>
                       </tr>
-                    )}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody>
+                      {sortedReturns.map(ret => (
+                        <tr key={ret.id}>
+                          <td>{new Date(ret.olusturulmaTarihi).toLocaleDateString('tr-TR')}</td>
+                          <td style={{ fontWeight: 'bold' }}>#{ret.siparis?.siparisNumarasi || '-'}</td>
+                          <td>{ret.siparis?.ad} {ret.siparis?.soyad}</td>
+                          <td style={{ fontSize: '12px', fontWeight: 'bold' }}>{ret.talepTipi}</td>
+                          <td style={{ maxWidth: '250px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                            {ret.aciklama}
+                          </td>
+                          <td>
+                            <span className={`badge badge-${ret.durum === 'ONAY_BEKLENIYOR' ? 'pending' : ret.durum === 'ONAYLANDI' || ret.durum === 'IADE_TAMAMLANDI' ? 'success' : 'error'}`}>
+                              {ret.durum}
+                            </span>
+                          </td>
+                          <td>
+                            <button className="btn btn-secondary btn-sm" onClick={() => viewReturn(ret)}>
+                              <Eye size={12} /> Detay
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                      {sortedReturns.length === 0 && (
+                        <tr>
+                          <td colSpan="7" style={{ textAlign: 'center', padding: '30px', color: 'var(--color-text-muted)' }}>
+                            Kayıtlı iade talebi bulunmamaktadır.
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </div>
-          </div>
-        )}
+          );
+        })()}
 
         {/* Tab 7: Settings */}
         {activeTab === 'settings' && (
@@ -1303,7 +1981,7 @@ export default function App() {
                 </div>
 
                 {settings.googleMerchantToken && (
-                  <div className="form-group" style={{ background: 'var(--color-bg-secondary)', padding: '12px', borderRadius: '6px', border: '1px solid var(--color-border)' }}>
+                  <div className="form-group" style={{ background: 'var(--color-bg-secondary)', padding: '12px', borderRadius: '6px', border: '1px solid var(--color-border)', marginBottom: '20px' }}>
                     <label className="form-label" style={{ fontSize: '12px', fontWeight: '600', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <span>Google Shopping XML Feed URL</span>
                       <button
@@ -1325,6 +2003,30 @@ export default function App() {
                     </div>
                   </div>
                 )}
+
+                <div className="form-group" style={{ marginBottom: '20px' }}>
+                  <label className="form-label">Google Tag Manager Container ID</label>
+                  <input 
+                    type="text" className="form-control" placeholder="Örn: GTM-XXXXXXX"
+                    value={settings.gtmContainerId || ''}
+                    onChange={e => setSettings({ ...settings, gtmContainerId: e.target.value })}
+                  />
+                  <small style={{ color: 'var(--color-text-muted)', fontSize: '11px', marginTop: '4px', display: 'block' }}>
+                    Google Tag Manager entegrasyonu için Container ID'nizi girin (GTM-XXXXXXX). Bu kod girildiğinde GTM kapsayıcısı mağazanızda dinamik olarak başlatılır.
+                  </small>
+                </div>
+
+                <div className="form-group" style={{ marginBottom: '10px' }}>
+                  <label className="form-label">Google Analytics 4 Ölçüm Kimliği (Measurement ID)</label>
+                  <input 
+                    type="text" className="form-control" placeholder="Örn: G-XXXXXXXXXX"
+                    value={settings.ga4MeasurementId || ''}
+                    onChange={e => setSettings({ ...settings, ga4MeasurementId: e.target.value })}
+                  />
+                  <small style={{ color: 'var(--color-text-muted)', fontSize: '11px', marginTop: '4px', display: 'block' }}>
+                    Google Analytics 4 entegrasyonu için Ölçüm Kimliğinizi girin (G-XXXXXXXXXX). Mağazanızdaki ziyaretler ve e-ticaret etkinlikleri otomatik olarak GA4'e aktarılır.
+                  </small>
+                </div>
               </div>
 
               {/* Kargo Ayarları */}
@@ -1343,7 +2045,7 @@ export default function App() {
                     <option value="UCRETSIZ">Ücretsiz Kargo</option>
                     <option value="SABIT_UCRET">Sabit Ücret</option>
                     <option value="SEPET_LIMITI">Sepet Limitli Ücretsiz Kargo</option>
-                    <option value="AGIRLIK_KADEMELI">Ağırlık/Desi Kademeli (Google Merchant Uyumlu)</option>
+                    <option value="AGIRLIK_KADEMELI">Ağırlık Kademeli (Google Merchant Uyumlu)</option>
                   </select>
                   <small style={{ color: 'var(--color-text-muted)', fontSize: '11px', marginTop: '4px', display: 'block' }}>
                     Google Merchant Center entegrasyonunun askıya alınmasını önlemek için, seçilen politikanın mağaza fiyatları ile feed fiyatlarını eşleştirmesi gerekir.
@@ -1395,28 +2097,7 @@ export default function App() {
                       </small>
                     </div>
                     <div className="form-group">
-                      <label className="form-label">Limit Altı Kargo Ücreti (₺)</label>
-                      <input 
-                        type="number" 
-                        className="form-control" 
-                        value={settings.kargoSabitUcret !== undefined ? settings.kargoSabitUcret : 0}
-                        onChange={e => setSettings({ ...settings, kargoSabitUcret: parseFloat(e.target.value) || 0 })}
-                        required
-                        min="0"
-                        step="0.01"
-                      />
-                      <small style={{ color: 'var(--color-text-muted)', fontSize: '11px', marginTop: '4px', display: 'block' }}>
-                        Belirtilen limitin altındaki alışverişlerde uygulanacak standart kargo ücreti.
-                      </small>
-                    </div>
-                  </div>
-                )}
-
-                {/* Ağırlık Kademeli Politikası */}
-                {(settings.kargoPolitikaTuru === 'AGIRLIK_KADEMELI') && (
-                  <div>
-                    <div className="form-group">
-                      <label className="form-label">Kargo Ağırlık/Desi Çarpanı (₺)</label>
+                      <label className="form-label">Limit Altı Kargo Ağırlık Çarpanı (₺/kg)</label>
                       <input 
                         type="number" 
                         className="form-control" 
@@ -1427,10 +2108,15 @@ export default function App() {
                         step="0.01"
                       />
                       <small style={{ color: 'var(--color-text-muted)', fontSize: '11px', marginTop: '4px', display: 'block' }}>
-                        Toplam desi/ağırlık en yüksek kademeyi aştığında, aşan her kg başına eklenecek ek ücret çarpanı.
+                        Limit altındaki siparişlerin kargo ücreti: Toplam Ağırlık (kg) x Bu Çarpan olarak hesaplanır.
                       </small>
                     </div>
+                  </div>
+                )}
 
+                {/* Ağırlık Kademeli Politikası */}
+                {(settings.kargoPolitikaTuru === 'AGIRLIK_KADEMELI') && (
+                  <div>
                     <div style={{ marginTop: '16px', marginBottom: '16px' }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
                         <h4 style={{ fontSize: '14px', fontWeight: '600', margin: 0 }}>📦 Kargo Fiyat Kademeleri</h4>
@@ -1477,55 +2163,60 @@ export default function App() {
 
                         return (
                           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                            {currentList.map((tier, idx) => (
-                              <div key={idx} style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                                <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                  <span style={{ fontSize: '13px', color: 'var(--color-text-muted)', minWidth: '40px' }}>{idx + 1}. Barem:</span>
-                                  <input 
-                                    type="number"
-                                    placeholder="Maks. Ağırlık (kg/Desi)"
-                                    className="form-control"
-                                    style={{ flex: 1 }}
-                                    value={tier.maxWeight}
-                                    min="0"
-                                    step="0.1"
-                                    onChange={e => {
-                                      const updatedList = [...currentList];
-                                      updatedList[idx] = { ...updatedList[idx], maxWeight: parseFloat(e.target.value) || 0 };
+                            {currentList.map((tier, idx) => {
+                              const prevWeight = idx === 0 ? 0 : (currentList[idx - 1]?.maxWeight || 0);
+                              return (
+                                <div key={idx} style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                                  <div style={{ flex: 1.5, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                    <span style={{ fontSize: '12px', color: 'var(--color-text-muted)', minWidth: '100px', whiteSpace: 'nowrap' }}>
+                                      {prevWeight} - {tier.maxWeight} kg arası:
+                                    </span>
+                                    <input 
+                                      type="number"
+                                      placeholder="Maks. Ağırlık (kg)"
+                                      className="form-control"
+                                      style={{ flex: 1 }}
+                                      value={tier.maxWeight}
+                                      min="0"
+                                      step="0.1"
+                                      onChange={e => {
+                                        const updatedList = [...currentList];
+                                        updatedList[idx] = { ...updatedList[idx], maxWeight: parseFloat(e.target.value) || 0 };
+                                        setSettings({ ...settings, kargoFiyatListesi: JSON.stringify(updatedList) });
+                                      }}
+                                    />
+                                  </div>
+                                  <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                    <span style={{ fontSize: '12px', color: 'var(--color-text-muted)' }}>Fiyat (₺):</span>
+                                    <input 
+                                      type="number"
+                                      placeholder="Fiyat (₺)"
+                                      className="form-control"
+                                      style={{ flex: 1 }}
+                                      value={tier.price}
+                                      min="0"
+                                      step="0.01"
+                                      onChange={e => {
+                                        const updatedList = [...currentList];
+                                        updatedList[idx] = { ...updatedList[idx], price: parseFloat(e.target.value) || 0 };
+                                        setSettings({ ...settings, kargoFiyatListesi: JSON.stringify(updatedList) });
+                                      }}
+                                    />
+                                  </div>
+                                  <button 
+                                    type="button" 
+                                    className="btn btn-danger btn-sm"
+                                    style={{ padding: '8px 10px', height: '38px', display: 'flex', alignItems: 'center' }}
+                                    onClick={() => {
+                                      const updatedList = currentList.filter((_, i) => i !== idx);
                                       setSettings({ ...settings, kargoFiyatListesi: JSON.stringify(updatedList) });
                                     }}
-                                  />
+                                  >
+                                    <Trash2 size={14} />
+                                  </button>
                                 </div>
-                                <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                  <span style={{ fontSize: '13px', color: 'var(--color-text-muted)' }}>Fiyat (₺):</span>
-                                  <input 
-                                    type="number"
-                                    placeholder="Fiyat (₺)"
-                                    className="form-control"
-                                    style={{ flex: 1 }}
-                                    value={tier.price}
-                                    min="0"
-                                    step="0.01"
-                                    onChange={e => {
-                                      const updatedList = [...currentList];
-                                      updatedList[idx] = { ...updatedList[idx], price: parseFloat(e.target.value) || 0 };
-                                      setSettings({ ...settings, kargoFiyatListesi: JSON.stringify(updatedList) });
-                                    }}
-                                  />
-                                </div>
-                                <button 
-                                  type="button" 
-                                  className="btn btn-danger btn-sm"
-                                  style={{ padding: '8px 10px', height: '38px', display: 'flex', alignItems: 'center' }}
-                                  onClick={() => {
-                                    const updatedList = currentList.filter((_, i) => i !== idx);
-                                    setSettings({ ...settings, kargoFiyatListesi: JSON.stringify(updatedList) });
-                                  }}
-                                >
-                                  <Trash2 size={14} />
-                                </button>
-                              </div>
-                            ))}
+                              );
+                            })}
                           </div>
                         );
                       })()}
@@ -1624,7 +2315,7 @@ export default function App() {
 
                 <div className="grid-2">
                   <div className="form-group">
-                    <label className="form-label">Ağırlık (Kg/Desi) *</label>
+                    <label className="form-label">Ağırlık (Kg) *</label>
                     <input 
                       type="number" step="0.1" className="form-control" value={productForm.agirlik}
                       onChange={e => setProductForm({ ...productForm, agirlik: parseFloat(e.target.value) })} required
@@ -1946,6 +2637,30 @@ export default function App() {
                     />
                   </div>
                 </div>
+
+                {selectedOrder.gecmis && selectedOrder.gecmis.length > 0 && (
+                  <div className="border-t pt-4 mt-4">
+                    <h4 className="mb-3">İşlem Geçmişi</h4>
+                    <div style={{ maxHeight: '200px', overflowY: 'auto', background: 'rgba(0,0,0,0.15)', padding: '12px', borderRadius: '8px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                      {selectedOrder.gecmis.map(log => (
+                        <div key={log.id} style={{ display: 'flex', flexDirection: 'column', paddingBottom: '8px', borderBottom: '1px solid var(--border-glass)', gap: '4px' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <span style={{ fontWeight: '600', color: 'var(--color-primary)' }}>
+                              {log.eskiDurum || 'YENİ'} ➔ {log.yeniDurum}
+                            </span>
+                            <span style={{ color: 'var(--color-text-muted)', fontSize: '11px' }}>
+                              {new Date(log.tarih).toLocaleString('tr-TR')}
+                            </span>
+                          </div>
+                          {log.not && <div style={{ color: 'var(--color-text-dimmed)', fontStyle: 'italic', paddingLeft: '6px', borderLeft: '2px solid var(--color-primary)' }}>Not: {log.not}</div>}
+                          <div style={{ color: 'var(--color-text-muted)', fontSize: '11px', display: 'flex', justifyContent: 'flex-end' }}>
+                            İşlem Yapan: {log.islemYapan}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
               <div className="modal-footer">
                 <button type="button" className="btn btn-secondary" onClick={() => setShowOrderModal(false)}>Kapat</button>

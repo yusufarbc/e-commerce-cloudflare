@@ -139,14 +139,14 @@ export class FeedController {
                 if (productPrice >= ucretsizKargoAltLimit) {
                     itemShippingFee = 0;
                 } else {
-                    itemShippingFee = sabitUcret;
+                    itemShippingFee = productWeight * weightMultiplier;
                 }
             } else if (policy === 'AGIRLIK_KADEMELI') {
                 let priceList = settings && settings.kargoFiyatListesi ? settings.kargoFiyatListesi : null;
                 if (typeof priceList === 'string') {
                     try {
                         priceList = JSON.parse(priceList);
-                    } catch (e) {
+                    } catch {
                         priceList = null;
                     }
                 }
@@ -158,9 +158,7 @@ export class FeedController {
                     if (matchingTier) {
                         itemShippingFee = Number(matchingTier.price);
                     } else {
-                        const lastTier = sortedList[sortedList.length - 1];
-                        const extraWeight = Math.ceil(productWeight - lastTier.maxWeight);
-                        itemShippingFee = Number(lastTier.price) + (extraWeight * weightMultiplier);
+                        itemShippingFee = null;
                     }
                 } else {
                     // Fallback
@@ -175,13 +173,22 @@ export class FeedController {
                     else if (productWeight <= 50) itemShippingFee = 800.00;
                     else if (productWeight <= 75) itemShippingFee = 1200.00;
                     else if (productWeight <= 100) itemShippingFee = 1600.00;
-                    else itemShippingFee = 1600.00 + (Math.ceil(productWeight - 100) * weightMultiplier);
+                    else itemShippingFee = null;
                 }
             } else {
                 itemShippingFee = sabitUcret;
             }
 
-            const shippingFeeStr = Number(itemShippingFee).toFixed(2);
+            let shippingNode = '';
+            if (itemShippingFee !== null && itemShippingFee !== undefined) {
+                const shippingFeeStr = Number(itemShippingFee).toFixed(2);
+                shippingNode = `
+      <g:shipping>
+        <g:country>TR</g:country>
+        <g:service>Kargo</g:service>
+        <g:price>${shippingFeeStr} TRY</g:price>
+      </g:shipping>`;
+            }
 
             xml += `
     <item>
@@ -199,11 +206,7 @@ export class FeedController {
       <g:identifier_exists>no</g:identifier_exists>
       <g:google_product_category>${this._mapToGoogleCategory(urun.kategori)}</g:google_product_category>
       <g:product_type>${this._escapeXml(urun.kategori?.ad || 'Genel')}</g:product_type>
-      <g:shipping>
-        <g:country>TR</g:country>
-        <g:service>Kargo</g:service>
-        <g:price>${shippingFeeStr} TRY</g:price>
-      </g:shipping>
+      ${shippingNode}
     </item>`;
         }
 
