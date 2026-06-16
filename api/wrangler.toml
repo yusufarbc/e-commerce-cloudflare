@@ -1,6 +1,6 @@
 name = "e-commerce-cloudflare"
 main = "src/app.js"
-compatibility_date = "2024-04-03"
+compatibility_date = "2026-02-01"
 compatibility_flags = [ "nodejs_compat" ]
 
 [vars]
@@ -8,8 +8,8 @@ NODE_ENV = "development"
 CORS_ORIGIN = "*"
 CLIENT_URL = "http://localhost:3000"
 API_URL = "http://localhost:8787"
-ORDER_NOTIFICATION_EMAIL = "bilgi@e-market-domain.com"
-CDN_URL = "https://cdn.e-market-domain.com"
+ORDER_NOTIFICATION_EMAIL = "siparis@ecommerceflaredev.web.tr"
+CDN_URL = "https://cdn.ecommerceflaredev.web.tr"
 GOOGLE_MERCHANT_TOKEN = "test-token"
 ADMIN_JWT_SECRET = "secure-admin-token-secret-12345"
 
@@ -34,19 +34,19 @@ IYZICO_BASE_URL = "https://sandbox-api.iyzipay.com"
 # PAYTR_MERCHANT_SALT = ""
 
 # ── E-posta (SMTP) ───────────────────────────────────────────────────────────
-SMTP_SENDER = "E-Market <siparis@e-market-domain.com>"
-SMTP_REPLY_TO = "bilgi@e-market-domain.com"
+SMTP_SENDER = "E-Market <siparis@ecommerceflaredev.web.tr>"
+SMTP_REPLY_TO = "siparis@ecommerceflaredev.web.tr"
 
 [[d1_databases]]
 binding = "DB"
-database_name = "ecommerce-d1"
-database_id = "9885a04b-194f-4558-9204-bce53057a40f"
+database_name = "ecommerce-d1-staging"
+database_id = "b22222ad-c1ef-4626-8dd4-9781c88ecbef"
 migrations_dir = "migrations"
 
 [[r2_buckets]]
 binding = "IMAGES_BUCKET"
-bucket_name = "ecommerce-r2"
-preview_bucket_name = "ecommerce-r2"
+bucket_name = "ecommerce-r2-staging"
+preview_bucket_name = "ecommerce-r2-staging"
 
 [[send_email]]
 name = "EMAIL"
@@ -58,17 +58,18 @@ crons = [ "0 2 * * *" ] # Everyday at 02:00 AM UTC
 # ⚙️ Cloudflare Environments Configuration
 # ========================================================
 
-# 🧪 Staging (Deployed automatically from 'test' branch)
+# 🧪 Staging (Deployed from 'test' branch)
 [env.staging]
 name = "e-commerce-cloudflare-staging"
+route = "api.ecommerceflaredev.web.tr/*"
 
 [env.staging.vars]
 NODE_ENV = "staging"
 CORS_ORIGIN = "*"
-CLIENT_URL = "https://ecommerce-storefront-dm5.pages.dev"
-API_URL = "https://e-commerce-cloudflare-staging.yusuftalhaarabaci-91d.workers.dev"
-ORDER_NOTIFICATION_EMAIL = "bilgi@e-market-domain.com"
-CDN_URL = "https://cdn.e-market-domain.com"
+CLIENT_URL = "https://ecommerceflaredev.web.tr"
+API_URL = "https://api.ecommerceflaredev.web.tr"
+ORDER_NOTIFICATION_EMAIL = "siparis@ecommerceflaredev.web.tr"
+CDN_URL = "https://cdn.ecommerceflaredev.web.tr"
 GOOGLE_MERCHANT_TOKEN = "test-token"
 ADMIN_JWT_SECRET = "secure-admin-token-secret-12345"
 
@@ -93,8 +94,8 @@ IYZICO_BASE_URL = "https://sandbox-api.iyzipay.com"
 # PAYTR_MERCHANT_SALT = ""
 
 # ── E-posta (SMTP) ────────────────────────────────────────────────────────────
-SMTP_SENDER = "E-Market <siparis@e-market-domain.com>"
-SMTP_REPLY_TO = "bilgi@e-market-domain.com"
+SMTP_SENDER = "E-Market <siparis@ecommerceflaredev.web.tr>"
+SMTP_REPLY_TO = "siparis@ecommerceflaredev.web.tr"
 
 [[env.staging.d1_databases]]
 binding = "DB"
@@ -110,54 +111,6 @@ preview_bucket_name = "ecommerce-r2-staging"
 [[env.staging.send_email]]
 name = "EMAIL"
 
-# 🚀 Production (Deployed automatically from 'main' branch)
-[env.production]
-name = "e-commerce-cloudflare"
-
-[env.production.vars]
-NODE_ENV = "production"
-CORS_ORIGIN = "*"
-CLIENT_URL = "https://ecommerce-storefront.pages.dev"
-API_URL = "https://api.e-market-domain.com"
-ORDER_NOTIFICATION_EMAIL = "bilgi@e-market-domain.com"
-CDN_URL = "https://cdn.e-market-domain.com"
-GOOGLE_MERCHANT_TOKEN = "test-token"
-ADMIN_JWT_SECRET = "secure-admin-token-secret-12345"
-
-# ── Active Payment Provider ───────────────────────────────────────────────────
-PAYMENT_PROVIDER = "iyzico"
-
-# ── iyzico credentials ────────────────────────────────────────────────────────
-# Secrets: wrangler secret put IYZICO_API_KEY --env production
-#          wrangler secret put IYZICO_SECRET_KEY --env production
-IYZICO_BASE_URL = "https://api.iyzipay.com"
-
-# ── Param POS (disabled) ──────────────────────────────────────────────────────
-# PARAM_CLIENT_CODE = ""
-# PARAM_CLIENT_USERNAME = ""
-# PARAM_CLIENT_PASSWORD = ""
-# PARAM_GUID = ""
-# PARAM_BASE_URL = "https://posws.param.com.tr/turkpos.ws/service_turkpos_prod.asmx?wsdl"
-
-# ── PayTR (disabled) ──────────────────────────────────────────────────────────
-# PAYTR_MERCHANT_ID = ""
-# PAYTR_MERCHANT_KEY = ""
-# PAYTR_MERCHANT_SALT = ""
-
-# ── E-posta (SMTP) ────────────────────────────────────────────────────────────
-SMTP_SENDER = "E-Market <siparis@e-market-domain.com>"
-SMTP_REPLY_TO = "bilgi@e-market-domain.com"
-
-[[env.production.d1_databases]]
-binding = "DB"
-database_name = "ecommerce-d1"
-database_id = "9885a04b-194f-4558-9204-bce53057a40f"
-migrations_dir = "migrations"
-
-[[env.production.r2_buckets]]
-binding = "IMAGES_BUCKET"
-bucket_name = "ecommerce-r2"
-preview_bucket_name = "ecommerce-r2"
-
-[[env.production.send_email]]
-name = "EMAIL"
+# 🚀 Production environment removed — staging-only deployment
+# [env.production] section removed as non-staging D1/R2 resources were deleted.
+# Only [env.staging] is active for test branch CI/CD deploys.

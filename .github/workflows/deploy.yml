@@ -1,13 +1,11 @@
-name: CI/CD Deployment Pipeline
+name: 🚀 Staging Deployment (test branch only)
 
 on:
   push:
     branches:
-      - main
       - test
   pull_request:
     branches:
-      - main
       - test
   workflow_dispatch:
 
@@ -29,19 +27,10 @@ jobs:
           node-version: 20
           cache: 'npm'
 
-      - name: Determine Target Environment
+      - name: Set Staging API URL
         id: env-setup
-        env:
-          GITHUB_REF: ${{ github.ref }}
-          GITHUB_BASE_REF: ${{ github.base_ref }}
-          STAGING_API_URL: ${{ secrets.STAGING_API_URL }}
-          PRODUCTION_API_URL: ${{ secrets.PRODUCTION_API_URL }}
         run: |
-          if [ "$GITHUB_REF" = "refs/heads/test" ] || [ "$GITHUB_BASE_REF" = "test" ]; then
-            echo "VITE_API_URL=$STAGING_API_URL" >> $GITHUB_ENV
-          else
-            echo "VITE_API_URL=$PRODUCTION_API_URL" >> $GITHUB_ENV
-          fi
+          echo "VITE_API_URL=https://api.ecommerceflaredev.web.tr" >> $GITHUB_ENV
         shell: bash
 
       - name: Install All Dependencies
@@ -94,7 +83,7 @@ jobs:
           path: admin/dist/
 
   deploy-backend:
-    name: Deploy API to Cloudflare Workers
+    name: Deploy API to Cloudflare Workers (Staging)
     needs: test-and-build
     if: github.event_name == 'push'
     runs-on: ubuntu-latest
@@ -109,18 +98,6 @@ jobs:
           node-version: 20
           cache: 'npm'
 
-      - name: Determine Deploy Environment
-        id: deploy-env-setup
-        env:
-          GITHUB_REF: ${{ github.ref }}
-        run: |
-          if [ "$GITHUB_REF" = "refs/heads/test" ]; then
-            echo "DEPLOY_ENV=staging" >> $GITHUB_ENV
-          else
-            echo "DEPLOY_ENV=production" >> $GITHUB_ENV
-          fi
-        shell: bash
-
       - name: Install API Dependencies
         run: |
           cd api
@@ -131,16 +108,16 @@ jobs:
           cd api
           npx prisma generate
 
-      - name: Deploy to Cloudflare Workers
+      - name: Deploy to Cloudflare Workers (Staging)
         run: |
           cd api
-          npx wrangler deploy --env ${{ env.DEPLOY_ENV }}
+          npx wrangler deploy --env staging
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
 
   deploy-frontend:
-    name: Deploy Frontends to Cloudflare Pages
+    name: Deploy Frontends to Cloudflare Pages (Staging)
     needs: [test-and-build, deploy-backend]
     if: github.event_name == 'push'
     runs-on: ubuntu-latest
@@ -161,28 +138,16 @@ jobs:
           name: admin-dist
           path: admin/dist
 
-      - name: Determine Pages Branch Target
-        id: pages-target
-        env:
-          GITHUB_REF: ${{ github.ref }}
+      - name: Deploy Storefront to Cloudflare Pages (Staging)
         run: |
-          if [ "$GITHUB_REF" = "refs/heads/test" ]; then
-            echo "PAGES_BRANCH=test" >> $GITHUB_ENV
-          else
-            echo "PAGES_BRANCH=main" >> $GITHUB_ENV
-          fi
-        shell: bash
-
-      - name: Deploy Storefront to Cloudflare Pages
-        run: |
-          npx wrangler pages deploy client/dist --project-name=ecommerce-storefront --branch=${{ env.PAGES_BRANCH }}
+          npx wrangler pages deploy client/dist --project-name=ecommerce-storefront --branch=test
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
 
-      - name: Deploy Admin Dashboard to Cloudflare Pages
+      - name: Deploy Admin Dashboard to Cloudflare Pages (Staging)
         run: |
-          npx wrangler pages deploy admin/dist --project-name=ecommerce-admin --branch=${{ env.PAGES_BRANCH }}
+          npx wrangler pages deploy admin/dist --project-name=ecommerce-admin --branch=test
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}

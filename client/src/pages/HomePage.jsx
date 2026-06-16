@@ -59,7 +59,7 @@ export function HomePage() {
                 title={seoTitle}
                 description={seoDescription}
                 structuredData={structuredData}
-                canonical="https://e-market-domain.com/"
+                canonical="https://ecommerceflaredev.web.tr/"
             />
 
             {/* Hero Section */}

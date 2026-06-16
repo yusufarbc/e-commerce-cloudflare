@@ -1,18 +1,17 @@
 import { config, currentEnv } from '../config.js';
 
 /**
- * Service for handling email notifications via Brevo (Sendinblue) HTTP API.
- * Replaces nodemailer SMTP transport for Cloudflare Workers edge compatibility.
+ * Service for sending transactional emails via Cloudflare Workers Email Sending API.
+ * Uses the `cloudflare:email` module with the EMAIL binding configured in wrangler.toml.
  */
 export class EmailService {
     /**
      * Creates an instance of EmailService.
-     * @param {Object} smtpConfig - SMTP configuration object (preserved for structure).
+     * @param {Object} emailConfig - Email configuration with sender/replyTo.
      */
-    constructor(smtpConfig) {
-        // We will parse the sender string into {name, email}
-        const senderString = smtpConfig?.sender || 'E-Market <siparis@e-market-domain.com>';
-        const replyToString = smtpConfig?.replyTo || 'bilgi@e-market-domain.com';
+    constructor(emailConfig) {
+        const senderString = emailConfig?.sender || 'E-Market <siparis@ecommerceflaredev.web.tr>';
+        const replyToString = emailConfig?.replyTo || 'siparis@ecommerceflaredev.web.tr';
 
         this.sender = this._parseSenderString(senderString);
         this.replyTo = this._parseSenderString(replyToString);
@@ -45,10 +44,16 @@ export class EmailService {
             const { EmailMessage } = await import("cloudflare:email");
             
             // Build raw RFC 822 / MIME format message
+            // Use TextEncoder for UTF-8 safe Base64 subject encoding
+            const subjectBytes = new TextEncoder().encode(subject);
+            let binaryStr = '';
+            subjectBytes.forEach(byte => { binaryStr += String.fromCharCode(byte); });
+            const subjectBase64 = btoa(binaryStr);
+
             const rawMime = [
                 `From: ${this.sender.name} <${this.sender.email}>`,
                 `To: ${toName || toEmail} <${toEmail}>`,
-                `Subject: =?utf-8?B?${btoa(unescape(encodeURIComponent(subject)))}?=`, // Base64 encoding for UTF-8 subject compatibility
+                `Subject: =?utf-8?B?${subjectBase64}?=`,
                 `MIME-Version: 1.0`,
                 `Content-Type: text/html; charset=utf-8`,
                 ``,
@@ -200,7 +205,7 @@ export class EmailService {
      * Sends internal seller notification for a newly completed order.
      */
     async sendSellerNewOrderNotification(order) {
-        const recipient = config.orderNotificationEmail || 'bilgi@e-market-domain.com';
+        const recipient = config.orderNotificationEmail || 'siparis@ecommerceflaredev.web.tr';
         if (!recipient) {
             console.warn('[Email] Seller notification skipped: recipient missing');
             return;

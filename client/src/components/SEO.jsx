@@ -36,7 +36,7 @@ export const SEO = ({
     const resolveImageUrl = (img) => {
         if (!img) return `${siteUrl}/images/og-image.png`;
         if (img.startsWith('http')) return img;
-        return `${settings.cdnUrl || 'https://cdn.e-market-domain.com'}/${img}`;
+        return `${settings.cdnUrl || 'https://cdn.ecommerceflaredev.web.tr'}/${img}`;
     };
 
     const metaDescription = description || defaultDescription;

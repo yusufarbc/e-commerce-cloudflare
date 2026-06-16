@@ -28,20 +28,13 @@ export const config = {
     baseUrl: 'https://www.paytr.com',
     callbackUrl: 'http://localhost:8787'
   },
-  brevo: {
-    apiKey: '',
-    smtp: {
-      host: 'smtp-relay.brevo.com',
-      port: 587,
-      user: '',
-      pass: '',
-      sender: 'E-Market <siparis@e-market-domain.com>',
-      replyTo: 'bilgi@e-market-domain.com',
-    }
+  email: {
+    sender: 'E-Market <siparis@ecommerceflaredev.web.tr>',
+    replyTo: 'siparis@ecommerceflaredev.web.tr',
   },
   clientUrl: 'http://localhost:3000',
-  orderNotificationEmail: 'bilgi@e-market-domain.com',
-  cdnUrl: 'https://cdn.e-market-domain.com',
+  orderNotificationEmail: 'siparis@ecommerceflaredev.web.tr',
+  cdnUrl: 'https://cdn.ecommerceflaredev.web.tr',
   googleMerchantToken: '',
   adminJwtSecret: 'secure-admin-token-secret-12345'
 };
@@ -59,8 +52,8 @@ export function initConfig(env) {
   config.corsOrigin = env.CORS_ORIGIN || '*';
   config.nodeEnv = env.NODE_ENV || 'development';
   config.clientUrl = env.CLIENT_URL || 'http://localhost:3000';
-  config.orderNotificationEmail = env.ORDER_NOTIFICATION_EMAIL || 'bilgi@e-market-domain.com';
-  config.cdnUrl = env.CDN_URL || 'https://cdn.e-market-domain.com';
+  config.orderNotificationEmail = env.ORDER_NOTIFICATION_EMAIL || 'siparis@ecommerceflaredev.web.tr';
+  config.cdnUrl = env.CDN_URL || 'https://cdn.ecommerceflaredev.web.tr';
   config.googleMerchantToken = env.GOOGLE_MERCHANT_TOKEN || '';
   config.adminJwtSecret = env.ADMIN_JWT_SECRET || 'secure-admin-token-secret-12345';
   config.paymentProvider = env.PAYMENT_PROVIDER || 'param';
@@ -92,18 +85,9 @@ export function initConfig(env) {
     callbackUrl: env.API_URL || 'http://localhost:8787'
   });
 
-  // In-place update for Brevo api key
-  Object.assign(config.brevo, {
-    apiKey: env.BREVO_API_KEY || ''
-  });
-
-  // In-place update for Brevo SMTP parameters to preserve references
-  Object.assign(config.brevo.smtp, {
-    host: env.SMTP_HOST || 'smtp-relay.brevo.com',
-    port: Number(env.SMTP_PORT) || 587,
-    user: env.SMTP_USER || '',
-    pass: env.SMTP_PASS || '',
-    sender: env.SMTP_SENDER || 'E-Market <siparis@e-market-domain.com>',
-    replyTo: env.SMTP_REPLY_TO || 'bilgi@e-market-domain.com',
+  // In-place update for email sender/replyTo (from env or defaults)
+  Object.assign(config.email, {
+    sender: env.SMTP_SENDER || 'E-Market <siparis@ecommerceflaredev.web.tr>',
+    replyTo: env.SMTP_REPLY_TO || 'siparis@ecommerceflaredev.web.tr',
   });
 }
