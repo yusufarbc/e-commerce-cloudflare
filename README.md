@@ -155,6 +155,31 @@ PAYTR_BASE_URL=https://www.paytr.com
 
 ---
 
+## 🧪 Test Kartları (Staging Ortamı)
+
+Staging ortamında ödeme testi yapmak için kullanabileceğiniz kart numaraları:
+
+### ✅ Başarılı Ödeme Kartları
+| Kart Numarası | Banka / Açıklama |
+|:---|:---|
+| `5526 0800 0000 0006` | Akbank (Kredi Kartı) |
+| `5890 0400 0000 0016` | Akbank (Banka Kartı) |
+| `4543 5900 0000 0006` | İş Bankası (Kredi Kartı) |
+| `6501 7001 9414 7183` | Vakıfbank (Troy Kredi) |
+| `5451 0300 0000 0000` | Yapı Kredi (Kredi Kartı) |
+
+### ✗ Hata Simülasyon Kartları
+| Kart Numarası | Hata |
+|:---|:---|
+| `4111 1111 1111 1129` | Yetersiz Bakiye |
+| `4125 1111 1111 1115` | Süresi Geçmiş Kart |
+| `4124 1111 1111 1116` | Geçersiz CVC |
+| `4151 1111 1111 1112` | 3D Secure Başlatma Hatası |
+
+**Tüm kartlar için:** Son Kullanma Tarihi: `12/26`, CVC: `123`
+
+---
+
 ## 🛡️ Edge Telemetry & KVKK Compliance
 
 E-Market enforces data privacy natively at the edge. 

@@ -84,7 +84,8 @@ export function CheckoutPage() {
     const isTestEnv = import.meta.env.DEV ||
                       window.location.hostname === 'localhost' ||
                       window.location.hostname.includes('ecommerce-storefront-dm5') ||
-                      window.location.hostname.includes('ecommerce-admin-v4s');
+                      window.location.hostname.includes('ecommerce-admin-v4s') ||
+                      window.location.hostname.includes('ecommerceflaredev.web.tr');
 
     const handleSelectTestCard = async (cardNumber) => {
         const formattedCardNumber = cardNumber.match(/.{1,4}/g)?.join(' ') || cardNumber;
