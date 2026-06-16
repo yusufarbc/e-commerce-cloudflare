@@ -984,7 +984,7 @@ export function CheckoutPage() {
                 </div>
             )}
             {isTestEnv && (
-                <div className="fixed bottom-6 right-6 z-40">
+                <div className="fixed bottom-6 left-6 z-40">
                     <button
                         type="button"
                         onClick={() => setShowTestCards(true)}
