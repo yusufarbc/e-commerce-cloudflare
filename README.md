@@ -112,14 +112,13 @@ Your local endpoints will be available at:
 
 ---
 
-## 🌐 Deployed Live Endpoints
+## 🌐 Deployed Live Endpoints (Staging)
 
-The applications are built, tested, and deployed to Cloudflare via the automated CI/CD pipeline:
+The applications are built, tested, and deployed to Cloudflare via the automated CI/CD pipeline (test branch only):
 
-- **Storefront (Pages):** [https://ecommerce-storefront-dm5.pages.dev](https://ecommerce-storefront-dm5.pages.dev)
-- **Admin Panel (Pages):** [https://ecommerce-admin-v4s.pages.dev](https://ecommerce-admin-v4s.pages.dev)
-- **Production API Worker:** [https://e-commerce-cloudflare.yusuftalhaarabaci-91d.workers.dev](https://e-commerce-cloudflare.yusuftalhaarabaci-91d.workers.dev)
-- **Staging API Worker:** [https://e-commerce-cloudflare-staging.yusuftalhaarabaci-91d.workers.dev](https://e-commerce-cloudflare-staging.yusuftalhaarabaci-91d.workers.dev)
+- **Storefront (Pages):** [https://ecommerceflaredev.web.tr](https://ecommerceflaredev.web.tr)
+- **Admin Panel (Pages):** [https://admin.ecommerceflaredev.web.tr](https://admin.ecommerceflaredev.web.tr)
+- **API (Worker):** [https://api.ecommerceflaredev.web.tr](https://api.ecommerceflaredev.web.tr)
 
 ### 🔑 Default Admin Dashboard Credentials
 Use the following credentials to access the live or local Admin Dashboard:
