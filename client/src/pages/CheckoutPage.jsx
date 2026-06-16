@@ -84,7 +84,8 @@ export function CheckoutPage() {
     const isTestEnv = import.meta.env.DEV ||
                       window.location.hostname === 'localhost' ||
                       window.location.hostname.includes('ecommerce-storefront-dm5') ||
-                      window.location.hostname.includes('ecommerce-admin-v4s');
+                      window.location.hostname.includes('ecommerce-admin-v4s') ||
+                      window.location.hostname.includes('ecommerceflaredev.web.tr');
 
     const handleSelectTestCard = async (cardNumber) => {
         const formattedCardNumber = cardNumber.match(/.{1,4}/g)?.join(' ') || cardNumber;
@@ -984,7 +985,7 @@ export function CheckoutPage() {
                 </div>
             )}
             {isTestEnv && (
-                <div className="fixed bottom-6 right-6 z-40">
+                <div className="fixed bottom-6 left-6 z-40">
                     <button
                         type="button"
                         onClick={() => setShowTestCards(true)}

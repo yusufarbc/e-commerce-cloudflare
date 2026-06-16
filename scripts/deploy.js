@@ -277,16 +277,10 @@ async function main() {
     console.log('\x1b[35m⚡ E-MARKET CLOUDFLARE SERVERLESS DEPLOY WIZARD ⚡\x1b[0m');
     console.log('\x1b[35m========================================================\x1b[0m\n');
 
-    // Determine target environment
-    let targetEnv = envArg;
-    if (!targetEnv && !isNonInteractive) {
-        const envOption = await askQuestion('Select target environment (1: production [default], 2: staging): ');
-        targetEnv = envOption.trim() === '2' ? 'staging' : 'production';
-    } else if (!targetEnv) {
-        targetEnv = 'production';
-    }
+    // Staging-only deployment
+    const targetEnv = 'staging';
     console.log(`Target Environment: \x1b[35m${targetEnv}\x1b[0m`);
-    const envFlag = targetEnv === 'production' ? '' : ` --env ${targetEnv}`;
+    const envFlag = ` --env staging`;
 
     // 1. Authentication Check
     console.log('\n1. Checking Cloudflare authentication status...');
@@ -312,9 +306,8 @@ async function main() {
     let dbId = '';
     const createDbAnswer = await askQuestion('\n2. Do you want to create a D1 Database? (y/n): ');
     if (createDbAnswer.toLowerCase() === 'y') {
-        const dbName = targetEnv === 'production' ? 'ecommerce-d1' : `ecommerce-d1-${targetEnv}`;
-        console.log(`Creating D1 database: ${dbName}...`);
-        const dbResult = runCommand(`npx wrangler d1 create ${dbName}${envFlag}`);
+        console.log('Creating D1 staging database if not exists...');
+        const dbResult = runCommand('npx wrangler d1 create ecommerce-d1-staging');
         
         if (dbResult.success) {
             // Extract UUID from output
@@ -327,15 +320,8 @@ async function main() {
                 const tomlPath = path.join(process.cwd(), 'api', 'wrangler.toml');
                 if (fs.existsSync(tomlPath)) {
                     let tomlContent = fs.readFileSync(tomlPath, 'utf8');
-                    if (targetEnv === 'production') {
-                        // Replace production database_id
-                        tomlContent = tomlContent.replace(/(database_name = "ecommerce-d1"\s+database_id = ")[a-f0-9-]+"/, `$1${dbId}"`);
-                    } else {
-                        // Replace environment-specific database_id
-                        const safeEnv = targetEnv.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-                        const regex = new RegExp(`(database_name = "ecommerce-d1-${safeEnv}"\\s+database_id = ")[a-f0-9-]+"` );
-                        tomlContent = tomlContent.replace(regex, `$1${dbId}"`);
-                    }
+                    const regex = new RegExp(`(database_name = "ecommerce-d1-staging"\\s+database_id = ")[a-f0-9-]+"`);
+                    tomlContent = tomlContent.replace(regex, `$1${dbId}"`);
                     fs.writeFileSync(tomlPath, tomlContent, 'utf8');
                     console.log('\x1b[32m[✓] Updated wrangler.toml with new database_id.\x1b[0m');
                 }
@@ -350,7 +336,7 @@ async function main() {
     // 3. R2 Bucket Creation
     const createR2Answer = await askQuestion('\n3. Do you want to create an R2 Object Storage Bucket for images? (y/n): ');
     if (createR2Answer.toLowerCase() === 'y') {
-        const bucketName = targetEnv === 'production' ? 'ecommerce-r2' : `ecommerce-r2-${targetEnv}`;
+        const bucketName = 'ecommerce-r2-staging';
         console.log(`Creating R2 bucket: ${bucketName}...`);
         const r2Result = runCommand(`npx wrangler r2 bucket create ${bucketName}${envFlag}`);
         if (r2Result.success) {
@@ -381,8 +367,7 @@ async function main() {
         fs.writeFileSync(tempSqlPath, sqlContent, 'utf8');
 
         console.log('Executing database seeds on D1 remote instance...');
-        const dbName = targetEnv === 'production' ? 'ecommerce-d1' : `ecommerce-d1-${targetEnv}`;
-        const seedResult = runCommand(`npx wrangler d1 execute ${dbName} --remote --file=temp-remote-seed.sql --cwd api${envFlag}`);
+        const seedResult = runCommand(`npx wrangler d1 execute ecommerce-d1-staging --remote --file=temp-remote-seed.sql --cwd api${envFlag}`);
         
         // Cleanup temp file
         if (fs.existsSync(tempSqlPath)) {
@@ -418,9 +403,7 @@ async function main() {
 
     if (!apiEndpoint) {
         if (isNonInteractive) {
-            apiEndpoint = targetEnv === 'production' 
-                ? 'https://e-commerce-cloudflare.yusuftalhaarabaci-91d.workers.dev'
-                : 'https://e-commerce-cloudflare-staging.yusuftalhaarabaci-91d.workers.dev';
+            apiEndpoint = 'https://api.ecommerceflaredev.web.tr';
         } else {
             apiEndpoint = await askQuestion('\n[?] Please enter your Workers API base URL (e.g. https://ecommerce-api.user.workers.dev): ');
         }
@@ -474,7 +457,7 @@ async function main() {
     if (deployPagesAnswer.toLowerCase() === 'y') {
         const isWindows = process.platform === 'win32';
         const npmCmd = isWindows ? 'npm.cmd' : 'npm';
-        const pagesBranch = targetEnv === 'staging' ? 'test' : 'main';
+        const pagesBranch = 'test';
 
         // Client Build
         console.log('Building storefront client app...');
@@ -484,7 +467,7 @@ async function main() {
         console.log('Building admin dashboard app...');
         const adminBuild = runCommand(`${npmCmd} run build --prefix admin`);
 
-        const prjSuffix = targetEnv === 'production' ? '' : `-${targetEnv}`;
+        const prjSuffix = '-staging';
 
         if (clientBuild.success) {
             console.log('Deploying Storefront to Cloudflare Pages...');
@@ -510,8 +493,9 @@ async function main() {
     console.log('\n\x1b[35m========================================================\x1b[0m');
     console.log('\x1b[32m🎉 DEPLOYMENT WIZARD COMPLETE! 🎉\x1b[0m');
     console.log(`\x1b[36m- API Worker Endpoint: ${apiEndpoint}\x1b[0m`);
-    console.log(`\x1b[36m- Storefront Pages: https://ecommerce-storefront${targetEnv === 'production' ? '' : '-staging'}.pages.dev\x1b[0m`);
-    console.log(`\x1b[36m- Admin Pages: https://ecommerce-admin${targetEnv === 'production' ? '' : '-staging'}.pages.dev\x1b[0m`);
+    console.log(`\x1b[36m- Storefront: https://ecommerceflaredev.web.tr\x1b[0m`);
+    console.log(`\x1b[36m- Admin Panel: https://admin.ecommerceflaredev.web.tr\x1b[0m`);
+    console.log(`\x1b[36m- API: https://api.ecommerceflaredev.web.tr\x1b[0m`);
     console.log('\x1b[35m========================================================\x1b[0m\n');
 
     if (rl) rl.close();

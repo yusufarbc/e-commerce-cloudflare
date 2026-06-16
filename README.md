@@ -112,14 +112,13 @@ Your local endpoints will be available at:
 
 ---
 
-## 🌐 Deployed Live Endpoints
+## 🌐 Deployed Live Endpoints (Staging)
 
-The applications are built, tested, and deployed to Cloudflare via the automated CI/CD pipeline:
+The applications are built, tested, and deployed to Cloudflare via the automated CI/CD pipeline (test branch only):
 
-- **Storefront (Pages):** [https://ecommerce-storefront-dm5.pages.dev](https://ecommerce-storefront-dm5.pages.dev)
-- **Admin Panel (Pages):** [https://ecommerce-admin-v4s.pages.dev](https://ecommerce-admin-v4s.pages.dev)
-- **Production API Worker:** [https://e-commerce-cloudflare.yusuftalhaarabaci-91d.workers.dev](https://e-commerce-cloudflare.yusuftalhaarabaci-91d.workers.dev)
-- **Staging API Worker:** [https://e-commerce-cloudflare-staging.yusuftalhaarabaci-91d.workers.dev](https://e-commerce-cloudflare-staging.yusuftalhaarabaci-91d.workers.dev)
+- **Storefront (Pages):** [https://ecommerceflaredev.web.tr](https://ecommerceflaredev.web.tr)
+- **Admin Panel (Pages):** [https://admin.ecommerceflaredev.web.tr](https://admin.ecommerceflaredev.web.tr)
+- **API (Worker):** [https://api.ecommerceflaredev.web.tr](https://api.ecommerceflaredev.web.tr)
 
 ### 🔑 Default Admin Dashboard Credentials
 Use the following credentials to access the live or local Admin Dashboard:
@@ -153,6 +152,31 @@ PAYTR_MERCHANT_KEY=your-merchant-key
 PAYTR_MERCHANT_SALT=your-merchant-salt
 PAYTR_BASE_URL=https://www.paytr.com
 ```
+
+---
+
+## 🧪 Test Kartları (Staging Ortamı)
+
+Staging ortamında ödeme testi yapmak için kullanabileceğiniz kart numaraları:
+
+### ✅ Başarılı Ödeme Kartları
+| Kart Numarası | Banka / Açıklama |
+|:---|:---|
+| `5526 0800 0000 0006` | Akbank (Kredi Kartı) |
+| `5890 0400 0000 0016` | Akbank (Banka Kartı) |
+| `4543 5900 0000 0006` | İş Bankası (Kredi Kartı) |
+| `6501 7001 9414 7183` | Vakıfbank (Troy Kredi) |
+| `5451 0300 0000 0000` | Yapı Kredi (Kredi Kartı) |
+
+### ✗ Hata Simülasyon Kartları
+| Kart Numarası | Hata |
+|:---|:---|
+| `4111 1111 1111 1129` | Yetersiz Bakiye |
+| `4125 1111 1111 1115` | Süresi Geçmiş Kart |
+| `4124 1111 1111 1116` | Geçersiz CVC |
+| `4151 1111 1111 1112` | 3D Secure Başlatma Hatası |
+
+**Tüm kartlar için:** Son Kullanma Tarihi: `12/26`, CVC: `123`
 
 ---
 

@@ -61,7 +61,7 @@ const paramService = new ParamService(config.param);
 const iyzicoService = new IyzicoService(config.iyzico);
 const paytrService = new PaytrService(config.paytr);
 const paymentService = new PaymentService(paramService, iyzicoService, paytrService, config);
-const emailService = new EmailService(config.brevo.smtp);
+const emailService = new EmailService(config.email);
 
 // Domain Services
 const productService = new ProductService(productRepository, categoryRepository);

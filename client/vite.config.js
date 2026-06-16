@@ -44,7 +44,7 @@ export default defineConfig({
                 globIgnores: ['**/images/og-image.png', '**/images/hero/**'],
                 runtimeCaching: [
                     {
-                        urlPattern: /^https:\/\/api\.e-market-domain\.com\/api\/v1\/.*/i,
+                        urlPattern: /^https:\/\/api\.ecommerceflaredev\.web\.tr\/api\/v1\/.*/i,
                         handler: 'NetworkFirst',
                         options: {
                             cacheName: 'api-cache',

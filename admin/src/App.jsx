@@ -23,17 +23,14 @@ import {
 
 const getApiUrl = () => {
   const envUrl = import.meta.env.VITE_API_URL;
-  if (envUrl && !envUrl.includes('ecommerce-api.yusuftalhaarabaci-91d.workers.dev') && !envUrl.includes('ecommerce-api-staging.yusuftalhaarabaci-91d.workers.dev')) {
+  if (envUrl) {
     return envUrl;
   }
   const hostname = typeof window !== 'undefined' ? window.location.hostname : '';
   if (hostname === 'localhost' || hostname === '127.0.0.1') {
     return 'http://localhost:8787';
   }
-  if (hostname.includes('test') || hostname.includes('staging') || hostname.includes('ecommerce-admin-v4s') || hostname.includes('ecommerce-storefront-dm5')) {
-    return 'https://e-commerce-cloudflare-staging.yusuftalhaarabaci-91d.workers.dev';
-  }
-  return 'https://e-commerce-cloudflare.yusuftalhaarabaci-91d.workers.dev';
+  return 'https://api.ecommerceflaredev.web.tr';
 };
 
 const API_URL = getApiUrl();
