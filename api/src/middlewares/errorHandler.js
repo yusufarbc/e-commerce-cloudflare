@@ -15,7 +15,7 @@ export const errorHandler = (err, c) => {
     if (err instanceof ZodError) {
         statusCode = 400;
         message = 'Geçersiz Veri Girişi';
-        details = err.errors.map(e => ({
+        details = err.issues.map(e => ({
             path: e.path.join('.'),
             message: e.message
         }));
