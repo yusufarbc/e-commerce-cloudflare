@@ -1,8 +1,10 @@
 name: E-Commerce D1 Database Backup Pipeline
 
 on:
-  schedule:
-    - cron: '0 0 * * *' # Every night at 00:00 UTC
+  # Scheduled run disabled for the demo environment to avoid nightly failure emails.
+  # Re-enable by uncommenting the schedule trigger below once backups are needed.
+  # schedule:
+  #   - cron: '0 0 * * *' # Every night at 00:00 UTC
   workflow_dispatch: # Enable manual execution
 
 permissions:
