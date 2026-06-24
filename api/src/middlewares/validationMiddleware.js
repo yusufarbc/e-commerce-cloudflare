@@ -15,11 +15,11 @@ export const validateRequest = (schema) => async (c, next) => {
         await next();
     } catch (error) {
         if (error instanceof z.ZodError) {
-            console.error('Doğrulama Hatası:', JSON.stringify(error.errors, null, 2));
+            console.error('Doğrulama Hatası:', JSON.stringify(error.issues, null, 2));
             return c.json({
                 status: 'failure',
                 errorMessage: 'Doğrulama Hatası (Validation Error)',
-                errors: error.errors
+                errors: error.issues
             }, 400);
         }
         throw error;
