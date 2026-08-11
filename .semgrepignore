@@ -21,3 +21,8 @@ scratch/**
 # Ignore Dockerfile
 api/Dockerfile
 **/Dockerfile
+
+# Ignore GitHub Workflows from mutable action tag semgrep rule
+.github/workflows/
+**/.github/workflows/**
+
