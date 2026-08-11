@@ -21,3 +21,9 @@ scratch/**
 # Ignore Dockerfile
 api/Dockerfile
 **/Dockerfile
+
+# Ignore GitHub directory (workflows & dependabot configs)
+.github/
+**/.github/**
+
+
