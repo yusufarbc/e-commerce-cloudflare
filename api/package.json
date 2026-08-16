@@ -14,7 +14,7 @@
     "seed": "node prisma/seed.js"
   },
   "dependencies": {
-    "@prisma/adapter-d1": "^5.22.0",
+    "@prisma/adapter-d1": "^7.9.1",
     "@prisma/client": "^5.22.0",
     "hono": "^4.12.26",
     "soap": "^1.10.0",
