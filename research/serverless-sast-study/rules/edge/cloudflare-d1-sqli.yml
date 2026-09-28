@@ -1,0 +1,25 @@
+rules:
+  - id: cloudflare.d1.tainted-query
+    message: Untrusted serverless event data reaches a D1 query without binding.
+    severity: ERROR
+    languages:
+      - javascript
+      - typescript
+    mode: taint
+    metadata:
+      cwe:
+        - "CWE-89: Improper Neutralization of Special Elements used in an SQL Command"
+      category: security
+      technology:
+        - cloudflare-workers
+        - cloudflare-d1
+      confidence: HIGH
+    pattern-sources:
+      - pattern: $CTX.req.query(...)
+      - pattern: $CTX.req.param(...)
+      - pattern: $CTX.req.json(...)
+      - pattern: $MESSAGE.body
+    pattern-sinks:
+      - pattern: $DB.prepare($QUERY)
+    pattern-sanitizers:
+      - pattern: $DB.prepare($QUERY).bind(...)
