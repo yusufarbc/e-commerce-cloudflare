@@ -33,7 +33,8 @@ jobs:
 
       - name: Validate workflow syntax
         shell: bash
-        run: "$RUNNER_TEMP/actionlint"
+        run: |
+          "$RUNNER_TEMP/actionlint"
 
       - name: Install pinned zizmor
         shell: bash

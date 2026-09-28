@@ -31,7 +31,7 @@ jobs:
       - name: Set Staging API URL
         id: env-setup
         run: |
-          echo "VITE_API_URL=https://api.ecommerceflaredev.web.tr" >> $GITHUB_ENV
+          echo "VITE_API_URL=https://api.ecommerceflaredev.web.tr" >> "$GITHUB_ENV"
         shell: bash
 
       - name: Install All Dependencies
