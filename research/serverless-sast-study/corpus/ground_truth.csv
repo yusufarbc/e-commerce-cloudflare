@@ -1,0 +1,5 @@
+case_id,pair_id,cwe,source_type,variant,file,sink_line,split,origin,notes
+C001-H-V,C001,CWE-89,http,vuln,cases/C001-d1-sqli/http_vuln.js,8,dev,injected,D1 template literal
+C001-H-F,C001,CWE-89,http,fixed,cases/C001-d1-sqli/http_fixed.js,,dev,injected,negative sample
+C001-Q-V,C001,CWE-89,queue,vuln,cases/C001-d1-sqli/queue_vuln.js,7,dev,injected,D1 template literal
+C001-Q-F,C001,CWE-89,queue,fixed,cases/C001-d1-sqli/queue_fixed.js,,dev,injected,negative sample
