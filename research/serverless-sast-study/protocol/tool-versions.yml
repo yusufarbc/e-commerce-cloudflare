@@ -2,11 +2,11 @@ snapshot_date: 2026-09-28
 
 actions:
   checkout:
-    version: v4
-    sha: 11d5960a326750d5838078e36cf38b85af677262
+    version: v7.0.1
+    sha: 3d3c42e5aac5ba805825da76410c181273ba90b1
   setup_node:
-    version: v4
-    sha: 49933ea5288caeca8642d1e84afbd3f7d6820020
+    version: v7.0.0
+    sha: 820762786026740c76f36085b0efc47a31fe5020
   setup_python:
     version: v6
     sha: ece7cb06caefa5fff74198d8649806c4678c61a1
@@ -14,8 +14,8 @@ actions:
     version: v3
     sha: 1190a975f95ce23525efb6a3fc21ea29567c1b52
   upload_artifact:
-    version: v4
-    sha: ea165f8d65b6e75b540449e92b4886f43607fa02
+    version: v7.0.1
+    sha: 043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
   trivy:
     version: master
     sha: d2a0b60797ff03db6132bd4e2b293f9b37081297
