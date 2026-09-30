@@ -34,9 +34,13 @@ Planlanan deneyler:
 - Gerçek secret değerleri korpusa veya sonuçlara alınmaz.
 - Her bulgu, ground truth kaydı ve yeniden üretim komutuyla ilişkilendirilir.
 
-İlk C001 ikiz vakası `files/` taslağından korpusa kopyalanmıştır. Kaynak
-`files/` dizini ve `security-experiment.yml` değiştirilmemiştir; doğrulama
-tamamlandıktan sonra ayrı bir temizlik değişikliğinde kaldırılabilirler.
+İlk C001 ikiz vakası `files/` taslağından korpusa kopyalanmıştır. Taslaklar
+(`files/`, kökteki `security-experiment.yml`) içerik doğrulamasından sonra
+kaldırıldı.
+
+`corpus/organic/` altındaki snapshot, demo uygulamanın eski düz metin JWT
+sırrını içerir. Bu değer artık uygulamada kullanılmıyor ve geçersiz kabul
+edilir; gerçek bir secret değildir.
 
 ## Çalıştırma
 

@@ -1,169 +1,188 @@
 # Araştırma ve Uygulama Planı
 
-Son güncelleme: 2026-09-28
+Son güncelleme: 2026-09-30
 
-## Amaç
+## Çalışma başlığı
 
-HTTP dışı serverless event kaynaklarının SAST araçlarında sistematik bir
-tespit boşluğu oluşturup oluşturmadığını ölçmek; platforma duyarlı kuralların
-bu boşluğu ne ölçüde kapattığını ve CI maliyetini belirlemek.
+*Same Sink, Different Source: A Paired Empirical Study of Taint-Source Coverage
+in Default SAST Gates for Event-Driven Serverless Edge Applications*
 
-## Araştırma soruları
+- Ölçek: dergi (hedef Software: Practice and Experience; yedek Turk J Elec Eng
+  & Comp Sci).
+- Çerçeve: kaynak modeli kapsamı. Ana değişken kaynak türüdür. SAST (CodeQL,
+  Semgrep CE, Opengrep) merkezdedir. Secret, SCA ve config kapıları yalnızca
+  RQ1 ve RQ4 bağlamında kullanılır; RQ2'ye dahil edilmeleri kategori hatası
+  olur.
+- Yazar künyesi: birinci yazar Yusuf Talha Arabacı, Karabük Üniversitesi adresi
+  (YL mezuniyet şartı).
 
-- **RQ1:** Varsayılan araçların serverless korpusundaki precision, recall ve
-  F1 değerleri nedir?
-- **RQ2:** Aynı sink için event kaynaklı vakaların yakalanma oranı HTTP
-  kaynaklı ikizlerinden farklı mıdır?
-- **RQ3:** Cloudflare/Workers bilgisi içeren özel kurallar held-out sette
-  recall'u precision'ı bozmadan artırır mı?
-- **RQ4:** Varsayılan ve özel güvenlik kontrollerinin CI çalışma süresine ek
-  yükü nedir?
+## Araştırma soruları ve hipotezler
+
+- **RQ1:** Varsayılan kapıların korpustaki precision, recall ve F1 değerleri
+  nedir?
+- **RQ2:** Aynı sink için tespit oranı kaynak türüne göre değişiyor mu?
+  - **H2a (event-source blindness):** Event kolunda recall, modellenmiş HTTP
+    (Express) koluna göre daha düşüktür.
+  - **H2b (framework blindness):** Hono HTTP kolunda recall, Express koluna göre
+    daha düşüktür.
+  - Birincil metrik: çift düzeyinde tespit farkı (event − Express).
+- **RQ3:** Platforma duyarlı özel kurallar, held-out sette recall'u precision'ı
+  bozmadan artırıyor mu?
+- **RQ4:** Kapıların CI süresine ek yükü nedir?
 
 ## Mevcut durum
 
-- [x] Ayrı araştırma dizini ve veri yerleşimi oluşturuldu.
-- [x] C001 HTTP/Queue–D1 SQL injection ikizleri eklendi.
-- [x] CodeQL, Semgrep, Opengrep, OSV-Scanner, npm audit, Trivy, Gitleaks,
-  Checkov ve Conftest workflow'a bağlandı.
-- [x] Action ve araç sürümleri sabitlendi.
-- [x] actionlint ve zizmor kontrolleri eklendi.
-- [x] İlk özel D1 taint kuralı 2 TP / 0 FP ile yerel Opengrep üzerinde
-  doğrulandı.
-- [ ] Workflow GitHub runner üzerinde henüz çalıştırılmadı.
-- [ ] Korpus istatistiksel analiz için yeterli büyüklükte değil.
-- [ ] Held-out ve dış kaynaklı vakalar henüz tamamlanmadı.
-- [ ] SARIF normalizasyonu ve istatistik betikleri henüz yazılmadı.
+- [x] Araştırma dizini, C001 HTTP/Queue–D1 SQLi ikizleri.
+- [x] Araçlar deney workflow'una bağlandı; action'lar SHA ile, imajlar digest
+  ile sabitlendi.
+- [x] Her araç için exit code ve sürüm `tools.csv`'ye, süre milisaniye olarak
+  `timings.csv`'ye yazılıyor.
+- [x] `default` profili bir kez koştu (run 36448405979).
+- [x] Organik vakalar `research/organic-snapshot-v1` etiketiyle donduruldu ve
+  `corpus/organic/` altına O001–O005 olarak alındı; uygulamada düzeltildi.
+- [x] Ürün pipeline'ı (`devsecops-pipeline.yml`) korpusu taramıyor.
+- [ ] Express pozitif kontrol kolu yok (zorunlu).
+- [ ] Protokol dondurulmadı (M0).
+- [ ] `baseline` ve `default+custom` profilleri henüz koşmadı.
+- [ ] Analiz betikleri yok.
 
-## Aşamalar
+## Aşamalar ve takvim
 
-### M0 — Protokolü dondurma
+| Aşama | Hafta | Tarih |
+| --- | --- | --- |
+| M0 Protokol dondurma | 1 | 5–11 Eki 2026 |
+| M1 Korpus | 1–4 | 5 Eki – 1 Kas |
+| M2–M3 Pilot + analiz hattı | 4–6 | 26 Eki – 15 Kas |
+| M4 E1/E2 + özel kurallar (E3) | 6–8 | 9–29 Kas |
+| M5–M6 E4 + AWS genellenebilirlik | 8–10 | 23 Kas – 13 Ara |
+| Literatür tamamlama | 1–10 | paralel |
+| M7 Yazım + gönderim | 10–14 | 7 Ara – 10 Oca 2027 |
 
-- CWE kapsamını ve source türlerini kesinleştir.
-- Birincil metriği RQ2 event-vs-HTTP recall farkı olarak kaydet.
-- TP eşleştirme kuralını sabitle: doğru dosya, sink ±3 satır ve doğru CWE
-  ailesi.
-- Dev/held-out ayrımını vakalar yazılmadan önce kaydet.
-- McNemar testi, etki büyüklüğü, güven aralığı ve çoklu test düzeltmesini
-  önceden belirle.
-- E4 için koşum sırasını rastgeleleştirme ve başarısız runner koşularını dışlama
-  kuralını yaz.
+### M0 — Protokolü dondur
 
-**Tamamlanma ölçütü:** Protokol dosyaları değişmez bir Git etiketiyle
-işaretlenmiş olmalı.
+`protocol/preregistration.md` yazılır ve `protocol-v1` etiketiyle dondurulur
+(isteğe bağlı OSF ön kaydı).
 
-### M1 — Korpusu tamamlama
+- **Kollar:** `http_express` (pozitif kontrol), `http_hono`, `event`
+  (`queue`, `cron`, `r2`, `webhook`). Express kolunda da kaçırılan çift
+  "bilgilendirici değil" olarak işaretlenir.
+- **Puanlama:** doğru dosya, sink ±3 satır, doğru CWE ailesi = TP. Duyarlılık
+  analizi ±0 ve ±5 ile yapılır. Temiz ikizdeki bulgu FP sayılır. Semgrep'te
+  pattern ve taint kuralları ayrı raporlanır.
+- **İstatistik:**
+  - RQ1: Wilson güven aralığı; Cochran's Q, ardından Holm düzeltmeli ikili exact
+    McNemar.
+  - RQ2: araç × kol başına exact McNemar; eşleştirilmiş OR = b/c; Newcombe
+    güven aralığı; GLMM `detected ~ arm*tool + complexity + (1|pair) + (1|cwe)`.
+  - RQ3: held-out kümede default ile custom karşılaştırması exact McNemar ile;
+    ΔFPR temiz ikizlerde.
+  - RQ4: koşular bağımsız, bu yüzden Mann–Whitney U + Cliff's δ + medyan/IQR +
+    BCa bootstrap.
+  - Chi-square kullanılmaz.
+- **Dev/held-out:** CWE × kaynak hücreleri vakalar yazılmadan önce yarı yarıya
+  bölünür; held-out listesinin hash'i commit edilir.
+- **Güç:** McNemar'da yalnızca uyumsuz çiftler bilgi taşır. Pilottan sonra çift
+  sayısı sabitlenir; hedef 40–60 çift.
+- **E4:** profil sırası rastgele (seed kaydedilir). Başarısız runner koşusu
+  dışlanır ve yeniden koşulur; dışlanan koşu sayısı raporlanır.
 
-Planlanan asgari vaka aileleri:
+**Tamamlanma ölçütü:** `protocol-v1` etiketi var.
 
-| Pair | CWE | HTTP ikizi | Event kaynağı | Önerilen split |
-|---|---|---|---|---|
-| C001 | CWE-89 | Query parametresi | Queue body | Dev, tamamlandı |
-| C002 | CWE-22 | Route/path parametresi | R2 object key | Held-out |
-| C003 | CWE-918 | Request URL alanı | Queue içindeki URL | Dev |
-| C004 | CWE-347/862 | HTTP ödeme isteği | Webhook | Held-out |
-| C005 | CWE-89/78 | HTTP girdisi | Cron'un çektiği veri | Held-out |
-| C006 | CWE-16/798 | API config | `wrangler.toml` | Dev + held-out |
+### M1 — Korpus
 
-Her pair için HTTP-vuln, HTTP-fixed, event-vuln ve event-fixed olmak üzere dört
-dosya bulunmalı. Anlamlı McNemar analizi için yalnızca altı pair ile
-yetinilmemeli; pilot bulgudan sonra güç analizi yapılarak her source/CWE
-katmanında yeterli sayıya çıkılmalı.
+- Yapı: `corpus/cases/Cxxx-<cwe>-<slug>/{http_express,http_hono,event_<type>}_{vuln,fixed}.js`.
+  Her çiftte 6 dosya olur. C001 bu adlandırmaya taşınır ve Express ikizi
+  eklenir.
+- Sink ve iş mantığı bayt düzeyinde aynıdır; ikizler yalnızca adapter
+  satırında farklılaşır. Adım sayısı eşitlenemezse `complexity` kovaryatı olur.
+- `ground_truth.csv` yeni sütunları: `arm`, `event_source`, `complexity`,
+  `ts_types`. Şema kontrolü `analysis/check_ground_truth.py` ile yapılır.
+- CWE × kaynak hedefi:
 
-- Organik `O001`–`O003` vakalarını yeni ground truth'a kontrollü biçimde aktar.
-- Held-out vakaların en az bir bölümünü kural yazarından farklı biri hazırlasın.
-- Fixed örneklerin davranışsal eşdeğerliğini test et.
-- Korpusun hiçbir parçasını deploy workflow'una dahil etme.
+  | CWE | Sink | Event kaynakları |
+  | --- | --- | --- |
+  | 89 SQLi | `env.DB.prepare` | queue, cron, webhook |
+  | 22/73 Path | R2 `get/put(key)` | r2, queue |
+  | 918 SSRF | `fetch(url)` | queue, webhook |
+  | 78/94 Code | `eval` / `new Function` | queue, cron |
+  | 79 XSS | HTML response | queue→KV→render, webhook |
+  | 639/862 Authz | admin mutasyonu | webhook (imzasız) |
+  | 347 İmza | webhook HMAC atlanması | webhook |
 
-**Tamamlanma ölçütü:** Tüm kayıtlar schema kontrolünden geçmeli; dosya, satır,
-CWE, source, split ve origin alanlarında eksik olmamalı.
+- Her hücrede 2–3 varyant ve 5–8 inter-procedural vaka olur (Semgrep CE ile
+  Opengrep motor farkı için).
+- Exploit oracle'ları `oracles/` altında Miniflare/vitest ile yazılır: her vuln
+  dosyası istismar edilebilir, her fixed dosya dayanıklı olmalı.
+- Held-out vakaların bir kısmını ikinci bir kişi yazar; Cohen's κ raporlanır.
 
-### M2 — Pilot araç koşusu
+**Tamamlanma ölçütü:** şema kontrolü ve oracle testleri geçiyor.
 
-- Değişiklikleri ayrı bir araştırma dalında commit/push et.
-- `baseline`, `default` ve `default+custom` profillerini birer kez çalıştır.
-- Her aracın gerçekten rapor ürettiğini ve SARIF'in parse edilebildiğini kontrol
-  et.
-- CodeQL path filtresi, OSV v2 komutu, Checkov SARIF çıktısı ve Conftest TOML
-  ayrıştırmasını runner üzerinde doğrula.
-- Docker imajlarını final deneyden önce tag yerine digest ile sabitle.
-- Başarısız araç çağrılarını bulgudan ayırmak için her rapora exit code ve araç
-  sürümü ekle.
+### M2–M3 — Pilot ve analiz hattı
 
-**Tamamlanma ölçütü:** Her beklenen araç için boş olsa bile geçerli bir çıktı,
-log ve süre kaydı bulunmalı.
+- 3 profil × 1 koşu. Pilot kapısı: kararlı çıktı üretmeyen araç kapsamdan
+  çıkarılır ve bu karar kayda geçer.
+- `analysis/` (Python + `uv`): `normalize.py` (SARIF/JSON → `findings.csv`,
+  `cwe_map.csv`), `match.py`, `stats.py`, `make_tables.py`, `fetch.ps1`.
+- `pytest`: doğru eşleşme, ±3 sınırı, fixed dosyada FP, yanlış CWE, yinelenen
+  bulgu.
 
-### M3 — Analiz hattı
+**Tamamlanma ölçütü:** temiz checkout ve indirilmiş artifact'lerle tüm tablolar
+tek komutla üretiliyor.
 
-- SARIF ve JSON raporlarını ortak bir finding tablosuna dönüştür.
-- Yol, satır ve CWE adlarını normalize et; araç-kural–CWE eşleme tablosu oluştur.
-- `ground_truth.csv` ile deterministik eşleştirme yap.
-- TP, FP, FN, precision, recall ve F1 üret.
-- HTTP/event ikizlerinden McNemar tablosu ve odds ratio üret.
-- Sonuç tablolarını ve şekilleri ham raporlardan tek komutla yeniden üret.
-- Unit testlerde en az: doğru eşleşme, ±3 sınırı, fixed dosyada FP, yanlış CWE
-  ve yinelenen bulgu vakalarını kapsa.
+### M4 — E1/E2 ve özel kurallar (E3)
 
-**Tamamlanma ölçütü:** Temiz checkout ve indirilmiş artifact'lerle tüm tablolar
-tek komutla yeniden üretilebilmeli.
+- E1 ve E2 `default` profiliyle tek koşu (tespit deterministik).
+- Özel kurallar yalnızca dev setinde geliştirilir: `rules/edge/`
+  (Semgrep/Opengrep), `rules/codeql-models/` (CodeQL `sourceModel`, kaynaklar
+  `wrangler.toml` bildirimlerinden türetilir), `rules/conftest/`.
+- `rules-frozen-v1` etiketi atılır, **ardından** held-out koşusu yapılır.
+  Held-out sonuçları ayrı artifact ve ayrı tablodadır.
+- Kaçırma taksonomisi: kaynak modellenmemiş / sink modellenmemiş / dataflow
+  kopuyor / kural yok.
 
-### M4 — Özel kurallar ve held-out değerlendirmesi
+### M5–M6 — E4 ve genellenebilirlik
 
-- Özel Semgrep ve Rego kurallarını yalnızca dev sette geliştir.
-- Held-out sonuçlarını kurallar dondurulana kadar açma.
-- Varsayılan ve varsayılan+özel sonuçları aynı vakalarda karşılaştır.
-- Recall artışı yanında yeni false positive'leri ve kural çalışma süresini
-  raporla.
+- 3 profil × 30 koşu; `analysis/dispatch_e4.ps1` rastgele sırayla tetikler.
+  Kurulum ve tarama süresi ayrı raporlanır.
+- AWS kolu: pinned SHA ile OWASP DVSA (yalnızca SAST, E1–E2 çekirdeği) ve küçük
+  bir Lambda TS ikiz seti. CodeQL AWS Lambda'yı modellediği için bu set
+  "modellenmiş serverless" kontrolüdür.
+- Opsiyonel: 2–3 açık kaynak Hono/Workers projesinde organik bulgular;
+  gerekirse responsible disclosure.
 
-**Tamamlanma ölçütü:** Held-out sonuçları ayrı artifact ve ayrı tablo olarak
-üretilmeli; dev sonuçlarıyla karışmamalı.
+### Literatür tamamlama (paralel)
 
-### M5 — E4 performans deneyi
+- Tam metin: FaaSGuard, Semgrep*, Brito vd., CloudFlow, SymFlow; kapalı
+  erişimliler (Austin 2012, Nunes 2018, Antunes & Vieira).
+- Birincil kaynaktan doğrulanacaklar: `refs.bib` içinde bellekten yazılmış
+  girdiler (SLSA, OWASP Serverless Top 10, DVSA, MITRE T1677), Checkov'un
+  Wrangler desteği, CodeQL 2.26–2.27 sürüm notları (Hono/Workers desteği).
+- IEEE Xplore, ACM DL, Scopus ve TR Dizin sorguları; gönderimden önce tekrar.
 
-- Üç profili 30'ar kez çalıştır.
-- Koşum sırasını gün ve saat etkisini azaltacak şekilde rastgeleleştir.
-- Runner image, commit ve araç sürümü aynı kalmalı.
-- Medyan, IQR, yüzde overhead ve Cliff's delta raporla.
-- Kurulum süresi ile gerçek tarama süresini mümkünse ayrı ölç.
+### M7 — Yazım ve gönderim
 
-**Tamamlanma ölçütü:** Her profil için 30 geçerli koşum veya önceden belirlenen
-yeniden-koşma kuralıyla belgelenmiş eşdeğer örneklem bulunmalı.
-
-### M6 — Genellenebilirlik
-
-- E1 ve E2'nin çekirdek kısmını AWS Lambda/DVSA üzerinde tekrarla.
-- Cloudflare'e özgü kural sonuçlarını serverless-genel sonuçlardan ayır.
-- Platformlar arası birebir eşlenemeyen source/sink türlerini açıkça işaretle.
-
-**Tamamlanma ölçütü:** En az bir Cloudflare dışı korpus için aynı normalize
-metrik tablosu üretilmeli.
-
-### M7 — Makale ve artifact paketi
-
-- Yöntem, etik, geçerlilik tehditleri ve responsible disclosure metinlerini
-  yaz.
-- Araç lisanslarını ve korpus dağıtım izinlerini kontrol et.
-- Ham çıktıları Git'e commit etme; release artifact veya arşiv kullan.
-- README'ye yeniden üretim komutları, beklenen süre ve donanım/runner bilgisini
-  ekle.
-- Anonim değerlendirme gerekiyorsa repo ve artifact içindeki kimlik bilgilerini
-  temizle.
-
-**Tamamlanma ölçütü:** Makaledeki her tablo/şekil bir artifact dosyasına ve
-üretim komutuna izlenebilir olmalı.
-
-## Hemen yapılacaklar
-
-1. Araştırma branch'i aç, mevcut iskeleti commit et ve workflow'ları push et.
-2. Üç profille tek koşumluk M2 pilotunu tamamla.
-3. Pilot hatalarını gider; container digest ve çıktı şemalarını dondur.
-4. C002–C006'yı yazmadan önce split ve örnek büyüklüğü kararını kaydet.
-5. Korpusu genişletirken paralel olarak SARIF normalizasyon betiğini geliştir.
+- `paper/` altında Wiley SPE LaTeX şablonu.
+- Yazım sırası: Methodology → Results → Threats → Intro/Related Work →
+  Discussion.
+- Replication package: GitHub release + Zenodo DOI (kod MIT, veri CC-BY). Ham
+  SARIF Git'e commit edilmez.
+- Danışman okuması → arXiv (cs.SE/cs.CR) → SPE.
 
 ## Karar kapıları
 
-- **Pilot kapısı:** Araçlardan biri kararlı çıktı üretemiyorsa kapsamdan çıkarma
-  kararı ana deneyden önce verilir.
-- **Korpus kapısı:** Eşleşmeyen HTTP/event ikizleri istatistiğe alınmaz.
-- **Held-out kapısı:** Özel kurallar dondurulmadan held-out sonuçlarına bakılmaz.
-- **Yayın kapısı:** Sonuçlar ikinci bir kişi tarafından temiz ortamda yeniden
-  üretilemeden makale tabloları final kabul edilmez.
+- **Pilot kapısı:** kararlı çıktı üretmeyen araç ana deneyden önce çıkarılır.
+- **Korpus kapısı:** eşleşmeyen ikizler ve Express kolunda da kaçırılan çiftler
+  RQ2 istatistiğine alınmaz (ayrıca raporlanır).
+- **Held-out kapısı:** `rules-frozen-v1` etiketinden önce held-out sonuçlarına
+  bakılmaz.
+- **Yayın kapısı:** ikinci bir kişi tabloları temiz ortamda yeniden üretemeden
+  tablolar final kabul edilmez.
+
+## Açık işler
+
+- Held-out vakaları yazacak ikinci kişi.
+- CodeQL default setup'ın kapatılması (ürün pipeline'ındaki CodeQL job'u ile
+  çakışır), Cloudflare Pages otomatik Git deploy'unun kapatılması, GitHub
+  `staging` environment'ı.
+- Kapalı erişimli makalelerin PDF'leri; hedef derginin danışmanla
+  netleştirilmesi; enstitüye kabul mektubunun yeterliliğinin sorulması.
