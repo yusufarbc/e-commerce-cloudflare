@@ -1,0 +1,295 @@
+name: DevSecOps Delivery Pipeline
+
+# Fail-closed CI gates -> Cloudflare CD (see DEVSECOPS_PIPELINE.MD).
+# Plain `pull_request` is used (never `pull_request_target`) to avoid
+# Poisoned Pipeline Execution from forked PRs.
+on:
+  push:
+    branches: [main, test]
+  pull_request:
+    branches: [main, test]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: devsecops-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  OSV_SCANNER_VERSION: 2.6.0
+  GITLEAKS_VERSION: 8.30.1
+  TRIVY_VERSION: 0.74.0
+  SEMGREP_VERSION: 1.178.0
+
+jobs:
+  # --- LAYER 1: CI / PIPELINE HYGIENE ---
+  pipeline-hygiene:
+    name: Pipeline hygiene (actionlint + zizmor)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install pinned actionlint
+        shell: bash
+        run: |
+          curl --fail --location --silent --show-error \
+            https://github.com/rhysd/actionlint/releases/download/v1.7.12/actionlint_1.7.12_linux_amd64.tar.gz \
+            --output "$RUNNER_TEMP/actionlint.tar.gz"
+          echo '8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8  '"$RUNNER_TEMP/actionlint.tar.gz" | sha256sum --check
+          tar --extract --gzip --file "$RUNNER_TEMP/actionlint.tar.gz" --directory "$RUNNER_TEMP" actionlint
+
+      - name: Validate workflow syntax
+        shell: bash
+        run: '"$RUNNER_TEMP/actionlint"'
+
+      - name: Install pinned zizmor
+        shell: bash
+        run: |
+          curl --fail --location --silent --show-error \
+            https://github.com/zizmorcore/zizmor/releases/download/v1.30.1/zizmor-x86_64-unknown-linux-gnu.tar.gz \
+            --output "$RUNNER_TEMP/zizmor.tar.gz"
+          echo 'e65324f4430c2717591937edcec90ccbefaf14c174f8ec9415e03ca875b46e1a  '"$RUNNER_TEMP/zizmor.tar.gz" | sha256sum --check
+          tar --extract --gzip --file "$RUNNER_TEMP/zizmor.tar.gz" --directory "$RUNNER_TEMP" zizmor
+
+      - name: Audit workflows with zizmor (fail on medium+)
+        shell: bash
+        run: '"$RUNNER_TEMP/zizmor" --collect=workflows --min-severity medium .'
+
+  # --- LAYER 2: SECRETS + DEPENDENCIES (SCA) ---
+  secrets-and-dependencies:
+    name: Secrets and dependencies (Gitleaks, OSV-Scanner, npm audit)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Checkout repository (full history)
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Secret scan (Gitleaks)
+        shell: bash
+        run: |
+          docker run --rm --volume "$PWD:/repo" \
+            "ghcr.io/gitleaks/gitleaks:v$GITLEAKS_VERSION" \
+            git /repo --config /repo/.gitleaks.toml --verbose --redact --exit-code 1
+
+      - name: Dependency scan (OSV-Scanner)
+        shell: bash
+        run: |
+          docker run --rm --volume "$PWD:/src" \
+            "ghcr.io/google/osv-scanner:v$OSV_SCANNER_VERSION" \
+            scan source --recursive /src
+
+      - name: Set up Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: "20.19.5"
+          cache: npm
+
+      - name: npm audit (high and above)
+        shell: bash
+        run: |
+          status=0
+          for project in . api client admin; do
+            echo "::group::npm audit ($project)"
+            (cd "$project" && npm audit --audit-level=high) || status=1
+            echo "::endgroup::"
+          done
+          exit "$status"
+
+  # --- LAYER 3a: SAST (Semgrep CE + IaC/config) ---
+  code-and-config-security:
+    name: SAST and config (Semgrep, Trivy)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: "3.12.10"
+
+      - name: Semgrep CE
+        shell: bash
+        run: |
+          python -m pip install "semgrep==$SEMGREP_VERSION"
+          semgrep scan \
+            --config p/javascript \
+            --config p/typescript \
+            --config p/owasp-top-ten \
+            --exclude research \
+            --metrics off \
+            --error
+
+      - name: Trivy config scan (wrangler / IaC misconfiguration)
+        uses: aquasecurity/trivy-action@d2a0b60797ff03db6132bd4e2b293f9b37081297 # master on 2026-09-28
+        with:
+          version: v${{ env.TRIVY_VERSION }}
+          scan-type: fs
+          scan-ref: .
+          scanners: misconfig
+          skip-dirs: research
+          severity: HIGH,CRITICAL
+          exit-code: "1"
+
+  # --- LAYER 3b: SAST (CodeQL taint tracking) ---
+  codeql:
+    name: SAST (CodeQL)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@1190a975f95ce23525efb6a3fc21ea29567c1b52 # v3
+        with:
+          languages: javascript-typescript
+          config-file: ./.github/codeql/codeql-config.yml
+
+      - name: Analyze with CodeQL
+        uses: github/codeql-action/analyze@1190a975f95ce23525efb6a3fc21ea29567c1b52 # v3
+
+  # --- LAYER 4: BUILD AND TEST ---
+  build-and-test:
+    name: Build and test
+    needs: [pipeline-hygiene, secrets-and-dependencies, code-and-config-security, codeql]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: "20.19.5"
+          cache: npm
+
+      - name: Install all dependencies
+        run: npm run ci:all
+
+      - name: Prisma validate and generate
+        working-directory: api
+        run: |
+          npx prisma validate
+          npx prisma generate
+
+      - name: API tests
+        working-directory: api
+        run: npm test
+
+      - name: Lint storefront
+        run: npm run lint --prefix client
+
+      - name: Lint admin dashboard
+        run: npm run lint --prefix admin
+
+      - name: Build storefront
+        run: npm run build --prefix client
+        env:
+          VITE_API_URL: https://api.ecommerceflaredev.web.tr
+
+      - name: Build admin dashboard
+        run: npm run build --prefix admin
+        env:
+          VITE_API_URL: https://api.ecommerceflaredev.web.tr
+
+      - name: Upload storefront artifact
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: client-dist
+          path: client/dist/
+          retention-days: 7
+
+      - name: Upload admin artifact
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: admin-dist
+          path: admin/dist/
+          retention-days: 7
+
+  # --- LAYER 5: CD (only after every gate is green, only from push) ---
+  deploy-backend:
+    name: Deploy API to Cloudflare Workers (staging)
+    needs: [build-and-test]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/test'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    environment: staging
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: "20.19.5"
+          cache: npm
+
+      - name: Install API dependencies
+        working-directory: api
+        run: npm ci
+
+      - name: Prisma generate
+        working-directory: api
+        run: npx prisma generate
+
+      - name: Deploy Worker
+        working-directory: api
+        run: npx wrangler deploy --env staging
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
+  deploy-frontend:
+    name: Deploy frontends to Cloudflare Pages (staging)
+    needs: [build-and-test, deploy-backend]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/test'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    environment: staging
+    steps:
+      - name: Download storefront build
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: client-dist
+          path: client/dist
+
+      - name: Download admin build
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: admin-dist
+          path: admin/dist
+
+      - name: Deploy storefront
+        run: npx wrangler pages deploy client/dist --project-name=ecommerce-storefront --branch=test
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
+      - name: Deploy admin dashboard
+        run: npx wrangler pages deploy admin/dist --project-name=ecommerce-admin --branch=test
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}

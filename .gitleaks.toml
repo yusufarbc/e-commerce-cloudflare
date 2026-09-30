@@ -1,0 +1,13 @@
+title = "e-commerce-cloudflare gitleaks config"
+
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "Research corpus: intentionally vulnerable snapshots, scanned by security-research.yml"
+paths = ['''^research/serverless-sast-study/corpus/''']
+
+[[allowlists]]
+description = "Burned demo JWT secret: public in history before research/organic-snapshot-v1, no longer used by the app"
+regexTarget = "match"
+regexes = ['''secure-admin-token-secret-12345''']
