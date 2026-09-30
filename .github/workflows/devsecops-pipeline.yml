@@ -78,7 +78,9 @@ jobs:
         run: |
           docker run --rm --volume "$PWD:/repo" \
             "ghcr.io/gitleaks/gitleaks:v$GITLEAKS_VERSION" \
-            git /repo --config /repo/.gitleaks.toml --verbose --redact --exit-code 1
+            git /repo --config /repo/.gitleaks.toml \
+            --gitleaks-ignore-path /repo/.gitleaksignore \
+            --verbose --redact --exit-code 1
 
       - name: Dependency scan (OSV-Scanner)
         shell: bash
