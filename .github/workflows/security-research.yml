@@ -304,10 +304,12 @@ jobs:
           started=$(date +%s%3N)
           python -m pip install "checkov==$CHECKOV_VERSION"
           set +e
+          # Checkov prints a banner on stdout, so write SARIF to a file instead.
           checkov --directory "$CORPUS" --output sarif --quiet --soft-fail \
-            > "$OUT/checkov.sarif"
+            --output-file-path "$RUNNER_TEMP/checkov"
           rc=$?
           set -e
+          mv "$RUNNER_TEMP/checkov/results_sarif.sarif" "$OUT/checkov.sarif" || rc=99
           printf 'checkov,%s\n' "$(( $(date +%s%3N) - started ))" >> "$OUT/timings.csv"
           printf 'checkov,%s,%s\n' "$rc" "$(checkov --version)" >> "$OUT/tools.csv"
 
@@ -329,6 +331,7 @@ jobs:
             docker run --rm --volume "$PWD:/project" "$CONFTEST_IMAGE" \
               test "${container_paths[@]}" \
               --policy "/project/$STUDY/rules/conftest" \
+              --all-namespaces \
               --output json > "$OUT/conftest.json"
             rc=$?
             set -e
