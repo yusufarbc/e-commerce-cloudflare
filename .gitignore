@@ -101,3 +101,9 @@ skills-lock.json
 IyzipaySamples.js
 PARAM-API-Kullanim-Ornekleri/
 PayTR Direkt API/
+
+# Local secrets / databases
+.dev.vars
+*.dev.vars
+*.db
+*.sqlite

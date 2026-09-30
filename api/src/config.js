@@ -36,7 +36,7 @@ export const config = {
   orderNotificationEmail: 'siparis@ecommerceflaredev.web.tr',
   cdnUrl: 'https://cdn.ecommerceflaredev.web.tr',
   googleMerchantToken: '',
-  adminJwtSecret: 'secure-admin-token-secret-12345'
+  adminJwtSecret: ''
 };
 
 export let currentEnv = null;
@@ -55,7 +55,8 @@ export function initConfig(env) {
   config.orderNotificationEmail = env.ORDER_NOTIFICATION_EMAIL || 'siparis@ecommerceflaredev.web.tr';
   config.cdnUrl = env.CDN_URL || 'https://cdn.ecommerceflaredev.web.tr';
   config.googleMerchantToken = env.GOOGLE_MERCHANT_TOKEN || '';
-  config.adminJwtSecret = env.ADMIN_JWT_SECRET || 'secure-admin-token-secret-12345';
+  // Secret only: set with `wrangler secret put ADMIN_JWT_SECRET` (or .dev.vars locally).
+  config.adminJwtSecret = env.ADMIN_JWT_SECRET || '';
   config.paymentProvider = env.PAYMENT_PROVIDER || 'param';
 
   // In-place update for Param POS parameters to preserve references
