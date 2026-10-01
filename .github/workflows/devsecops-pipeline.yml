@@ -94,7 +94,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
-          node-version: "20.19.5"
+          node-version: "22.23.3"
           cache: npm
 
       - name: npm audit (high and above)
@@ -205,7 +205,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
-          node-version: "20.19.5"
+          node-version: "22.23.3"
           cache: npm
 
       - name: Install all dependencies
@@ -272,7 +272,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
-          node-version: "20.19.5"
+          node-version: "22.23.3"
           cache: npm
 
       - name: Install API dependencies
@@ -311,7 +311,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
-          node-version: "20.19.5"
+          node-version: "22.23.3"
 
       - name: Download storefront build
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
