@@ -97,7 +97,7 @@ def validate(cases: list[Case], corpus: Path = CORPUS) -> list[str]:
             lines = path.read_text(encoding="utf-8").splitlines()
             if not 1 <= c.sink_line <= len(lines):
                 errors.append(f"{where} sink_line {c.sink_line} outside file ({len(lines)} lines)")
-            elif c.origin == "injected" and SINK_MARKER not in lines[c.sink_line - 1]:
+            elif c.origin in ("injected", "external") and SINK_MARKER not in lines[c.sink_line - 1]:
                 errors.append(f"{where} line {c.sink_line} lacks '{SINK_MARKER}' marker")
         elif c.sink_line is not None:
             errors.append(f"{where} fixed case must not have sink_line")
@@ -106,7 +106,7 @@ def validate(cases: list[Case], corpus: Path = CORPUS) -> list[str]:
         splits = {m.split for m in members}
         if len(splits) > 1:
             errors.append(f"{pair_id}: mixed splits {sorted(splits)}")
-        if members[0].origin != "injected":
+        if members[0].origin not in ("injected", "external"):
             continue
         arms: dict[str, set[str]] = defaultdict(set)
         for m in members:

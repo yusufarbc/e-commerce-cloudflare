@@ -19,3 +19,8 @@ raporlanır ve doğru CWE ailesiyle eşleşirse true positive kabul edilir.
 Düzeltilmiş dosyalardaki eşleşmeler false positive olarak sayılır.
 
 Bu kod deney içindir ve deploy edilmemelidir.
+
+Vaka önekleri: `C…` enjekte (yazar), `X…` dış kaynaklı held-out (OWASP DVSA,
+CloudBench, SecBench.js desenlerinden uyarlanmış; kaynak kodu kopyalanmadı,
+kaynak ve lisans `notes` sütununda), `O…` organik held-out (demo uygulamanın
+düzeltme öncesi hâli).
