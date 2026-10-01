@@ -1,119 +1,81 @@
-# 🚀 CI/CD Deployment Pipeline Documentation
+# 🚀 CI/CD Pipeline
 
-The e-commerce project uses a fully automated **CI/CD Deployment Pipeline** to ensure the safety, quality, and continuity of every code change. The pipeline is powered by GitHub Actions and manages automated deployments to the Cloudflare infrastructure.
+All builds and deployments run through one fail-closed GitHub Actions workflow:
+[`.github/workflows/devsecops-pipeline.yml`](../.github/workflows/devsecops-pipeline.yml).
+The design and the role of each tool are described in
+[`DEVSECOPS_PIPELINE.MD`](../DEVSECOPS_PIPELINE.MD).
 
-Pipeline definitions are located in [.github/workflows/deploy.yml](file:///C:/Users/yusuf/Github/e-commerce-cloudflare/.github/workflows/deploy.yml).
+There is no other deploy path: no local deploy script and no Cloudflare Git
+integration, so code reaches Cloudflare only after every gate is green.
 
----
+## Branches and environments
 
-## 📐 Pipeline Flow Diagram
+| Branch | Environment | Storefront | Admin | API |
+| --- | --- | --- | --- | --- |
+| `staging` | staging | staging.ecommerceflaredev.web.tr | staging-admin.ecommerceflaredev.web.tr | staging-api.ecommerceflaredev.web.tr |
+| `production` (default) | production | ecommerceflaredev.web.tr | admin.ecommerceflaredev.web.tr | api.ecommerceflaredev.web.tr |
 
-The Mermaid diagram below illustrates the pipeline trigger stages, job dependencies, and data flow:
+Flow: feature branch → PR to `staging` → merge deploys staging → PR
+`staging` → `production` → merge deploys production. Dependabot also opens its
+PRs against `staging`.
+
+Both branches are protected by the `protect-production-staging` ruleset: no
+deletion, no force-push, changes only via PR, and the five gate checks below
+must pass.
+
+## Flow
 
 ```mermaid
-graph TD
-    classDef test fill:#4f46e5,stroke:#fff,stroke-width:2px,color:#fff
-    classDef deploy fill:#10b981,stroke:#fff,stroke-width:2px,color:#fff
-    classDef artifact fill:#f59e0b,stroke:#fff,stroke-width:2px,color:#fff
-
-    Start([Code Push or PR: test/main]) --> Job1[Test & Build Projects]:::test
-
-    subgraph Job1_Steps [Test & Build Stages]
-        direction TB
-        Install[Dependencies: npm run ci:all]
-        PrismaVal[Prisma Schema Validation]
-        LintClient[Linter: Client ESLint]
-        LintAdmin[Linter: Admin ESLint]
-        Semgrep[Security: Semgrep SAST Scan]
-        Build[Vite Build: Client & Admin]
-
-        Install --> PrismaVal --> LintClient --> LintAdmin --> Semgrep --> Build
-    end
-
-    Job1 -->|Upload Artifacts| ArtClient[client-dist]:::artifact
-    Job1 -->|Upload Artifacts| ArtAdmin[admin-dist]:::artifact
-
-    Job1 -->|Push events only| Job2[Deploy API to Cloudflare Workers]:::deploy
-
-    subgraph Job2_Steps [Backend Deployment Stages]
-        direction TB
-        PrismaGen[Prisma Client Generation]
-        WranglerDeploy[Wrangler Deploy: env Staging/Production]
-        PrismaGen --> WranglerDeploy
-    end
-
-    Job2 --> Job3[Deploy Frontends to Cloudflare Pages]:::deploy
-
-    ArtClient --> Job3
-    ArtAdmin --> Job3
-
-    subgraph Job3_Steps [Frontend Deployment Stages]
-        direction TB
-        DeployStorefront[Wrangler Pages Deploy: storefront]
-        DeployAdmin[Wrangler Pages Deploy: admin-dashboard]
-    end
+graph LR
+    H[Pipeline hygiene<br/>actionlint + zizmor] --> B
+    S[Secrets & dependencies<br/>Gitleaks, OSV-Scanner, npm audit] --> B
+    C[SAST & config<br/>Semgrep CE, Trivy] --> B
+    Q[SAST<br/>CodeQL] --> B
+    B[Build and test<br/>Prisma, vitest, lint, build] --> DA[Deploy API<br/>D1 migrations + Worker]
+    DA --> DF[Deploy frontends<br/>storefront + admin Workers]
 ```
 
----
+The four gate jobs run in parallel; `Build and test` needs all of them, and the
+deploy jobs run only on a **push** to `staging` or `production`. Pull requests
+run every gate and the build, never a deploy.
 
-## ⚙️ Pipeline Jobs & Details
+## Jobs
 
-The pipeline consists of three main jobs:
+| Job | What it does | Fails on |
+| --- | --- | --- |
+| Pipeline hygiene | actionlint, zizmor (pinned binaries, checksum-verified) | any medium+ zizmor finding |
+| Secrets and dependencies | Gitleaks over full history, OSV-Scanner, `npm audit --audit-level=high` in root/api/client/admin | any leak, any OSV finding, high/critical audit |
+| SAST and config | Semgrep CE (`p/javascript`, `p/typescript`, `p/owasp-top-ten`), Trivy misconfig | any Semgrep finding, HIGH/CRITICAL misconfig |
+| SAST (CodeQL) | CodeQL `javascript-typescript` | analysis failure |
+| Build and test | `npm run ci:all`, `prisma validate/generate`, `npm test` (api), lint and build of client/admin with the environment's `VITE_API_URL` | any step |
+| Deploy API | `wrangler d1 migrations apply DB --remote`, `wrangler deploy --env <env>` | any step |
+| Deploy frontends | `wrangler deploy --env <env>` in `client/` and `admin/` (Workers static assets) | any step |
 
-### 1. Test and Build Projects (`test-and-build`)
+The research corpus under `research/` is intentionally vulnerable and is
+excluded from Semgrep, Trivy, Gitleaks and CodeQL here; it is measured by
+`security-research.yml` instead.
 
-This job runs on both **Pull Request (PR)** and **Push** triggers. Its purpose is to validate code quality and perform static code analysis.
+## Versions
 
-- **Dependencies:** None. This is the first job to run.
-- **Stages:**
-  1. **Node.js Setup:** Node.js v20 runtime is installed.
-  2. **Dependency Installation:** `npm run ci:all` installs all sub-project dependencies (`client`, `admin`, `api`) across the monorepo with a clean install.
-  3. **Database Validation:** `prisma validate` is run to validate the backend schema.
-  4. **Lint Check (ESLint):** Linting rules are enforced across `client` and `admin` directories. The pipeline halts on any errors.
-  5. **Security Scan (SAST):** Semgrep scans for vulnerabilities such as ReDoS, Format String, and Shell Injection.
-  6. **Vite Build:** Frontend applications are compiled against the targeted API URLs:
-     - If targeting the `test` branch → `STAGING_API_URL` is used.
-     - If targeting the `main` branch → `PRODUCTION_API_URL` is used.
-  7. **Artifact Upload:** The compiled `client/dist` and `admin/dist` directories are temporarily uploaded to GitHub Actions servers for use in subsequent jobs.
+All actions are pinned to commit SHAs; Docker images and binaries are pinned by
+version and checksum or digest. Node.js 22.23.3 and Wrangler 4.145.0 are set
+in the workflow `env`.
 
----
+## Secrets
 
-### 2. Deploy API to Cloudflare Workers (`deploy-backend`)
+| Secret | Purpose |
+| --- | --- |
+| `CLOUDFLARE_API_TOKEN` | Account API token, least privilege: Workers Scripts, D1, Workers R2 Storage (Edit), Account Settings (Read), Zone Workers Routes (Edit) and Zone (Read) on `ecommerceflaredev.web.tr` |
+| `CLOUDFLARE_ACCOUNT_ID` | Cloudflare account ID |
 
-This job runs only on **direct Push** events (i.e., after a PR is approved and merged).
+The application itself has no deploy-time secrets: admin access is handled by
+Cloudflare Access (see the deployment guide).
 
-- **Dependencies:** Requires `test-and-build` to have completed successfully.
-- **Stages:**
-  1. **Environment Selection:**
-     - Push to `test` branch → environment is set to `staging`.
-     - Push to `main` branch → environment is set to `production`.
-  2. **Prisma Client Generation:** The Prisma client is generated for Cloudflare D1 (`npx prisma generate`).
-  3. **Wrangler Deployment:** `npx wrangler deploy --env <environment>` deploys the API to the target environment.
-  4. **Required Secrets:** `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`.
+## Other workflows
 
----
-
-### 3. Deploy Frontends to Cloudflare Pages (`deploy-frontend`)
-
-This job runs after the backend API has been successfully deployed, publishing the frontend interfaces.
-
-- **Dependencies:** Requires both `test-and-build` and `deploy-backend` to have completed successfully.
-- **Stages:**
-  1. **Artifact Download:** The `client-dist` and `admin-dist` artifacts built in the first job are downloaded.
-  2. **Pages Deployment:**
-     - **Storefront:** Deployed to the `ecommerce-storefront` Pages project targeting the appropriate branch.
-     - **Admin Dashboard:** Deployed to the `ecommerce-admin` Pages project targeting the appropriate branch.
-  3. **Required Secrets:** `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`.
-
----
-
-## 🔒 Security & Secrets Configuration
-
-The following repository secrets must be configured in your GitHub repository for the pipeline to function:
-
-| Secret Name | Description |
-| :--- | :--- |
-| `CLOUDFLARE_ACCOUNT_ID` | Cloudflare Account ID |
-| `CLOUDFLARE_API_TOKEN` | Cloudflare API Token with permissions for Workers, D1, R2, and Pages |
-| `STAGING_API_URL` | Backend API address for the staging environment (e.g. `https://e-commerce-cloudflare-staging.yusuftalhaarabaci-91d.workers.dev`) |
-| `PRODUCTION_API_URL` | Backend API address for the production environment (e.g. `https://api.e-market-domain.com`) |
+| Workflow | Trigger | Purpose |
+| --- | --- | --- |
+| `workflow-security.yml` | PRs touching workflows | actionlint and zizmor report |
+| `research-checks.yml` | PRs touching `research/serverless-sast-study` | ground-truth schema and analysis tests |
+| `security-research.yml` | manual | research measurement pipeline (all scanners, SARIF, timings) |
+| `backup.yml` | manual | encrypted export of the production D1 to Google Drive |
