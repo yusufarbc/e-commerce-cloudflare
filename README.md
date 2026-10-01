@@ -2,7 +2,7 @@
 
 E-Market is a modern, high-performance, fully serverless e-commerce framework designed to deploy and run entirely within the **Cloudflare Ecosystem**. 
 
-Unlike traditional monoliths or containerized setups, E-Market leverages lightweight V8 isolates (**Cloudflare Workers**), serverless SQL databases (**Cloudflare D1**), free-egress object storage (**Cloudflare R2**), and lightning-fast CDNs (**Cloudflare Pages**) to deliver sub-millisecond response times, absolute privacy compliance, and near-zero running costs.
+Unlike traditional monoliths or containerized setups, E-Market leverages lightweight V8 isolates (**Cloudflare Workers**), serverless SQL databases (**Cloudflare D1**), free-egress object storage (**Cloudflare R2**), and static assets served from Workers at the edge to deliver sub-millisecond response times, absolute privacy compliance, and near-zero running costs.
 
 This project is open-source, fully responsive, and works as a Progressive Web App (PWA) out-of-the-box.
 
@@ -18,8 +18,9 @@ graph TD
     classDef cfWorkers fill:#f6821f,stroke:#fff,stroke-width:1px,color:#fff
     classDef external fill:#1e1e24,stroke:#555,stroke-width:1px,color:#ccc
 
-    Storefront["Storefront\nReact PWA - Cloudflare Pages"]:::cfPages
-    Admin["Admin Dashboard\nReact SPA - Cloudflare Pages"]:::cfPages
+    Storefront["Storefront\nReact PWA - Workers static assets"]:::cfPages
+    Access["Cloudflare Access\nZero Trust sign-in"]:::cfWorkers
+    Admin["Admin Dashboard\nReact SPA + proxy Worker"]:::cfPages
     API["Workers API & sGTM\nHono - Cloudflare Workers"]:::cfWorkers
     D1[("D1 Database\nCloudflare SQLite")]:::cfWorkers
     R2["R2 Object Storage\nCloudflare Assets"]:::cfWorkers
@@ -28,8 +29,8 @@ graph TD
     GA4["Google Analytics 4\nEdge Sanitized"]:::external
 
     Storefront -->|HTTPS REST| API
-    Admin -->|JWT Auth REST| API
-    Admin -->|Client-side Resize and Upload| R2
+    Access -->|Signed JWT| Admin
+    Admin -->|Service binding, Access JWT verified| API
     API -->|Prisma D1 Adapter| D1
     API -->|R2 Binding PUT| R2
     API -->|Send Email Binding| Email
@@ -58,12 +59,13 @@ graph TD
 
 ```text
 e-commerce-cloudflare/
-├── client/              # React Storefront (Cloudflare Pages)
-├── admin/               # React Admin Dashboard (Cloudflare Pages)
+├── client/              # React Storefront (Workers static assets)
+├── admin/               # React Admin Dashboard + proxy Worker (behind Cloudflare Access)
 ├── api/                 # Hono REST API Worker (Cloudflare Workers)
 │   ├── prisma/          # Prisma SQLite migrations and seed scripts
 │   └── src/             # API Controllers, Repositories, Middlewares, and Services
-├── scripts/             # Utility deploy & execution scripts
+├── research/            # Academic study: serverless SAST corpus, protocol, analysis
+├── scripts/             # Backup upload utility
 ├── .github/             # CI/CD Workflows, Dependabot, and Issue Templates
 └── package.json         # Monorepo management scripts
 ```
@@ -73,7 +75,7 @@ e-commerce-cloudflare/
 ## 🚀 Local Development Quickstart
 
 ### Prerequisites
-- [Node.js](https://nodejs.org/) (v20 or higher recommended)
+- [Node.js](https://nodejs.org/) 22 or higher (required by Wrangler 4)
 - [NPM](https://www.npmjs.com/)
 - Cloudflare Wrangler CLI (installed automatically)
 
@@ -107,23 +109,29 @@ npm run dev
 
 Your local endpoints will be available at:
 - **Workers API:** `http://localhost:8787`
-- **Storefront storefront:** `http://localhost:5173`
-- **Admin Panel:** `http://localhost:5174`
+- **Storefront:** `http://localhost:3000`
+- **Admin Panel:** `http://localhost:5173`
+
+Admin API routes are protected by Cloudflare Access and return `503` locally
+unless `ACCESS_TEAM_DOMAIN` / `ACCESS_AUD` are set (see `api/.dev.vars.example`).
 
 ---
 
-## 🌐 Deployed Live Endpoints (Staging)
+## 🌐 Environments
 
-The applications are built, tested, and deployed to Cloudflare via the automated CI/CD pipeline (test branch only):
+Deployed by the CI/CD pipeline after all security gates pass:
 
-- **Storefront (Pages):** [https://ecommerceflaredev.web.tr](https://ecommerceflaredev.web.tr)
-- **Admin Panel (Pages):** [https://admin.ecommerceflaredev.web.tr](https://admin.ecommerceflaredev.web.tr)
-- **API (Worker):** [https://api.ecommerceflaredev.web.tr](https://api.ecommerceflaredev.web.tr)
+| | Staging (`staging` branch) | Production (`production` branch) |
+| --- | --- | --- |
+| Storefront | [staging.ecommerceflaredev.web.tr](https://staging.ecommerceflaredev.web.tr) | [ecommerceflaredev.web.tr](https://ecommerceflaredev.web.tr) |
+| Admin Panel | [staging-admin.ecommerceflaredev.web.tr](https://staging-admin.ecommerceflaredev.web.tr) | [admin.ecommerceflaredev.web.tr](https://admin.ecommerceflaredev.web.tr) |
+| API | [staging-api.ecommerceflaredev.web.tr](https://staging-api.ecommerceflaredev.web.tr/api/v1/health) | [api.ecommerceflaredev.web.tr](https://api.ecommerceflaredev.web.tr/api/v1/health) |
 
-### 🔑 Default Admin Dashboard Credentials
-Use the following credentials to access the live or local Admin Dashboard:
-- **Email:** `admin@e-market.com`
-- **Password:** `admin12345`
+### 🔐 Admin access
+The admin panel has no username/password. Sign-in is handled by **Cloudflare
+Access** (one-time PIN to an allowed e-mail address); the API verifies the
+signed Access token on every admin request. Access is granted by the
+repository owner.
 
 ---
 
@@ -206,78 +214,23 @@ To configure the backup pipeline, add the following Repository Secrets to your G
 
 ---
 
-## 🚦 Branch Protection & CI/CD Checks
+## 🚦 Branches, CI/CD and Deployment
 
-To guarantee code quality and stability in open-source environments, E-Market runs automated checks on every pull request targeting `test` or `main` branches:
-- **Dependency Audit:** Immutability checking with `npm ci`.
-- **Database Schema Validation:** Validates model structure consistency using `npx prisma validate`.
-- **Code Linter Verification:** Code quality checks on the client storefront and admin panels.
-- **SAST Security Scanning:** Automated vulnerability checks using Semgrep.
+`staging` and `production` are the only long-lived branches. Changes go
+feature branch → PR to `staging` → PR `staging` → `production`; both branches
+are protected (PR required, no force-push or deletion, gate checks required).
 
-These checks must pass successfully before a pull request can be merged. Deployments to staging or production are strictly reserved for post-merge pushes to the `test` or `main` branches respectively.
+Every PR and push runs the fail-closed DevSecOps pipeline: workflow linting
+(actionlint, zizmor), secret scanning (Gitleaks), dependency scanning
+(OSV-Scanner, npm audit), SAST (Semgrep CE, CodeQL), config scanning (Trivy),
+then Prisma validation, API tests, lint and builds. A push to `staging` or
+`production` additionally applies D1 migrations and deploys the API,
+storefront and admin Workers to that environment.
 
----
-
-## ☁️ Deploying to Cloudflare
-
-### Automatic Deployment (Recommended)
-You can deploy the entire stack (D1 database, R2 bucket, Hono API Worker, Storefront Pages, and Admin Pages) with a single interactive script:
-```bash
-npm run deploy
-```
-The wizard will check your authentication, guide you through creating cloud resources, set up D1 bindings, build, and deploy all components.
-
-### Manual Deployment Steps
-
-#### 1. D1 Database Creation
-Create your production D1 Database in Cloudflare:
-```bash
-npx wrangler d1 create ecommerce-d1
-```
-Copy the outputted `database_id` and paste it inside `api/wrangler.toml`:
-```toml
-[[d1_databases]]
-binding = "DB"
-database_name = "ecommerce-d1"
-database_id = "YOUR_CLOUDFLARE_D1_DATABASE_UUID"
-```
-Apply migrations to production D1:
-```bash
-npx wrangler d1 migrations apply ecommerce-d1 --remote --cwd api
-```
-
-#### 2. R2 Storage Bucket Creation
-Create an R2 Bucket for product assets:
-```bash
-npx wrangler r2 bucket create ecommerce-r2
-```
-
-#### 3. Deploy API Worker
-Deploy the Workers API using wrangler:
-```bash
-cd api
-npx wrangler deploy
-```
-
-#### 4. Configure Redirects and Deploy Frontends to Cloudflare Pages
-Create a `_redirects` file in `client/public/_redirects` and `admin/public/_redirects` pointing to your deployed API URL to avoid CORS:
-```text
-/api/* https://your-workers-api-url.workers.dev/api/:splat 200
-```
-Build and deploy `client/dist` and `admin/dist` directly as Cloudflare Pages projects:
-```bash
-# Build Client & Admin
-npm run build --prefix client
-npm run build --prefix admin
-
-# Deploy to Staging (Preview)
-npx wrangler pages deploy client/dist --project-name e-market-client --branch test
-npx wrangler pages deploy admin/dist --project-name e-market-admin --branch test
-
-# Deploy to Production (Live)
-npx wrangler pages deploy client/dist --project-name e-market-client --branch main
-npx wrangler pages deploy admin/dist --project-name e-market-admin --branch main
-```
+There is no manual deploy script: deployments happen only through the
+pipeline. See [CI/CD Pipeline](docs/cicd_pipeline.md),
+[Cloudflare Deployment Guide](docs/cloudflare_deployment_guide.md) and
+[DEVSECOPS_PIPELINE.MD](DEVSECOPS_PIPELINE.MD).
 
 ---
 
@@ -288,7 +241,7 @@ Detailed guides for every aspect of E-Market are available in the [`docs/`](docs
 | Guide | Description |
 | :--- | :--- |
 | [CI/CD Pipeline](docs/cicd_pipeline.md) | GitHub Actions workflow stages, job dependencies, and secrets setup |
-| [Cloudflare Deployment Guide](docs/cloudflare_deployment_guide.md) | Full step-by-step deployment of Workers, D1, R2, and Pages |
+| [Cloudflare Deployment Guide](docs/cloudflare_deployment_guide.md) | One-time Cloudflare setup: zone, D1/R2 per environment, Cloudflare Access, API token |
 | [Google Services Integration](docs/google_services.md) | sGTM proxy on Workers, GA4, Search Console, Merchant Center, Consent Mode v2 |
 | [Google Drive Backup](docs/google_drive_backup.md) | Automated encrypted D1 database backup pipeline to Google Drive |
 | [Payment Gateways](docs/payment_gateways.md) | Param POS, iyzico, and PayTR configuration and 3D Secure flows |

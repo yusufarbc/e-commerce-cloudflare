@@ -9,7 +9,8 @@
   "scripts": {
     "dev": "npx wrangler dev",
     "seed": "node prisma/seed.js",
-    "test": "vitest run"
+    "test": "vitest run",
+    "seed:remote": "npx --yes wrangler@4.145.0 d1 execute DB --remote --file prisma/seed.sql"
   },
   "prisma": {
     "seed": "node prisma/seed.js"
