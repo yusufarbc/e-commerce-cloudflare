@@ -107,3 +107,7 @@ PayTR Direkt API/
 *.dev.vars
 *.db
 *.sqlite
+
+# Python
+__pycache__/
+*.py[cod]
