@@ -10,8 +10,9 @@ export const CASES = path.resolve(path.dirname(fileURLToPath(import.meta.url)), 
 export const load = async (pair, file) => (await import(path.join(CASES, pair, file))).default;
 
 // ---- Cloudflare bindings ----------------------------------------------------
-export function makeD1() {
+export function makeD1(extraSql = '') {
   const db = freshCatalogue();
+  if (extraSql) db.exec(extraSql);
   return {
     prepare(sql) {
       let params = [];
@@ -49,9 +50,17 @@ export function makeFilesDir() {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'oracle-files-'));
   fs.mkdirSync(path.join(dir, 'public'));
   fs.mkdirSync(path.join(dir, 'private'));
+  fs.mkdirSync(path.join(dir, 'feedback'));
+  fs.writeFileSync(path.join(dir, 'feedback', 'note.txt'), 'thanks');
   fs.writeFileSync(path.join(dir, 'public', 'logo.png'), 'public logo');
   fs.writeFileSync(path.join(dir, SECRET_KEY), SECRET_TEXT);
   return dir;
+}
+
+// Queue producer binding that records sent messages for a later consumer call.
+export function makeQueue() {
+  const sent = [];
+  return { sent, async send(body) { sent.push(body); } };
 }
 
 export function queueBatch(...bodies) {
