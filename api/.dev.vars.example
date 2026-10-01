@@ -1,3 +1,4 @@
-# Copy to .dev.vars for `wrangler dev` (never commit the real file)
-ADMIN_JWT_SECRET="change-me-long-random-string"
-ADMIN_PASSWORD="change-me"
+# Copy to .dev.vars for `wrangler dev` (never commit the real file).
+# Admin routes use Cloudflare Access and return 503 locally unless these are set.
+ACCESS_TEAM_DOMAIN=""
+ACCESS_AUD=""

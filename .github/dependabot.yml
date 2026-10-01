@@ -61,6 +61,8 @@ updates:
         update-types: ["version-update:semver-major"]
       - dependency-name: "react-i18next"
         update-types: ["version-update:semver-major"]
+      - dependency-name: "i18next"
+        update-types: ["version-update:semver-major"]
       - dependency-name: "eslint"
         update-types: ["version-update:semver-major"]
       - dependency-name: "react"
