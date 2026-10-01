@@ -64,7 +64,12 @@ in Default SAST Gates for Event-Driven Serverless Edge Applications*
   traversal → R2), X003 (CloudBench HTTP → kuyruk → consumer → fetch), X004
   (CloudBench/DVSA cron ile ikinci derece SQLi). Kod kopyalanmadı, desen
   uyarlandı; kaynak ve lisans `ground_truth.csv` notlarında. Oracle'lar: 88 test.
-- [ ] Korpusu 40–60 çifte genişletme (dev + held-out varyantlar).
+- [x] SQL/SSRF genişletmesi (e1-01'e göre güç önceliği): yeni hücreler dev
+  (C008 SQL×R2, C009 SSRF×cron, C010 SSRF×R2), mevcut hücrelerin ek
+  varyantları §5 gereği held-out (C011–C019, yazar tarafından yazıldı, ayrı
+  raporlanır). Toplam SQL 10, SSRF 10 çift; oracle'lar 184 test.
+- [ ] Korpusu 40–60 çifte genişletme (kalan: path traversal ve yeni event
+  kaynakları; ikinci yazar bulunursa onun held-out vakaları).
 
 ## Aşamalar ve takvim
 
