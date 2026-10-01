@@ -197,6 +197,23 @@ jobs:
           printf 'semgrep-custom,%s\n' "$(( $(date +%s%3N) - started ))" >> "$OUT/timings.csv"
           printf 'semgrep-custom,%s,%s\n' "$rc" "$(semgrep --version)" >> "$OUT/tools.csv"
 
+      - name: Opengrep custom Cloudflare rules (intra-file inter-procedural)
+        if: inputs.profile == 'default+custom'
+        shell: bash
+        run: |
+          started=$(date +%s%3N)
+          set +e
+          "$RUNNER_TEMP/opengrep" scan \
+            --config "$STUDY/rules/edge" \
+            --taint-intrafile \
+            --sarif \
+            --output "$OUT/opengrep-custom-intrafile.sarif" \
+            "$CORPUS"
+          rc=$?
+          set -e
+          printf 'opengrep-custom-intrafile,%s\n' "$(( $(date +%s%3N) - started ))" >> "$OUT/timings.csv"
+          printf 'opengrep-custom-intrafile,%s,%s\n' "$rc" "$("$RUNNER_TEMP/opengrep" --version)" >> "$OUT/tools.csv"
+
       - name: Remove scanner rule checkout before repository scans
         if: inputs.profile != 'baseline' && always()
         shell: bash

@@ -1,6 +1,6 @@
 rules:
-  - id: cloudflare.d1.tainted-query
-    message: Untrusted Workers request or event data reaches a D1 query string without binding.
+  - id: cloudflare.r2.tainted-key
+    message: Untrusted Workers request or event data controls an R2 object key without a prefix check.
     severity: ERROR
     languages:
       - javascript
@@ -8,7 +8,7 @@ rules:
     mode: taint
     metadata:
       cwe:
-        - "CWE-89: Improper Neutralization of Special Elements used in an SQL Command"
+        - "CWE-22: Improper Limitation of a Pathname to a Restricted Directory"
       category: security
       technology:
         - cloudflare-workers
@@ -30,5 +30,15 @@ rules:
       - pattern: (await fetch(...)).json()
     pattern-sinks:
       - patterns:
-          - pattern: $DB.prepare($QUERY)
-          - focus-metavariable: $QUERY
+          - pattern-either:
+              - pattern: $BUCKET.get($KEY, ...)
+              - pattern: $BUCKET.put($KEY, ...)
+              - pattern: $BUCKET.delete($KEY)
+              - pattern: $BUCKET.head($KEY)
+          - metavariable-regex:
+              metavariable: $BUCKET
+              regex: (?i).*(bucket|r2|storage|assets|images).*
+          - pattern-not-inside: |
+              if (!$TARGET.startsWith($PREFIX)) return $RET;
+              ...
+          - focus-metavariable: $KEY
