@@ -1,6 +1,6 @@
 rules:
-  - id: cloudflare.d1.tainted-query
-    message: Untrusted Workers request or event data reaches a D1 query string without binding.
+  - id: cloudflare.fetch.tainted-url
+    message: Untrusted Workers request or event data controls an outbound fetch() URL without a host allowlist.
     severity: ERROR
     languages:
       - javascript
@@ -8,7 +8,7 @@ rules:
     mode: taint
     metadata:
       cwe:
-        - "CWE-89: Improper Neutralization of Special Elements used in an SQL Command"
+        - "CWE-918: Server-Side Request Forgery (SSRF)"
       category: security
       technology:
         - cloudflare-workers
@@ -30,5 +30,12 @@ rules:
       - pattern: (await fetch(...)).json()
     pattern-sinks:
       - patterns:
-          - pattern: $DB.prepare($QUERY)
-          - focus-metavariable: $QUERY
+          - pattern-either:
+              - pattern: fetch($URL, ...)
+              - pattern: fetch(new Request($URL, ...), ...)
+          - pattern-not-inside: |
+              if (!$ALLOWED.has(new URL($X).hostname)) return $RET;
+              ...
+          # the feed request that produces cron input is a source, not a sink
+          - pattern-not-inside: (await fetch(...)).json()
+          - focus-metavariable: $URL
