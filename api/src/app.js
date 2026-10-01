@@ -1,7 +1,6 @@
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
-import { sign } from 'hono/jwt';
-import { config, initConfig } from './config.js';
+import { initConfig } from './config.js';
 import { getPrisma } from './prisma.js';
 import { errorHandler } from './middlewares/errorHandler.js';
 
@@ -52,34 +51,6 @@ app.use('*', async (c, next) => {
  */
 app.get('/api/v1/health', (c) => {
     return c.json({ status: 'UP', timestamp: new Date() });
-});
-
-// Admin Login (Public endpoint before jwt check)
-app.post('/api/v1/admin/login', async (c) => {
-    const adminEmail = c.env.ADMIN_EMAIL || 'admin@e-market.com';
-    const adminPassword = c.env.ADMIN_PASSWORD;
-
-    // Fail closed: no built-in password or signing key fallbacks.
-    if (!adminPassword || !config.adminJwtSecret) {
-        return c.json({ status: 'error', errorMessage: 'Yönetici girişi yapılandırılmamış.' }, 503);
-    }
-
-    try {
-        const { email, password } = await c.req.json();
-
-        if (email === adminEmail && password === adminPassword) {
-            const payload = {
-                email: adminEmail,
-                exp: Math.floor(Date.now() / 1000) + 60 * 60 * 24 // 24 Hours validity
-            };
-            const token = await sign(payload, config.adminJwtSecret);
-            return c.json({ status: 'success', token });
-        }
-
-        return c.json({ status: 'error', errorMessage: 'E-posta veya şifre hatalı!' }, 401);
-    } catch (e) {
-        return c.json({ status: 'error', errorMessage: 'Geçersiz giriş verisi!' }, 400);
-    }
 });
 
 // Mount modular public sub-routers

@@ -16,7 +16,6 @@ import {
   ShoppingBag as OrdersIcon, 
   Eye, 
   X,
-  Lock,
   Sun,
   Moon
 } from 'lucide-react';
@@ -34,13 +33,16 @@ const getApiUrl = () => {
 };
 
 const API_URL = getApiUrl();
+
+// Admin endpoints are called on the panel's own origin: the admin Worker forwards
+// /api/* to the API through a service binding, so the Cloudflare Access session
+// (and its signed Cf-Access-Jwt-Assertion header) covers every admin request.
+const isLocalhost = typeof window !== 'undefined' &&
+  ['localhost', '127.0.0.1'].includes(window.location.hostname);
+const ADMIN_API_URL = isLocalhost ? 'http://localhost:8787' : '';
 const config = { cdnUrl: '' };
 
 export default function App() {
-  const [token, setToken] = useState(localStorage.getItem('admin_token') || '');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [loginError, setLoginError] = useState('');
   const [activeTab, setActiveTab] = useState('dashboard');
   const [theme, setTheme] = useState(localStorage.getItem('admin_theme') || 'dark');
 
@@ -177,21 +179,17 @@ export default function App() {
     });
   };
 
+  // Sign-in and sign-out are handled by Cloudflare Access.
   const handleLogout = () => {
-    localStorage.removeItem('admin_token');
-    setToken('');
-    setActiveTab('dashboard');
+    window.location.assign('/cdn-cgi/access/logout');
   };
 
   const adminRequest = async (url, options = {}) => {
-    const headers = {
-      ...options.headers,
-      'Authorization': `Bearer ${token}`
-    };
     try {
-      const res = await fetch(url, { ...options, headers });
-      if (res.status === 401) {
-        handleLogout();
+      const res = await fetch(url, { ...options, credentials: 'same-origin' });
+      if (res.status === 401 || res.status === 403) {
+        // Access session expired: reloading sends the browser back through Access.
+        window.location.reload();
         throw new Error('UNAUTHORIZED');
       }
       return res;
@@ -208,12 +206,12 @@ export default function App() {
     setLoading(true);
     try {
       const [prodRes, catRes, brandRes, orderRes, returnRes, settingsRes] = await Promise.all([
-        adminRequest(`${API_URL}/api/v1/admin/products`),
-        adminRequest(`${API_URL}/api/v1/admin/categories`),
-        adminRequest(`${API_URL}/api/v1/admin/brands`),
-        adminRequest(`${API_URL}/api/v1/admin/orders`),
-        adminRequest(`${API_URL}/api/v1/admin/returns`),
-        adminRequest(`${API_URL}/api/v1/admin/settings`)
+        adminRequest(`${ADMIN_API_URL}/api/v1/admin/products`),
+        adminRequest(`${ADMIN_API_URL}/api/v1/admin/categories`),
+        adminRequest(`${ADMIN_API_URL}/api/v1/admin/brands`),
+        adminRequest(`${ADMIN_API_URL}/api/v1/admin/orders`),
+        adminRequest(`${ADMIN_API_URL}/api/v1/admin/returns`),
+        adminRequest(`${ADMIN_API_URL}/api/v1/admin/settings`)
       ]);
 
       const prods = await prodRes.json();
@@ -235,7 +233,7 @@ export default function App() {
 
     } catch (e) {
       if (e.message === 'UNAUTHORIZED') {
-        alert('Oturum süresi dolmuş veya geçersiz token! Lütfen tekrar giriş yapın.');
+        console.warn('Cloudflare Access oturumu yenileniyor...');
       } else {
         console.error('Veri yükleme hatası:', e);
       }
@@ -244,36 +242,13 @@ export default function App() {
     }
   };
 
-  // Fetch all dashboard data when token is present
+  // Cloudflare Access has already authenticated the user before the page loads.
   useEffect(() => {
-    if (token) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      fetchData();
-    }
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    fetchData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [token]);
+  }, []);
 
-  const handleLogin = async (e) => {
-    e.preventDefault();
-    setLoginError('');
-    try {
-      const res = await fetch(`${API_URL}/api/v1/admin/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password })
-      });
-      const data = await res.json();
-      if (data.status === 'success') {
-        localStorage.setItem('admin_token', data.token);
-        setToken(data.token);
-      } else {
-        setLoginError(data.errorMessage || 'Giriş başarısız!');
-      }
-    } catch (err) {
-      console.error(err);
-      setLoginError('Sunucu bağlantı hatası!');
-    }
-  };
 
   // Image Cropper States & Event Handlers
   const [cropState, setCropState] = useState({
@@ -398,7 +373,7 @@ export default function App() {
         formData.append('file', webpFile);
 
         try {
-          const res = await adminRequest(`${API_URL}/api/v1/admin/upload`, {
+          const res = await adminRequest(`${ADMIN_API_URL}/api/v1/admin/upload`, {
             method: 'POST',
             body: formData
           });
@@ -427,8 +402,8 @@ export default function App() {
   const saveProduct = async (e) => {
     e.preventDefault();
     const url = editingProduct 
-      ? `${API_URL}/api/v1/admin/products/${editingProduct.id}` 
-      : `${API_URL}/api/v1/admin/products`;
+      ? `${ADMIN_API_URL}/api/v1/admin/products/${editingProduct.id}` 
+      : `${ADMIN_API_URL}/api/v1/admin/products`;
     const method = editingProduct ? 'PUT' : 'POST';
 
     try {
@@ -504,7 +479,7 @@ export default function App() {
     setLoading(true);
     try {
       const deletePromises = ids.map(id => 
-        adminRequest(`${API_URL}/api/v1/admin/products/${id}`, { method: 'DELETE' })
+        adminRequest(`${ADMIN_API_URL}/api/v1/admin/products/${id}`, { method: 'DELETE' })
       );
       await Promise.all(deletePromises);
       setSelectedProductIds([]);
@@ -524,7 +499,7 @@ export default function App() {
     setLoading(true);
     try {
       const deletePromises = ids.map(id => 
-        adminRequest(`${API_URL}/api/v1/admin/categories/${id}`, { method: 'DELETE' })
+        adminRequest(`${ADMIN_API_URL}/api/v1/admin/categories/${id}`, { method: 'DELETE' })
       );
       await Promise.all(deletePromises);
       setSelectedCategoryIds([]);
@@ -544,7 +519,7 @@ export default function App() {
     setLoading(true);
     try {
       const deletePromises = ids.map(id => 
-        adminRequest(`${API_URL}/api/v1/admin/brands/${id}`, { method: 'DELETE' })
+        adminRequest(`${ADMIN_API_URL}/api/v1/admin/brands/${id}`, { method: 'DELETE' })
       );
       await Promise.all(deletePromises);
       setSelectedBrandIds([]);
@@ -562,7 +537,7 @@ export default function App() {
   const deleteProduct = async (id) => {
     if (!confirm('Bu ürünü silmek istediğinize emin misiniz?')) return;
     try {
-      const res = await adminRequest(`${API_URL}/api/v1/admin/products/${id}`, {
+      const res = await adminRequest(`${ADMIN_API_URL}/api/v1/admin/products/${id}`, {
         method: 'DELETE'
       });
       const data = await res.json();
@@ -581,8 +556,8 @@ export default function App() {
   const saveCategory = async (e) => {
     e.preventDefault();
     const url = editingCategory 
-      ? `${API_URL}/api/v1/admin/categories/${editingCategory.id}` 
-      : `${API_URL}/api/v1/admin/categories`;
+      ? `${ADMIN_API_URL}/api/v1/admin/categories/${editingCategory.id}` 
+      : `${ADMIN_API_URL}/api/v1/admin/categories`;
     const method = editingCategory ? 'PUT' : 'POST';
 
     try {
@@ -609,7 +584,7 @@ export default function App() {
   const deleteCategory = async (id) => {
     if (!confirm('Kategoriyi silmek istediğinizden emin misiniz?')) return;
     try {
-      await adminRequest(`${API_URL}/api/v1/admin/categories/${id}`, {
+      await adminRequest(`${ADMIN_API_URL}/api/v1/admin/categories/${id}`, {
         method: 'DELETE'
       });
       fetchData();
@@ -625,8 +600,8 @@ export default function App() {
   const saveBrand = async (e) => {
     e.preventDefault();
     const url = editingBrand 
-      ? `${API_URL}/api/v1/admin/brands/${editingBrand.id}` 
-      : `${API_URL}/api/v1/admin/brands`;
+      ? `${ADMIN_API_URL}/api/v1/admin/brands/${editingBrand.id}` 
+      : `${ADMIN_API_URL}/api/v1/admin/brands`;
     const method = editingBrand ? 'PUT' : 'POST';
 
     try {
@@ -653,7 +628,7 @@ export default function App() {
   const deleteBrand = async (id) => {
     if (!confirm('Markayı silmek istediğinizden emin misiniz?')) return;
     try {
-      await adminRequest(`${API_URL}/api/v1/admin/brands/${id}`, {
+      await adminRequest(`${ADMIN_API_URL}/api/v1/admin/brands/${id}`, {
         method: 'DELETE'
       });
       fetchData();
@@ -668,7 +643,7 @@ export default function App() {
   // Order Detail & Update
   const viewOrder = async (order) => {
     try {
-      const res = await adminRequest(`${API_URL}/api/v1/admin/orders/${order.id}`);
+      const res = await adminRequest(`${ADMIN_API_URL}/api/v1/admin/orders/${order.id}`);
       const data = await res.json();
       if (data.status === 'success') {
         const fullOrder = data.data;
@@ -696,7 +671,7 @@ export default function App() {
   const saveOrderStatus = async (e) => {
     e.preventDefault();
     try {
-      const res = await adminRequest(`${API_URL}/api/v1/admin/orders/${selectedOrder.id}`, {
+      const res = await adminRequest(`${ADMIN_API_URL}/api/v1/admin/orders/${selectedOrder.id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json'
@@ -729,7 +704,7 @@ export default function App() {
   const saveReturnStatus = async (e) => {
     e.preventDefault();
     try {
-      const res = await adminRequest(`${API_URL}/api/v1/admin/returns/${selectedReturn.id}`, {
+      const res = await adminRequest(`${ADMIN_API_URL}/api/v1/admin/returns/${selectedReturn.id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json'
@@ -752,7 +727,7 @@ export default function App() {
   const saveSettings = async (e) => {
     e.preventDefault();
     try {
-      const res = await adminRequest(`${API_URL}/api/v1/admin/settings`, {
+      const res = await adminRequest(`${ADMIN_API_URL}/api/v1/admin/settings`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json'
@@ -770,63 +745,6 @@ export default function App() {
       }
     }
   };
-
-  // Login View
-  if (!token) {
-    return (
-      <div className="login-container">
-        <button 
-          onClick={toggleTheme}
-          className="btn btn-secondary" 
-          style={{ position: 'absolute', top: '20px', right: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}
-        >
-          {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
-          <span>{theme === 'dark' ? 'Açık Tema' : 'Koyu Tema'}</span>
-        </button>
-        <div className="card login-card">
-          <div className="login-header">
-            <div className="login-logo">E</div>
-            <h2>E-Market Yönetim Paneli</h2>
-            <p style={{ color: 'var(--color-text-muted)', fontSize: '13px', marginTop: '8px' }}>
-              Sunucusuz altyapı ile güvenli yönetim
-            </p>
-          </div>
-          {loginError && (
-            <div style={{ background: 'var(--status-error-bg)', color: 'var(--status-error)', padding: '12px', borderRadius: '8px', marginBottom: '20px', fontSize: '13px', textAlign: 'center', fontWeight: 600 }}>
-              {loginError}
-            </div>
-          )}
-          <form onSubmit={handleLogin}>
-            <div className="form-group">
-              <label className="form-label">E-Posta Adresi</label>
-              <input 
-                type="email" 
-                className="form-control" 
-                placeholder="admin@e-market.com" 
-                value={email}
-                onChange={e => setEmail(e.target.value)}
-                required
-              />
-            </div>
-            <div className="form-group">
-              <label className="form-label">Şifre</label>
-              <input 
-                type="password" 
-                className="form-control" 
-                placeholder="••••••••" 
-                value={password}
-                onChange={e => setPassword(e.target.value)}
-                required
-              />
-            </div>
-            <button type="submit" className="btn btn-primary" style={{ width: '100%', padding: '14px', marginTop: '10px' }}>
-              <Lock size={16} /> Giriş Yap
-            </button>
-          </form>
-        </div>
-      </div>
-    );
-  }
 
   // Dashboard Main View
   return (
