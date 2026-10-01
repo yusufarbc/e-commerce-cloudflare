@@ -5,9 +5,9 @@ name: DevSecOps Delivery Pipeline
 # Poisoned Pipeline Execution from forked PRs.
 on:
   push:
-    branches: [main, test]
+    branches: [production, staging]
   pull_request:
-    branches: [main, test]
+    branches: [production, staging]
   workflow_dispatch:
 
 permissions:
@@ -15,13 +15,15 @@ permissions:
 
 concurrency:
   group: devsecops-${{ github.ref }}
-  cancel-in-progress: true
+  # Never cancel a running deploy; superseded PR runs may be cancelled.
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 env:
   OSV_SCANNER_VERSION: 2.6.0
   GITLEAKS_VERSION: 8.30.1
   TRIVY_VERSION: 0.74.0
   SEMGREP_VERSION: 1.178.0
+  WRANGLER_VERSION: 4.145.0
 
 jobs:
   # --- LAYER 1: CI / PIPELINE HYGIENE ---
@@ -174,11 +176,31 @@ jobs:
     needs: [pipeline-hygiene, secrets-and-dependencies, code-and-config-security, codeql]
     runs-on: ubuntu-24.04
     timeout-minutes: 20
+    outputs:
+      environment: ${{ steps.target.outputs.environment }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+
+      # Branch -> environment: production -> production, staging -> staging.
+      # PRs build against the environment of their base branch.
+      - name: Resolve target environment
+        id: target
+        shell: bash
+        env:
+          REF_NAME: ${{ github.ref_name }}
+          BASE_REF: ${{ github.base_ref }}
+        run: |
+          branch="${BASE_REF:-$REF_NAME}"
+          if [[ "$branch" == production ]]; then
+            echo "environment=production" >> "$GITHUB_OUTPUT"
+            echo "api_url=https://api.ecommerceflaredev.web.tr" >> "$GITHUB_OUTPUT"
+          else
+            echo "environment=staging" >> "$GITHUB_OUTPUT"
+            echo "api_url=https://staging-api.ecommerceflaredev.web.tr" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Set up Node.js
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
@@ -208,12 +230,12 @@ jobs:
       - name: Build storefront
         run: npm run build --prefix client
         env:
-          VITE_API_URL: https://api.ecommerceflaredev.web.tr
+          VITE_API_URL: ${{ steps.target.outputs.api_url }}
 
       - name: Build admin dashboard
         run: npm run build --prefix admin
         env:
-          VITE_API_URL: https://api.ecommerceflaredev.web.tr
+          VITE_API_URL: ${{ steps.target.outputs.api_url }}
 
       - name: Upload storefront artifact
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
@@ -229,14 +251,18 @@ jobs:
           path: admin/dist/
           retention-days: 7
 
-  # --- LAYER 5: CD (only after every gate is green, only from push) ---
+  # --- LAYER 5: CD (only after every gate is green, only on push to an env branch) ---
   deploy-backend:
-    name: Deploy API to Cloudflare Workers (staging)
+    name: Deploy API (${{ needs.build-and-test.outputs.environment }})
     needs: [build-and-test]
-    if: github.event_name == 'push' && github.ref == 'refs/heads/test'
+    if: github.event_name == 'push' && (github.ref_name == 'staging' || github.ref_name == 'production')
     runs-on: ubuntu-24.04
     timeout-minutes: 15
-    environment: staging
+    environment: ${{ needs.build-and-test.outputs.environment }}
+    env:
+      TARGET_ENV: ${{ needs.build-and-test.outputs.environment }}
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -257,21 +283,36 @@ jobs:
         working-directory: api
         run: npx prisma generate
 
+      - name: Apply D1 migrations
+        working-directory: api
+        run: npx --yes "wrangler@$WRANGLER_VERSION" d1 migrations apply DB --env "$TARGET_ENV" --remote
+
       - name: Deploy Worker
         working-directory: api
-        run: npx wrangler deploy --env staging
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: npx --yes "wrangler@$WRANGLER_VERSION" deploy --env "$TARGET_ENV"
 
   deploy-frontend:
-    name: Deploy frontends to Cloudflare Pages (staging)
+    name: Deploy frontends (${{ needs.build-and-test.outputs.environment }})
     needs: [build-and-test, deploy-backend]
-    if: github.event_name == 'push' && github.ref == 'refs/heads/test'
+    if: github.event_name == 'push' && (github.ref_name == 'staging' || github.ref_name == 'production')
     runs-on: ubuntu-24.04
     timeout-minutes: 15
-    environment: staging
+    environment: ${{ needs.build-and-test.outputs.environment }}
+    env:
+      TARGET_ENV: ${{ needs.build-and-test.outputs.environment }}
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
     steps:
+      - name: Checkout repository (wrangler.jsonc)
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: "20.19.5"
+
       - name: Download storefront build
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
@@ -284,14 +325,10 @@ jobs:
           name: admin-dist
           path: admin/dist
 
-      - name: Deploy storefront
-        run: npx wrangler pages deploy client/dist --project-name=ecommerce-storefront --branch=test
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      - name: Deploy storefront (Workers static assets)
+        working-directory: client
+        run: npx --yes "wrangler@$WRANGLER_VERSION" deploy --env "$TARGET_ENV"
 
-      - name: Deploy admin dashboard
-        run: npx wrangler pages deploy admin/dist --project-name=ecommerce-admin --branch=test
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      - name: Deploy admin dashboard (Workers static assets)
+        working-directory: admin
+        run: npx --yes "wrangler@$WRANGLER_VERSION" deploy --env "$TARGET_ENV"
