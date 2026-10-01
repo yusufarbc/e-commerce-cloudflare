@@ -7,6 +7,7 @@ updates:
       interval: "weekly"
       time: "08:00"
       timezone: "Europe/Istanbul"
+    target-branch: "staging"
     open-pull-requests-limit: 3
     # Major upgrades need code/config migration; tracked manually, not via weekly PRs.
     ignore:
@@ -27,12 +28,15 @@ updates:
       interval: "weekly"
       time: "08:00"
       timezone: "Europe/Istanbul"
+    target-branch: "staging"
     open-pull-requests-limit: 3
     # Major upgrades need code/config migration; tracked manually, not via weekly PRs.
     ignore:
       - dependency-name: "prisma"
         update-types: ["version-update:semver-major"]
       - dependency-name: "@prisma/*"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "vitest"
         update-types: ["version-update:semver-major"]
     groups:
       dependencies:
@@ -49,6 +53,7 @@ updates:
       interval: "weekly"
       time: "08:00"
       timezone: "Europe/Istanbul"
+    target-branch: "staging"
     open-pull-requests-limit: 3
     # Major upgrades need code/config migration; tracked manually, not via weekly PRs.
     ignore:
@@ -57,6 +62,20 @@ updates:
       - dependency-name: "react-i18next"
         update-types: ["version-update:semver-major"]
       - dependency-name: "i18next"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "eslint"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "react"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "react-dom"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "@types/react"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "@types/react-dom"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "eslint-plugin-react-refresh"
+        versions: [">=0.5.0"]
+      - dependency-name: "eslint-plugin-react-hooks"
         update-types: ["version-update:semver-major"]
     groups:
       dependencies:
@@ -73,6 +92,7 @@ updates:
       interval: "weekly"
       time: "08:00"
       timezone: "Europe/Istanbul"
+    target-branch: "staging"
     open-pull-requests-limit: 3
     groups:
       dependencies:
