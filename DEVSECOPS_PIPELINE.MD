@@ -111,7 +111,14 @@ PR'lar tüm kapılardan ve build'den geçer ama deploy etmez. Her iki dal `prote
 
 Sınır aşılınca `429` ve `Retry-After: 60` döner. Bu davranış `app.security.test.js` ile test edilir.
 
-#### 5.2 WAF ve zone ayarları (Dashboard, elle)
+#### 5.2 Güvenlik başlıkları (kodda)
+
+- **API:** Hono `secureHeaders` (HSTS, `nosniff`, `X-Frame-Options`, `Referrer-Policy` ...) gönderir. Vitrin GTM proxy betiğini cross-origin yüklediği için CORP `cross-origin` olarak ayarlıdır.
+- **Vitrin ve admin:** `public/_headers` dosyası (Workers static assets) CSP (`frame-ancestors 'none'`, `base-uri`, `object-src`), `X-Frame-Options: DENY`, HSTS, `nosniff`, `Referrer-Policy`, `Permissions-Policy` ve COOP ekler. CSP `script-src` içermez, çünkü GTM ve Param 3D Secure akışı uçtan uca test edilmeden sıkılaştırılmamalıdır. ZAP bu yüzden CSP ile ilgili Medium uyarılar vermeye devam edebilir.
+
+Bu başlıklar ilk ZAP koşusunun bulgularına yanıt olarak eklendi.
+
+#### 5.3 WAF ve zone ayarları (Dashboard, elle)
 
 Wrangler zone düzeyindeki WAF kurallarını yönetemez. Bu ayarlar `ecommerceflaredev.web.tr` zone'unda Dashboard'dan bir kez yapılır (Free plan):
 

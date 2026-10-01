@@ -75,7 +75,8 @@ The API Worker applies per-IP limits with the Workers Rate Limiting binding
 requests/minute on `/api/*` and 30 requests/minute on order, payment and return
 routes, answering `429` with `Retry-After`. Zone-level WAF, the free rate
 limiting rule, Bot Fight Mode and TLS/HSTS settings are configured in the
-Cloudflare dashboard; the steps are in `DEVSECOPS_PIPELINE.MD` section 5.2.
+Cloudflare dashboard; the steps are in `DEVSECOPS_PIPELINE.MD` section 5.3. Security headers come from Hono
+`secureHeaders` on the API and `public/_headers` on the storefront and admin.
 
 ## Local hook
 
