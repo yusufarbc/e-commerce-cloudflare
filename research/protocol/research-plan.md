@@ -76,6 +76,9 @@ kurallarla (H3) ayrıca incelenir.
   (C008 SQL×R2, C009 SSRF×cron, C010 SSRF×R2), mevcut hücrelerin ek
   varyantları §5 gereği held-out (C011–C019, yazar tarafından yazıldı, ayrı
   raporlanır). Toplam SQL 10, SSRF 10 çift; oracle'lar 184 test.
+- [x] M4: platform-aware kural paketi (D1, R2, fetch), yalnız dev'de
+  geliştirildi, `rules-frozen-v1` ile donduruldu; held-out ilk kez rq3-01'de
+  puanlandı (`protocol/interim-results.md`).
 - [ ] Korpusu 40–60 çifte genişletme (kalan: path traversal ve yeni event
   kaynakları; ikinci yazar bulunursa onun held-out vakaları).
 
