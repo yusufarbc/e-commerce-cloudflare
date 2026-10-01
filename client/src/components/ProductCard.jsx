@@ -24,12 +24,12 @@ export function ProductCard({ product }) {
     const isActive = product.aktif !== false;
     const inStock = isActive && stockCount > 0;
 
-    // Helper to strip HTML
+    // Helper to strip HTML. DOMParser builds an inert document: unlike innerHTML on a
+    // live element, it never loads images or runs event handlers such as onerror.
     const stripHtml = (html) => {
         if (!html) return '';
-        const tmp = document.createElement("DIV");
-        tmp.innerHTML = html;
-        return tmp.textContent || tmp.innerText || "";
+        const doc = new DOMParser().parseFromString(html, 'text/html');
+        return doc.body.textContent || '';
     };
 
     const plainDescription = stripHtml(product.aciklama).substring(0, 80) + (product.aciklama?.length > 80 ? '...' : '');

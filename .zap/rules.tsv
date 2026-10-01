@@ -1,0 +1,3 @@
+# OWASP ZAP baseline rule overrides (zap-baseline.py -c).
+# Format: <plugin id><TAB><IGNORE|INFO|WARN|FAIL><TAB><reason>.
+# Every override needs a reason; the pipeline fails on any High risk alert regardless.

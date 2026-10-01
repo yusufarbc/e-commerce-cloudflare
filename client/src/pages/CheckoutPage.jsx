@@ -335,8 +335,11 @@ export function CheckoutPage() {
             });
 
             if (paymentResponse.data.status === 'success' && paymentResponse.data.ucdHtml) {
-                // Render Param 3D Secure Form
+                // Render Param 3D Secure Form. The HTML is the bank's 3DS redirect page,
+                // returned by Param to our API over TLS; replacing the document is the
+                // integration Param documents, so this write is intentional.
                 document.open();
+                // nosemgrep: insecure-document-method
                 document.write(paymentResponse.data.ucdHtml);
                 document.close();
             } else {

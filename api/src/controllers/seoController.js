@@ -1,5 +1,6 @@
 import { config } from '../config.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
+import { escapeMarkup } from '../utils/escape.js';
 
 /**
  * SEO Controller - Dynamic sitemap generation
@@ -55,7 +56,7 @@ export class SeoController {
     for (const product of products) {
       if (!product.slug) continue;
       xml += `  <url>
-    <loc>${baseUrl}/urun/${product.slug}</loc>
+    <loc>${escapeMarkup(`${baseUrl}/urun/${encodeURIComponent(product.slug)}`)}</loc>
     <lastmod>${product.guncellenmeTarihi?.toISOString().split('T')[0] || today}</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>

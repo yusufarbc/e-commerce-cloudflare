@@ -222,10 +222,15 @@ are protected (PR required, no force-push or deletion, gate checks required).
 
 Every PR and push runs the fail-closed DevSecOps pipeline: workflow linting
 (actionlint, zizmor), secret scanning (Gitleaks), dependency scanning
-(OSV-Scanner, npm audit), SAST (Semgrep CE, CodeQL), config scanning (Trivy),
-then Prisma validation, API tests, lint and builds. A push to `staging` or
-`production` additionally applies D1 migrations and deploys the API,
-storefront and admin Workers to that environment.
+(OSV-Scanner, npm audit), SAST (Semgrep CE with pinned rules, Opengrep with
+custom Cloudflare Workers taint rules, CodeQL), config scanning (Trivy) and a
+Conftest policy for `wrangler.toml`, then Prisma validation, API tests, lint,
+builds and CycloneDX SBOMs. A push to `staging` or `production` additionally
+applies D1 migrations, deploys the API, storefront and admin Workers to that
+environment (production waits for reviewer approval), and runs an OWASP ZAP
+baseline DAST scan against the deployed storefront and API. At runtime the API
+enforces per-IP rate limits through the Workers Rate Limiting binding. Every
+tool in the chain is free.
 
 There is no manual deploy script: deployments happen only through the
 pipeline. See [CI/CD Pipeline](docs/cicd_pipeline.md),

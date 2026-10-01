@@ -4,9 +4,22 @@ if git diff --cached --name-only | grep -E '(^|/)dev\.db$|\.sqlite$'; then
   exit 1
 fi
 
-# Local secret scan (install: https://github.com/gitleaks/gitleaks)
-if command -v gitleaks >/dev/null 2>&1; then
-  gitleaks protect --staged --redact --verbose || exit 1
-else
-  echo "UYARI: gitleaks bulunamadi, yerel sir taramasi atlandi (CI yine tarar)."
+# Local secret scan (required). Uses the pinned binary from scripts/install-gitleaks.sh,
+# or a gitleaks on PATH; without either the commit is refused.
+ROOT=$(git rev-parse --show-toplevel)
+GITLEAKS=""
+for candidate in "$ROOT/.tools/gitleaks" "$ROOT/.tools/gitleaks.exe"; do
+  if [ -x "$candidate" ]; then GITLEAKS="$candidate"; break; fi
+done
+if [ -z "$GITLEAKS" ] && command -v gitleaks >/dev/null 2>&1; then
+  GITLEAKS=gitleaks
 fi
+if [ -z "$GITLEAKS" ]; then
+  echo "HATA: gitleaks bulunamadi; yerel sir taramasi zorunlu."
+  echo "Kurulum: sh scripts/install-gitleaks.sh  (CI ile ayni surum, .tools/ altina)"
+  exit 1
+fi
+
+"$GITLEAKS" git --pre-commit --staged --redact --verbose \
+  --config "$ROOT/.gitleaks.toml" \
+  --gitleaks-ignore-path "$ROOT/.gitleaksignore" || exit 1
