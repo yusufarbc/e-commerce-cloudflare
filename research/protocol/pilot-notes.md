@@ -82,3 +82,57 @@ Gözlemler (tek çift; istatistik yok):
   Hono ve event kaynakları için yazıldı); `express` kolundaki FN beklenen.
 - Pattern kuralları kaynaktan bağımsız tüm kolları yakaladı (tavan etkisi);
   bu yüzden preregistration'da ayrı raporlanıyor.
+
+## e1-01 — ilk E1/E2 ön koşusu (2026-10-02, yalnızca dev seti)
+
+Run `36924977367`, commit `22a48fe`, profil `default+custom`. Dev seti: 7 çift
+(C001–C007) × 4 kol. Held-out (X…, O…) puanlanmadı. Tüm araçlar exit 0
+(Conftest exit 1 = politika ihlali, held-out organik vaka; incelenmedi).
+
+### Kol bazında recall (n = 7 çift; Wilson %95)
+
+| Konfigürasyon | ctrl | express | hono | event | FP (fixed) |
+| --- | --- | --- | --- | --- | --- |
+| CodeQL | 7/7 [0.65, 1.00] | 2/7 [0.08, 0.64] | 0/7 [0.00, 0.35] | 0/7 [0.00, 0.35] | 4/28 |
+| Semgrep varsayılan | 3/7 | 3/7 | 0/7 | 0/7 | 0/28 |
+| Semgrep özel (`rules/edge`) | 1/7 | 1/7 | 3/7 | 2/7 | 0/28 |
+| Semgrep / Opengrep pattern | 3/7 | 3/7 | 3/7 | 3/7 | 0/28 |
+
+### Eşleştirilmiş karşılaştırmalar (exact McNemar; b = yalnız ilk kol, c = yalnız ikinci)
+
+| Konfigürasyon | H1 ctrl–express | H2b express–hono | H2a express–event (birincil) | hono–event (ikincil) |
+| --- | --- | --- | --- | --- |
+| CodeQL | b=5 c=0, p=0.062 | b=2 c=0, p=0.50 | b=2 c=0, p=0.50 | b=0 c=0 |
+| Semgrep varsayılan | b=0 c=0 | b=3 c=0, p=0.25 | b=3 c=0, p=0.25 | b=0 c=0 |
+| Semgrep özel | b=0 c=0 | b=0 c=2, p=0.50 | b=1 c=2, p=1.00 | b=1 c=0 |
+
+Bu koşu ön koşudur; korpus örneklem hedefinin altındadır, hiçbir sonuç
+anlamlı değildir ve makaleye sonuç olarak girmez.
+
+### Gözlemler
+
+- **Kalibrasyon tuttu (H0):** CodeQL `ctrl` kolunu 7/7 yakaladı; araç bu üç CWE'yi
+  prensipte biliyor.
+- **Sink modeli en güçlü sinyal (H1):** CodeQL D1 (`.prepare`) ve R2 (`.get`)
+  sink'lerini hiç yakalamadı; Express kaynağıyla yalnızca global `fetch`
+  (SSRF) sink'ini yakaladı. b=5, c=0, p=0.062.
+- **Varsayılan araçlar Workers kaynağını hiç tanımıyor:** CodeQL ve varsayılan
+  Semgrep kuralları `hono` ve `event` kollarının hiçbirini yakalamadı. Bu
+  yüzden ikincil karşılaştırma (hono–event) bilgi taşımıyor ve birincil
+  H2a farkı (express–event) çerçeve etkisinden (H2b) ayrılamıyor: varsayılan
+  araçlarda gözlenen körlük, event'e özgü değil, Workers/Hono çerçevesinin
+  modellenmemesi düzeyinde. Bu, makalenin çerçevesi için önemli bir bulgu
+  adayı; event'e özgü etkiyi ayırmak için Hono'yu modelleyen kurallar (H3)
+  gerekiyor.
+- **Güç:** Exact McNemar'da p < 0.05 için en az 6 uyumsuz çift gerekir.
+  Uyumsuzluk yalnızca SQL (Semgrep) ve SSRF (CodeQL) hücrelerinde çıktı;
+  path traversal hücreleri varsayılan araçlarda bilgi taşımadı (yalnız `ctrl`).
+  Genişletme önceliği: SQL ve SSRF hücrelerinde varyant sayısını artırmak
+  (her biri ≥ 10 çift).
+- **CodeQL FP:** SSRF fixed ikizlerindeki `ALLOWED_HOSTS.has(new URL(url).hostname)`
+  allowlist'i sanitizer sayılmadı (`js/request-forgery`, 4/28). Precision
+  için gerçek bir bulgu.
+- **Özel kural (dev bulgusu, M4 için):** `$MESSAGE.body` kaynak deseni Express
+  `req.body`'yi de eşledi (C004 ctrl/express TP); cron'un `fetch` ile çektiği
+  feed kaynak olarak modellenmemiş (C004 event FN); kural yalnızca CWE-89'u
+  kapsıyor.
