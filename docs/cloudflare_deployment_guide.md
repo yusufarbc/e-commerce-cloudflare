@@ -1,141 +1,96 @@
-# ⛅ Cloudflare Serverless E-Commerce Deployment Guide
+# ⛅ Cloudflare Deployment Guide
 
-This guide describes the step-by-step process to deploy the **E-Market** monorepo project fully serverless onto the Cloudflare ecosystem (Workers, Pages, D1 Database, R2 Storage).
+E-Market runs entirely on Cloudflare Workers: the API is a Worker, and the
+storefront and admin panel are Workers with static assets. Deployments are
+done only by the CI/CD pipeline ([CI/CD Pipeline](cicd_pipeline.md)). This
+guide covers the one-time setup of the Cloudflare side, for example for a fork.
 
----
+## Architecture per environment
 
-## 📋 Prerequisites
+| Component | Worker name (staging / production) | Custom domain (staging / production) | Bindings |
+| --- | --- | --- | --- |
+| API | `e-commerce-cloudflare-staging` / `-production` | `staging-api.` / `api.` | D1 `DB`, R2 `IMAGES_BUCKET`, `EMAIL`, cron |
+| Storefront | `ecommerce-storefront-staging` / `-production` | `staging.` / apex | static assets (SPA) |
+| Admin | `ecommerce-admin-staging` / `-production` | `staging-admin.` / `admin.` | static assets + service binding `API` |
 
-Before starting, ensure that the following requirements are met:
-1. A **Cloudflare Account** (Free or Paid plan).
-2. **Node.js** (v18+) and **NPM** installed locally.
-3. A **Custom Domain** configured and active on Cloudflare (required for email routing and asset CDN).
-4. Cloudflare **Email Routing** enabled for your domain.
+Configuration lives in `api/wrangler.toml`, `client/wrangler.jsonc` and
+`admin/wrangler.jsonc`. Each environment has its own D1 database and R2
+bucket; `wrangler dev` and `preview_*` bindings use a separate preview D1/R2,
+so previews never touch live data.
 
----
+## One-time setup
 
-## ⚡ Method 1: Automatic Deployment (Recommended)
+### 1. Zone
 
-You can deploy the entire stack with a single interactive script that automates the whole wizard:
+Add the domain to the Cloudflare account and point the registrar's nameservers
+to the two Cloudflare nameservers shown for the zone. Wait until the zone is
+**Active**. Workers custom domains create their DNS records and certificates
+automatically on the first deploy.
 
-```bash
-npm run deploy
-```
-
-**This wizard automatically performs the following steps:**
-1. Checks your Cloudflare authentication (triggers `wrangler login` if not logged in).
-2. Creates your D1 SQL Database and R2 Image Bucket.
-3. Applies database schemas and migrations to the remote D1 instance.
-4. Updates your `server/api/wrangler.toml` file with the newly generated D1 database UUID.
-5. Deploys the Workers Hono API and retrieves the production Worker URL.
-6. Sets up proxy redirects (`_redirects` file) in client and admin frontend projects to prevent CORS issues.
-7. Builds both frontend applications and deploys them to Cloudflare Pages.
-
----
-
-## 🛠️ Method 2: Step-by-Step Manual Deployment
-
-If you prefer to run commands manually, follow these steps in order:
-
-### Step 1: Install Dependencies and Authenticate Wrangler
-
-Install all required node packages recursively and authenticate the wrangler CLI:
+### 2. D1 and R2
 
 ```bash
-# Install all sub-project dependencies concurrently
-npm run install:all
-
-# Login to your Cloudflare account
-npx wrangler login
+npx wrangler d1 create <project>-d1-staging
+npx wrangler d1 create <project>-d1-production
+npx wrangler d1 create <project>-d1-preview
+npx wrangler r2 bucket create <project>-r2-staging
+npx wrangler r2 bucket create <project>-r2-production
+npx wrangler r2 bucket create <project>-r2-preview
 ```
 
-### Step 2: Create D1 Database
+Put the database IDs and bucket names into `api/wrangler.toml` (top level =
+preview, `[env.staging]`, `[env.production]`). Run Wrangler from a directory
+**without** a Wrangler config when creating resources, or from `api/`, so
+commands never pick up the wrong project.
 
-1. Create a production D1 Database instance:
-   ```bash
-   npx wrangler d1 create ecommerce-d1
-   ```
-2. Copy the generated `database_id` UUID from the CLI output and paste it inside [server/api/wrangler.toml](file:///c:/Users/yusuf/Github/e-commerce-cloudflare/server/api/wrangler.toml):
-   ```toml
-   [[d1_databases]]
-   binding = "DB"
-   database_name = "ecommerce-d1"
-   database_id = "YOUR_CLOUDFLARE_D1_DATABASE_UUID"
-   ```
-3. Apply schema migrations to your remote production D1 database:
-   ```bash
-   npx wrangler d1 migrations apply DB --remote --cwd server/api
-   ```
-
-### Step 3: Create R2 Storage Bucket
-
-Create an R2 storage bucket for housing product assets, images, and logos:
+Migrations are applied by the pipeline before each API deploy. Sample data can
+be loaded into an environment with:
 
 ```bash
-npx wrangler r2 bucket create ecommerce-r2
+cd api
+npm run seed:remote -- --env staging
 ```
 
-> [!IMPORTANT]
-> To allow direct client-side canvas uploads and media loading, go to the Cloudflare Dashboard, navigate to R2 settings, configure **CORS** headers to allow your storefront and admin Pages URLs, and set up a **Custom Domain** or **Public URL** for CDN access.
+`prisma/seed.sql` starts with `DELETE` statements; do not run it against an
+environment with real data.
 
-### Step 4: Deploy Workers API and Configure Secrets
+### 3. Cloudflare Access for the admin panel
 
-1. Deploy the backend Hono API Workers bundle:
-   ```bash
-   cd server/api
-   npx wrangler deploy
-   ```
-   *The command will output your live API endpoint, e.g., `https://ecommerce-api.username.workers.dev`.*
+The admin panel has no password login. Cloudflare Access authenticates admins
+and the API verifies the Access token.
 
-2. Define required production secrets and environment variables on the deployed worker:
-   ```bash
-   # Secure admin session token secret
-   npx wrangler secret put ADMIN_JWT_SECRET
-   
-   # Admin dashboard credentials (defaults: admin@e-market.com / admin12345)
-   npx wrangler secret put ADMIN_EMAIL
-   npx wrangler secret put ADMIN_PASSWORD
-   
-   # Param POS Credentials (if checkout payment integration is active)
-   npx wrangler secret put PARAM_CLIENT_CODE
-   npx wrangler secret put PARAM_CLIENT_USERNAME
-   npx wrangler secret put PARAM_CLIENT_PASSWORD
-   npx wrangler secret put PARAM_GUID
-   ```
+1. **Zero Trust → Access → Applications → Add an application → Self-hosted**
+   with the hostnames `admin.<domain>` and `staging-admin.<domain>`.
+2. Add an **Allow** policy for the admin e-mail addresses (one-time PIN works
+   without an identity provider).
+3. Recommended: **Settings → Cookies → HTTP Only** and **Binding cookie** on.
+4. Set in `api/wrangler.toml` for both environments:
+   - `ACCESS_TEAM_DOMAIN` = `<team>.cloudflareaccess.com`
+   - `ACCESS_AUD` = the application's Audience tag (also visible as `kid=` in
+     the Access login redirect URL)
 
-3. **Email Routing Sending Permissions:**
-   For transactional emails to deliver successfully, go to Cloudflare Dashboard > **Email Routing** and verify the sender address configured in your environment settings (e.g., `siparis@yourdomain.com`).
+How it fits together: the admin Worker serves the SPA and forwards `/api/*` to
+the API through the `API` service binding, so admin calls are same-origin and
+carry Access's `Cf-Access-Jwt-Assertion` header. The API's `adminAuth`
+middleware verifies that JWT (RS256, issuer, audience, expiry) against
+`https://<team>.cloudflareaccess.com/cdn-cgi/access/certs`. Requests to the
+API hostname without a valid assertion get 401; if the `ACCESS_*` values are
+missing the admin routes return 503. `workers_dev` and preview URLs are off
+for the admin Worker so Access cannot be bypassed.
 
-### Step 5: Configure Proxy Redirects and Deploy Frontends
+### 4. GitHub
 
-1. **Create `_redirects` files:**
-   Write redirect proxy rules inside `client/public/_redirects` and `admin/public/_redirects` to route `/api/*` requests to your live Worker URL to prevent browser CORS block:
-   ```text
-   /api/* https://ecommerce-api.username.workers.dev/api/:splat 200
-   ```
-2. **Build frontend applications:**
-   ```bash
-   # Build storefront client app
-   npm run build --prefix client
-   
-   # Build admin dashboard app
-   npm run build --prefix admin
-   ```
-3. **Deploy build outputs to Cloudflare Pages:**
-   ```bash
-   # Deploy storefront
-   npx wrangler pages deploy client/dist --project-name e-market-client
-   
-   # Deploy admin panel
-   npx wrangler pages deploy admin/dist --project-name e-market-admin
-   ```
+1. Create an **Account API token** (Manage Account → Account API Tokens) with:
+   Workers Scripts Edit, D1 Edit, Workers R2 Storage Edit, Account Settings
+   Read, and Zone Workers Routes Edit + Zone Read limited to the domain.
+2. Repository secrets: `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`.
+3. Branches `staging` and `production`, protected by a ruleset that requires
+   PRs and the pipeline's gate checks.
 
----
+Pushing to `staging` then deploys staging; promoting `staging` to `production`
+via PR deploys production.
 
-## 🔍 Post-Deployment Verification
+## Prerequisites for e-mail
 
-After successful deployment, verify the following details:
-1. **Database Seeding:** Run system seeds to populate default settings and color charts to the production database.
-2. **Admin Dashboard Login:** Navigate to your deployed admin Pages URL and authenticate using your admin credentials.
-3. **Image Uploads:** Create a test product and upload an image to confirm canvas compression and direct R2 upload flows.
-4. **Checkout Integration:** Add a product to the cart, fill in shipping info, and proceed to checkout to verify Param POS gateway connection.
+The `EMAIL` (`send_email`) binding needs **Email Routing** enabled on the zone
+with a verified destination address before order notifications can be sent.
