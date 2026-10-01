@@ -52,7 +52,7 @@ routes = [ { pattern = "staging-api.ecommerceflaredev.web.tr", custom_domain = t
 [env.staging.vars]
 NODE_ENV = "staging"
 ACCESS_TEAM_DOMAIN = "nalbur-tech.cloudflareaccess.com"
-ACCESS_AUD = ""         # Audience tag of the admin Access application
+ACCESS_AUD = "444d0c601d900d5ea914c4334667688e23ae1bb394d12764d485595ea696970b" # Access app "admin"
 CORS_ORIGIN = "https://staging.ecommerceflaredev.web.tr,https://staging-admin.ecommerceflaredev.web.tr"
 CLIENT_URL = "https://staging.ecommerceflaredev.web.tr"
 API_URL = "https://staging-api.ecommerceflaredev.web.tr"
@@ -92,7 +92,7 @@ routes = [ { pattern = "api.ecommerceflaredev.web.tr", custom_domain = true } ]
 [env.production.vars]
 NODE_ENV = "production"
 ACCESS_TEAM_DOMAIN = "nalbur-tech.cloudflareaccess.com"
-ACCESS_AUD = ""         # Audience tag of the admin Access application
+ACCESS_AUD = "444d0c601d900d5ea914c4334667688e23ae1bb394d12764d485595ea696970b" # Access app "admin"
 CORS_ORIGIN = "https://ecommerceflaredev.web.tr,https://admin.ecommerceflaredev.web.tr"
 CLIENT_URL = "https://ecommerceflaredev.web.tr"
 API_URL = "https://api.ecommerceflaredev.web.tr"
