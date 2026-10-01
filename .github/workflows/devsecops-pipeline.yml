@@ -248,14 +248,15 @@ jobs:
         run: |
           branch="${BASE_REF:-$REF_NAME}"
           if [[ "$branch" == production ]]; then
-            echo "environment=production" >> "$GITHUB_OUTPUT"
-            echo "api_url=https://api.ecommerceflaredev.web.tr" >> "$GITHUB_OUTPUT"
-            echo "site_url=https://ecommerceflaredev.web.tr" >> "$GITHUB_OUTPUT"
+            env_name=production prefix=""
           else
-            echo "environment=staging" >> "$GITHUB_OUTPUT"
-            echo "api_url=https://staging-api.ecommerceflaredev.web.tr" >> "$GITHUB_OUTPUT"
-            echo "site_url=https://staging.ecommerceflaredev.web.tr" >> "$GITHUB_OUTPUT"
+            env_name=staging prefix="staging"
           fi
+          {
+            echo "environment=$env_name"
+            echo "api_url=https://${prefix:+$prefix-}api.ecommerceflaredev.web.tr"
+            echo "site_url=https://${prefix:+$prefix.}ecommerceflaredev.web.tr"
+          } >> "$GITHUB_OUTPUT"
 
       - name: Set up Node.js
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
