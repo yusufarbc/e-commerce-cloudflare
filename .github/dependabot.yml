@@ -8,6 +8,10 @@ updates:
       time: "08:00"
       timezone: "Europe/Istanbul"
     open-pull-requests-limit: 3
+    # Major upgrades need code/config migration; tracked manually, not via weekly PRs.
+    ignore:
+      - dependency-name: "concurrently"
+        update-types: ["version-update:semver-major"]
     groups:
       dependencies:
         patterns:
@@ -24,6 +28,12 @@ updates:
       time: "08:00"
       timezone: "Europe/Istanbul"
     open-pull-requests-limit: 3
+    # Major upgrades need code/config migration; tracked manually, not via weekly PRs.
+    ignore:
+      - dependency-name: "prisma"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "@prisma/*"
+        update-types: ["version-update:semver-major"]
     groups:
       dependencies:
         patterns:
@@ -40,6 +50,12 @@ updates:
       time: "08:00"
       timezone: "Europe/Istanbul"
     open-pull-requests-limit: 3
+    # Major upgrades need code/config migration; tracked manually, not via weekly PRs.
+    ignore:
+      - dependency-name: "tailwindcss"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "react-i18next"
+        update-types: ["version-update:semver-major"]
     groups:
       dependencies:
         patterns:
