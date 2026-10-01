@@ -19,11 +19,17 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 env:
-  OSV_SCANNER_VERSION: 2.6.0
-  GITLEAKS_VERSION: 8.30.1
   TRIVY_VERSION: 0.74.0
   SEMGREP_VERSION: 1.178.0
+  # Semgrep community rules pinned to a commit instead of the live registry (p/...).
+  SEMGREP_RULES_SHA: a84ff9cc2453ca91d581380de4b8b3f272f6f4be
+  OPENGREP_VERSION: 1.30.0
   WRANGLER_VERSION: 4.145.0
+  # Container images are pinned by digest; the tag is kept for readability.
+  GITLEAKS_IMAGE: ghcr.io/gitleaks/gitleaks:v8.30.1@sha256:c00b6bd0aeb3071cbcb79009cb16a60dd9e0a7c60e2be9ab65d25e6bc8abbb7f
+  OSV_SCANNER_IMAGE: ghcr.io/google/osv-scanner:v2.6.0@sha256:afd838850ac1a0fcc15ff4a041dc9ba11123c3f0d2666217a5f0fcf9222b55fa
+  CONFTEST_IMAGE: openpolicyagent/conftest:v0.70.1@sha256:82f23e0e1f3faf2f3798f4b1974676c1aed96b05c6656ec6820435c31867c532
+  ZAP_IMAGE: ghcr.io/zaproxy/zaproxy:2.16.1@sha256:7840969c7c9fead565bf9734b12f49f6886db90b1d35b1f74d79710bbd081dab
 
 jobs:
   # --- LAYER 1: CI / PIPELINE HYGIENE ---
@@ -79,7 +85,7 @@ jobs:
         shell: bash
         run: |
           docker run --rm --volume "$PWD:/repo" \
-            "ghcr.io/gitleaks/gitleaks:v$GITLEAKS_VERSION" \
+            "$GITLEAKS_IMAGE" \
             git /repo --config /repo/.gitleaks.toml \
             --gitleaks-ignore-path /repo/.gitleaksignore \
             --verbose --redact --exit-code 1
@@ -88,7 +94,7 @@ jobs:
         shell: bash
         run: |
           docker run --rm --volume "$PWD:/src" \
-            "ghcr.io/google/osv-scanner:v$OSV_SCANNER_VERSION" \
+            "$OSV_SCANNER_IMAGE" \
             scan source --recursive /src
 
       - name: Set up Node.js
@@ -108,9 +114,9 @@ jobs:
           done
           exit "$status"
 
-  # --- LAYER 3a: SAST (Semgrep CE + IaC/config) ---
+  # --- LAYER 3a: SAST (Semgrep CE, Opengrep custom rules) + IaC/config policy ---
   code-and-config-security:
-    name: SAST and config (Semgrep, Trivy)
+    name: SAST and config (Semgrep, Opengrep, Trivy, Conftest)
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
@@ -119,23 +125,7 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Set up Python
-        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
-        with:
-          python-version: "3.12.10"
-
-      - name: Semgrep CE
-        shell: bash
-        run: |
-          python -m pip install "semgrep==$SEMGREP_VERSION"
-          semgrep scan \
-            --config p/javascript \
-            --config p/typescript \
-            --config p/owasp-top-ten \
-            --exclude research \
-            --metrics off \
-            --error
-
+      # Runs before the rule checkout below so the rule repository is never scanned.
       - name: Trivy config scan (wrangler / IaC misconfiguration)
         uses: aquasecurity/trivy-action@d2a0b60797ff03db6132bd4e2b293f9b37081297 # master on 2026-09-28
         with:
@@ -146,6 +136,67 @@ jobs:
           skip-dirs: research
           severity: HIGH,CRITICAL
           exit-code: "1"
+
+      # Deployment policy for the API Worker config (policy/wrangler.rego): no secrets in
+      # vars, preview D1/R2 never pointing at live data, no wildcard CORS in real envs.
+      - name: Wrangler policy (Conftest / OPA)
+        shell: bash
+        run: |
+          docker run --rm --volume "$PWD:/project" --workdir /project "$CONFTEST_IMAGE" \
+            test api/wrangler.toml --policy policy --namespace wrangler.deploy
+
+      - name: Checkout pinned Semgrep community rules
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: semgrep/semgrep-rules
+          ref: ${{ env.SEMGREP_RULES_SHA }}
+          path: .semgrep-rules
+          persist-credentials: false
+          sparse-checkout: |
+            javascript
+            typescript
+
+      - name: Set up Python
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: "3.12.10"
+
+      # Security rules only (no audit, style or i18n rules). html-in-template-string is
+      # left out: it flags every template literal containing a tag and cannot see the
+      # escapeMarkup() calls, so it only adds noise on escaped XML and email bodies.
+      - name: Semgrep CE (pinned JavaScript/TypeScript security rules)
+        shell: bash
+        run: |
+          python -m pip install "semgrep==$SEMGREP_VERSION"
+          configs=()
+          while IFS= read -r rule; do
+            configs+=(--config "$rule")
+          done < <(find .semgrep-rules/javascript .semgrep-rules/typescript \
+            -path '*/security/*' -not -path '*/audit/*' \
+            \( -name '*.yaml' -o -name '*.yml' \) \
+            -not -name '*.test.yaml' -not -name 'html-in-template-string.yaml' | sort)
+          echo "Loaded $(( ${#configs[@]} / 2 )) rule files from semgrep-rules@$SEMGREP_RULES_SHA"
+          semgrep scan "${configs[@]}" \
+            --exclude research \
+            --exclude .semgrep-rules \
+            --metrics off \
+            --error
+
+      # Platform-aware taint rules for D1, R2 and fetch sinks (research/rules/edge), run on
+      # the API with Opengrep's intra-file inter-procedural taint mode.
+      - name: Opengrep custom Workers rules (API)
+        shell: bash
+        run: |
+          curl --fail --location --silent --show-error \
+            "https://github.com/opengrep/opengrep/releases/download/v$OPENGREP_VERSION/opengrep_manylinux_x86" \
+            --output "$RUNNER_TEMP/opengrep"
+          echo '35779bdd72e92129c8df2a77f0c55e8c08356801ea92591ef32108d6b28d564c  '"$RUNNER_TEMP/opengrep" | sha256sum --check
+          chmod +x "$RUNNER_TEMP/opengrep"
+          "$RUNNER_TEMP/opengrep" scan \
+            --config research/rules/edge \
+            --taint-intrafile \
+            --error \
+            api/src
 
   # --- LAYER 3b: SAST (CodeQL taint tracking) ---
   codeql:
@@ -178,6 +229,8 @@ jobs:
     timeout-minutes: 20
     outputs:
       environment: ${{ steps.target.outputs.environment }}
+      api_url: ${{ steps.target.outputs.api_url }}
+      site_url: ${{ steps.target.outputs.site_url }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -195,12 +248,15 @@ jobs:
         run: |
           branch="${BASE_REF:-$REF_NAME}"
           if [[ "$branch" == production ]]; then
-            echo "environment=production" >> "$GITHUB_OUTPUT"
-            echo "api_url=https://api.ecommerceflaredev.web.tr" >> "$GITHUB_OUTPUT"
+            env_name=production prefix=""
           else
-            echo "environment=staging" >> "$GITHUB_OUTPUT"
-            echo "api_url=https://staging-api.ecommerceflaredev.web.tr" >> "$GITHUB_OUTPUT"
+            env_name=staging prefix="staging"
           fi
+          {
+            echo "environment=$env_name"
+            echo "api_url=https://${prefix:+$prefix-}api.ecommerceflaredev.web.tr"
+            echo "site_url=https://${prefix:+$prefix.}ecommerceflaredev.web.tr"
+          } >> "$GITHUB_OUTPUT"
 
       - name: Set up Node.js
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
@@ -210,6 +266,24 @@ jobs:
 
       - name: Install all dependencies
         run: npm run ci:all
+
+      # CycloneDX SBOM per package (root, api, client, admin), kept as a build artifact.
+      - name: Generate SBOMs (CycloneDX)
+        shell: bash
+        run: |
+          mkdir -p sbom
+          for project in . api client admin; do
+            name=$([[ "$project" == . ]] && echo root || echo "$project")
+            (cd "$project" && npm sbom --sbom-format cyclonedx --sbom-type application) > "sbom/$name.cdx.json"
+            echo "sbom/$name.cdx.json: $(jq '.components | length' "sbom/$name.cdx.json") components"
+          done
+
+      - name: Upload SBOMs
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: sbom-cyclonedx
+          path: sbom/
+          retention-days: 90
 
       - name: Prisma validate and generate
         working-directory: api
@@ -332,3 +406,63 @@ jobs:
       - name: Deploy admin dashboard (Workers static assets)
         working-directory: admin
         run: npx --yes "wrangler@$WRANGLER_VERSION" deploy --env "$TARGET_ENV"
+
+  # --- LAYER 6: DAST (passive OWASP ZAP baseline against the environment just deployed) ---
+  # The admin dashboard is behind Cloudflare Access, so only the public surfaces are scanned.
+  dast:
+    name: DAST (OWASP ZAP baseline, ${{ matrix.target }})
+    needs: [build-and-test, deploy-frontend]
+    if: github.event_name == 'push' && (github.ref_name == 'staging' || github.ref_name == 'production')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        target: [storefront, api]
+    env:
+      SITE_URL: ${{ needs.build-and-test.outputs.site_url }}
+      API_URL: ${{ needs.build-and-test.outputs.api_url }}
+      TARGET: ${{ matrix.target }}
+    steps:
+      - name: Checkout repository (ZAP rule config)
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: ZAP baseline scan
+        shell: bash
+        run: |
+          if [[ "$TARGET" == storefront ]]; then url="$SITE_URL"; else url="$API_URL/api/v1/products"; fi
+          mkdir -p zap
+          cp .zap/rules.tsv zap/rules.tsv
+          chmod -R a+rwX zap
+          # -I: warnings alone do not fail this step; the next step gates on High risk.
+          set +e
+          docker run --rm --volume "$PWD/zap:/zap/wrk:rw" "$ZAP_IMAGE" \
+            zap-baseline.py -t "$url" -m 2 -I -c rules.tsv \
+            -J "zap-$TARGET.json" -r "zap-$TARGET.html" -w "zap-$TARGET.md"
+          rc=$?
+          set -e
+          if [[ ! -s "zap/zap-$TARGET.json" ]]; then
+            echo "::error::ZAP produced no report (exit $rc)"
+            exit 1
+          fi
+          cat "zap/zap-$TARGET.md" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Fail on High risk alerts
+        shell: bash
+        run: |
+          jq -r '.site[].alerts[] | [.riskdesc, .pluginid, .name] | @tsv' "zap/zap-$TARGET.json"
+          high=$(jq '[.site[].alerts[] | select(.riskcode == "3")] | length' "zap/zap-$TARGET.json")
+          if (( high > 0 )); then
+            echo "::error::ZAP reported $high High risk alert(s) on $TARGET"
+            exit 1
+          fi
+
+      - name: Upload ZAP report
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: zap-${{ matrix.target }}
+          path: zap/zap-${{ matrix.target }}.*
+          retention-days: 30

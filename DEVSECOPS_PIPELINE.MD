@@ -1,116 +1,134 @@
-`yusufarbc/e-commerce-cloudflare` projesinin mimarisi (TypeScript, Hono, React, Prisma, Cloudflare Workers, Pages, D1, R2) dikkate alındığında; **VS Code (Yerel) $\rightarrow$ GitHub Actions (CI Kapıları) $\rightarrow$ Cloudflare (CD & Dağıtım)** hattında kurulacak en dengeli, ücretsiz ve üretim standartlarına uygun DevSecOps mimarisi şu adımlarla hayata geçirilir.
+# DevSecOps Boru Hattı
+
+`yusufarbc/e-commerce-cloudflare` hem açık kaynak bir e-ticaret demo ortamı hem de bir DevSecOps referans uygulamasıdır. Mimari: Hono API (Cloudflare Workers, D1, R2, Queues, Cron), React vitrin ve admin paneli (Workers static assets), admin girişi Cloudflare Access ile.
+
+Hat üç katmandan oluşur: **Yerel (VS Code) → GitHub Actions (CI kapıları) → Cloudflare (CD ve çalışma zamanı)**. Tüm araçlar ücretsizdir. Her kapı fail-closed çalışır: bulgu varsa dağıtım durur.
 
 ---
 
-### 1. Boru Hattında Konumlandırılacak Araç Seti
+### 1. Araç seti
 
-| Katman | Araç | Lisans / Maliyet | Projedeki Görevi | Uygulamadaki yeri |
-| --- | --- | --- | --- | --- |
-| **Yerel (VS Code)** | Husky + Gitleaks + ESLint (`eslint-plugin-security`) | Açık kaynak | `dev.db`, API anahtarı ve JWT sırlarının commit edilmesini yerelde engelleme | `.husky/pre-commit`, `client/.eslintrc.cjs`, `admin/eslint.config.js` |
-| **CI güvenliği** | actionlint + zizmor | Açık kaynak | Workflow'lardaki enjeksiyon, pinlenmemiş action ve PPE açıkları | `pipeline-hygiene` job'u |
-| **Gizli anahtar** | Gitleaks | Açık kaynak | Tüm git geçmişinde sır sızıntısı | `secrets-and-dependencies` job'u, `.gitleaks.toml`, `.gitleaksignore` |
-| **Bağımlılık (SCA)** | OSV-Scanner + npm audit | Açık kaynak | Dört `package-lock.json` (kök, api, client, admin) | `secrets-and-dependencies` job'u |
-| **SAST** | Semgrep CE | Açık kaynak | Hono route'larında enjeksiyon, CORS ve OWASP Top 10 kalıpları | `code-and-config-security` job'u |
-| **SAST** | GitHub CodeQL | Açık kaynak projelerde ücretsiz | Derin taint analizi | `codeql` job'u, `.github/codeql/codeql-config.yml` |
-| **Altyapı (IaC / config)** | Trivy (misconfig) | Açık kaynak | Yapılandırma dosyalarındaki güvensiz ayarlar | `code-and-config-security` job'u |
-| **Dağıtım (CD)** | Wrangler CLI | Açık kaynak | Kapılardan geçen kodu Workers ve Pages'e aktarma | `deploy-backend`, `deploy-frontend` job'ları |
-
-> Opengrep, Checkov, Conftest ve TruffleHog ürün pipeline'ında yok; bunlar
-> araştırma ölçüm hattında (`security-research.yml`) çalışır. Ürün kapısında
-> Opengrep Semgrep CE ile aynı kuralları çalıştırır ve ek koruma sağlamaz;
-> Checkov'un `wrangler.toml` desteği ise pilotta doğrulanacak.
-
----
-
-### 2. Aşama: VS Code (Geliştirici Ortamı ve Shift-Left)
-
-Geliştiricinin zafiyetli kodu repoya göndermesini en baştan engellemek için yerel Git hook'ları devreye alınır:
-
-1. **Husky ve Gitleaks ile Pre-commit Kurulumu:**
-```bash
-npm install --save-dev husky eslint-plugin-security
-npx husky init
-
-```
-
-
-2. **`.husky/pre-commit` Dosyasına Eklenecek Kontroller:**
-```bash
-# 1. Commit edilmemesi gereken veritabanı dosyalarını kontrol et
-if git diff --cached --name-only | grep -E 'dev\.db$|.*\.sqlite$'; then
-  echo "HATA: Yerel SQLite/Prisma veritabanı dosyaları commit edilemez!"
-  exit 1
-fi
-
-# 2. Gitleaks yerel sır taraması
-gitleaks protect --staged --verbose
-
-```
-
-
-3. **ESLint Güvenlik Eklentisi:**
-`eslint.config.js` veya `.eslintrc.json` içerisine `eslint-plugin-security` eklenerek güvensiz regex, dinamik kod çalıştırma ve nesne enjeksiyonları IDE seviyesinde uyarılır.
-
-
-
----
-
-### 3. Aşama: GitHub Actions (CI Güvenlik Kapıları)
-
-Projenin kök dizininde `.github/workflows/devsecops-pipeline.yml` dosyası oluşturularak fail-closed (bulgu durumunda dağıtımı durduran) bir kapı kurgulanır. Çatallanmış PR'larda Poisoned Pipeline Execution (PPE / MITRE T1677) riskini engellemek için `pull_request_target` yerine standart `pull_request` tetikleyicisi kullanılır.
-
-Uygulanan dosya: [`.github/workflows/devsecops-pipeline.yml`](.github/workflows/devsecops-pipeline.yml).
-
-```
-pipeline-hygiene ─┐
-secrets-and-dependencies ─┤
-code-and-config-security ─┼─► build-and-test ─► deploy-backend ─► deploy-frontend
-codeql ─┘                                  (yalnızca push → test, environment: staging)
-```
-
-Bu plandaki örnek YAML'dan farkları:
-
-| Konu | Plan | Uygulama | Gerekçe |
+| Katman | Araç | Projedeki görevi | Uygulamadaki yeri |
 | --- | --- | --- | --- |
-| Action sürümleri | `@v4`, `trivy-action@master` | Tamamı commit SHA ile pinli | Değişken tag'ler tedarik zinciri riski (zizmor `unpinned-uses`) |
-| Araç kurulumu | `gitleaks-action`, `zizmor-action`, `pip install semgrep` | Sürümü sabit Docker imajı veya checksum'ı doğrulanan binary | Gitleaks action'ı organizasyonlarda lisans istiyor; tekrar üretilebilirlik |
-| Build | Kökte `npm run build` | `npm run ci:all`, Prisma validate/generate, `npm test` (api), client/admin lint ve build | Repo bir monorepo; kökte build script'i yok |
-| Deploy dalı | `main` push | `test` push, `staging` environment | Mevcut staging akışı korundu |
-| Araştırma korpusu | — | Semgrep `--exclude research`, Trivy `skip-dirs`, Gitleaks allowlist, CodeQL `paths-ignore` | Korpus bilerek açıklı kod içerir; ölçüm `security-research.yml` ile yapılır |
-| Checkout | Varsayılan | `persist-credentials: false` | Token'ın artifact veya log'a sızmaması |
+| **Yerel** | Husky + Gitleaks (zorunlu) + ESLint (`eslint-plugin-security`) | `dev.db` ve sırların commit edilmesini yerelde engelleme | `.husky/pre-commit`, `scripts/install-gitleaks.sh` |
+| **CI güvenliği** | actionlint + zizmor | Workflow enjeksiyonu, pinlenmemiş action, PPE | `pipeline-hygiene` |
+| **Gizli anahtar** | Gitleaks | Tüm git geçmişinde sır sızıntısı | `secrets-and-dependencies`, `.gitleaks.toml`, `.gitleaksignore` |
+| **SCA** | OSV-Scanner + npm audit | Dört `package-lock.json` (kök, api, client, admin) | `secrets-and-dependencies` |
+| **SAST** | Semgrep CE | Commit'e sabitlenmiş `semgrep-rules` JS/TS güvenlik kuralları | `code-and-config-security` |
+| **SAST (platform)** | Opengrep + özel Workers kuralları | D1, R2 ve `fetch` sink'lerine giden taint akışları (`--taint-intrafile`) | `code-and-config-security`, `research/rules/edge` |
+| **SAST** | GitHub CodeQL | Derin taint analizi | `codeql`, `.github/codeql/codeql-config.yml` |
+| **IaC / config** | Trivy (misconfig) | Yapılandırma dosyalarındaki güvensiz ayarlar | `code-and-config-security` |
+| **Politika** | Conftest (OPA) | `wrangler.toml` dağıtım politikası | `code-and-config-security`, `policy/wrangler.rego` |
+| **SBOM** | `npm sbom` (CycloneDX 1.5) | Dört paketin bileşen envanteri, 90 gün artifact | `build-and-test` → `sbom-cyclonedx` |
+| **CD** | Wrangler | Kapılardan geçen kodu Workers'a aktarma | `deploy-backend`, `deploy-frontend` |
+| **DAST** | OWASP ZAP baseline | Dağıtılan ortamda vitrin ve API'nin pasif taraması; High risk bulguda hata | `dast`, `.zap/rules.tsv` |
+| **Çalışma zamanı** | Workers Rate Limiting + Cloudflare WAF | İstemci başına istek sınırı; zone düzeyinde WAF | `api/src/middlewares/rateLimit.js`, bölüm 5 |
 
+TruffleHog ve Checkov yalnızca araştırma ölçüm hattında (`security-research.yml`) çalışır.
 
 ---
 
-### 4. Aşama: Cloudflare Entegrasyonu ve Dağıtım Hijyeni
+### 2. Yerel katman (shift-left)
 
-Pipeline'ın son aşamasında Cloudflare ortamının güvenliği için üç operasyonel kural uygulanır:
+`npm install` kökte Husky'yi kurar (`prepare` script'i). `.husky/pre-commit` iki kontrol yapar:
 
-* **Sınırlandırılmış API Belirteci (Least Privilege):** Dağıtım için Global API Key kullanılmaz. Cloudflare Dashboard'dan yalnızca projenin ihtiyaç duyduğu izinlerle sınırlı bir `API Token` üretilir:
-* `Account.Workers Scripts: Edit`
-* `Account.D1: Edit`
-* `Account.Workers R2 Storage: Edit`
-* `Account.Cloudflare Pages: Edit`
-* `Zone.Workers Routes: Edit` (yalnızca uygulamanın zone'u için)
+1. `dev.db` ve `.sqlite` dosyaları commit edilemez.
+2. Staged değişiklikler Gitleaks ile taranır. **Bu adım zorunludur.** Gitleaks yoksa commit reddedilir.
 
-  KV kullanılmadığı için `Workers KV Storage` yetkisi verilmez.
+Gitleaks'i CI ile aynı sürümde kurmak için:
 
+```bash
+sh scripts/install-gitleaks.sh   # .tools/gitleaks (gitignored), SHA-256 doğrulamalı
+```
 
-* **Cloudflare Dashboard Otomatik Dağıtımının Kapatılması:**
-Cloudflare Pages panelindeki *"Automatic Git Deployments"* özelliği kapatılmalıdır. Açık bırakılırsa, kod GitHub'a push edildiği an Cloudflare doğrudan derleme başlatır ve GitHub Actions'taki güvenlik kapıları baypas edilir. Dağıtım kontrolü yalnızca CI/CD hattındaki Wrangler adımları üzerinden yönetilmelidir.
+Script Linux, macOS ve Windows (Git Bash) üzerinde çalışır. PATH'te kurulu bir `gitleaks` varsa hook onu da kabul eder.
 
+ESLint tarafında `eslint-plugin-security`, client ve admin projelerinde güvensiz regex, dinamik kod çalıştırma ve nesne enjeksiyonu için IDE'de uyarı verir.
 
-* **Önizleme Ortamı İzolasyonu (Preview Deployments):**
-Her çekme isteğinde (PR) otomatik oluşturulan geçici `pr-*.pages.dev` ve preview worker adresleri canlı D1 ve R2 veritabanına bağlanmamalıdır. `wrangler.toml` içinde preview ortamı için izole test D1 bağlamları tanımlanmalı, genel internete açık kalmaması adına Cloudflare Access (ZTNA) arkasına alınmalıdır.
+---
 
+### 3. GitHub Actions (CI kapıları ve CD)
 
+Dosya: [`.github/workflows/devsecops-pipeline.yml`](.github/workflows/devsecops-pipeline.yml).
 
-**Durum (2026-10-01):** Deploy yeni Cloudflare hesabına (`yusufarbc`) taşınıyor.
+```
+pipeline-hygiene ─────────┐
+secrets-and-dependencies ─┤
+code-and-config-security ─┼─► build-and-test ─► deploy-backend ─► deploy-frontend ─► dast (storefront, api)
+codeql ───────────────────┘      (+ SBOM)        (yalnızca staging/production push'u)
+```
 
-- [ ] En az yetkili API token: yeni hesapta oluşturulup GitHub `CLOUDFLARE_API_TOKEN` / `CLOUDFLARE_ACCOUNT_ID` secret'larına yazılacak.
-- [ ] Otomatik Git deploy: Pages projeleri Wrangler ile *Direct Upload* olarak oluşturulacak; Git entegrasyonu olmadığı için kapılar baypas edilemez.
-- [ ] Önizleme izolasyonu: `api/wrangler.toml` içinde `preview_bucket_name` canlı bucket'la aynı ve D1 için `preview_database_id` yok. Yeni hesapta ayrı preview D1/R2 tanımlanacak.
-- [ ] GitHub `staging` environment'ı ve koruma kuralları.
+| Dal | Ortam | Alan adları | Onay |
+| --- | --- | --- | --- |
+| `staging` | `staging` | `staging.`, `staging-api.`, `staging-admin.ecommerceflaredev.web.tr` | Yok |
+| `production` | `production` | `ecommerceflaredev.web.tr`, `api.`, `admin.` | Zorunlu reviewer |
+
+PR'lar tüm kapılardan ve build'den geçer ama deploy etmez. Her iki dal `protect-production-staging` ruleset'iyle korunur (PR zorunlu, beş kapı zorunlu check). Her ortam yalnızca kendi dalından deploy alır (environment branch policy). Production'da reviewer onayı API deploy'unda ve frontend deploy'unda ayrı ayrı istenir.
+
+**Tedarik zinciri sertleştirmesi**
+
+- Action'ların tamamı commit SHA'sına sabitlidir.
+- Docker imajları (Gitleaks, OSV-Scanner, Conftest, ZAP) digest ile sabitlidir.
+- İndirilen binary'ler (actionlint, zizmor, Opengrep) SHA-256 ile doğrulanır.
+- Semgrep kuralları canlı registry (`p/...`) yerine `semgrep/semgrep-rules` deposunun belirli bir commit'inden alınır. Kural seti yalnızca `security/` dizinlerindeki, `audit` dışı kurallardır. `html-in-template-string` kuralı dışarıda bırakılır: her etiketli template literal'ı işaretler ve `escapeMarkup()` çağrılarını göremez.
+- Checkout'larda `persist-credentials: false` vardır. Workflow izinleri `contents: read` ile başlar.
+- Tetikleyici `pull_request`'tir; `pull_request_target` kullanılmaz (PPE / MITRE T1677).
+
+**Kapıların ayrıntısı**
+
+- **Opengrep özel kuralları:** Araştırmada geliştirilen (`rules-frozen-v1`) Workers kuralları `api/src` üzerinde `--taint-intrafile --error` ile çalışır. İlk koşuda GTM proxy'sinde (`metricsRoutes.js`) URL'e eklenen kullanıcı girdisini yakaladı. Girdi artık allowlist regex'i ve `URLSearchParams` ile ekleniyor.
+- **Conftest (`policy/wrangler.rego`)** şunları reddeder:
+  - `vars` içinde sır benzeri anahtarlar (`SECRET`, `TOKEN`, `PASSWORD`, `API_KEY`, ...); bunlar `wrangler secret put` ile verilmelidir;
+  - canlı D1/R2 kaynağına bağlanan preview binding'leri;
+  - staging veya production'da `*` içeren `CORS_ORIGIN`.
+- **SBOM:** `npm sbom --sbom-format cyclonedx` dört paket için çalışır. Sonuç `sbom-cyclonedx` artifact'i olarak 90 gün saklanır.
+- **DAST:** Deploy'dan sonra ZAP baseline (pasif tarama, spider 2 dakika) iki hedefe gider: vitrin ve `API/api/v1/products`. Rapor (HTML, JSON, Markdown) artifact olarak yüklenir ve özeti job summary'ye yazılır. High risk (`riskcode 3`) uyarısı job'u kırmızıya çevirir. Admin paneli Access arkasında olduğu için taranmaz. Kural istisnaları gerekçesiyle birlikte `.zap/rules.tsv` dosyasına yazılır.
+
+> DAST deploy'dan sonra çalışır. Bu yüzden staging'deki bir High bulgu staging'i geri almaz, ama staging → production PR'ı açılmadan önce görünür olur. Production'da aynı tarama yayından hemen sonra koşar.
+
+---
+
+### 4. Cloudflare dağıtım hijyeni
+
+- **En az yetkili API token:** Global API Key kullanılmaz. Token yalnızca Workers Scripts, D1 ve Workers R2 Storage (Edit), Account Settings (Read), ayrıca `ecommerceflaredev.web.tr` zone'u için Workers Routes (Edit) ve Zone (Read) yetkilerini taşır. Token GitHub'da `CLOUDFLARE_API_TOKEN` olarak saklanır.
+- **Git entegrasyonu yok:** Vitrin ve admin, Workers static assets olarak yalnızca Wrangler ile deploy edilir. Cloudflare tarafında Git'ten otomatik build yoktur, bu yüzden kapılar baypas edilemez.
+- **Preview izolasyonu:** `api/wrangler.toml` içinde her ortamın preview D1/R2 kaynağı canlı kaynaktan ayrıdır. Conftest bu kuralı CI'da zorlar.
+- **Sırlar:** `ACCESS_*` dışındaki tüm hassas değerler (`PARAM_*`, `GOOGLE_MERCHANT_TOKEN` vb.) `wrangler secret put --env <ortam>` ile verilir. `vars` içinde sır bulunmaz; Gitleaks ve Conftest bunu denetler.
+- **Admin erişimi:** Admin paneli ve `/api/v1/admin/*` Cloudflare Access ile korunur. API, Access JWT'sini JWKS üzerinden doğrular.
+
+---
+
+### 5. Çalışma zamanı korumaları
+
+#### 5.1 Rate limiting (kodda, Wrangler ile)
+
+`api/wrangler.toml` her ortam için iki [Workers Rate Limiting](https://developers.cloudflare.com/workers/runtime-apis/bindings/rate-limit/) binding'i tanımlar. `api/src/middlewares/rateLimit.js` anahtar olarak `CF-Connecting-IP` kullanır:
+
+| Binding | Kapsam | Sınır |
+| --- | --- | --- |
+| `API_RATE_LIMITER` | Tüm `/api/*` | IP başına 300 istek / 60 sn |
+| `SENSITIVE_RATE_LIMITER` | `/api/v1/orders/*`, `/payment/*`, `/returns/*` | IP başına 30 istek / 60 sn |
+
+Sınır aşılınca `429` ve `Retry-After: 60` döner. Bu davranış `app.security.test.js` ile test edilir.
+
+#### 5.2 WAF ve zone ayarları (Dashboard, elle)
+
+Wrangler zone düzeyindeki WAF kurallarını yönetemez. Bu ayarlar `ecommerceflaredev.web.tr` zone'unda Dashboard'dan bir kez yapılır (Free plan):
+
+1. **Security → WAF → Managed rules:** *Cloudflare Free Managed Ruleset* açık olmalı (Free planda varsayılan olarak açıktır).
+2. **Security → WAF → Custom rules → Create rule** (Free planda 5 kural hakkı var):
+   - *Block non-API methods:* `(http.host in {"api.ecommerceflaredev.web.tr" "staging-api.ecommerceflaredev.web.tr"} and not http.request.method in {"GET" "POST" "PUT" "DELETE" "OPTIONS"})` → **Block**.
+   - *Block scanners on sensitive paths:* `(http.request.uri.path contains "/.env" or http.request.uri.path contains "/.git" or http.request.uri.path contains "wp-")` → **Block**.
+3. **Security → WAF → Rate limiting rules** (Free planda 1 kural): `(http.host eq "api.ecommerceflaredev.web.tr" and starts_with(http.request.uri.path, "/api/v1/payment"))`, eşik 20 istek / 10 sn, eylem **Block** (10 sn). Bu kural istekleri Worker'a ulaşmadan durdurur. Worker içindeki limit ikinci savunma hattı olarak kalır.
+4. **Security → Bots:** *Bot Fight Mode* açık. (Not: Bot Fight Mode API istemcilerini de etkileyebilir. Sorun çıkarsa API host'u için bir custom rule ile *Skip* tanımlanır.)
+5. **Security → Settings:** *Security Level* = Medium, *Browser Integrity Check* açık.
+6. **SSL/TLS:** Mod *Full (strict)*. *Edge Certificates* altında *Always Use HTTPS*, *Automatic HTTPS Rewrites*, *Minimum TLS Version* = 1.2 ve *HSTS* açık (max-age 6 ay, includeSubDomains; preload'u ancak tüm alt alanların HTTPS olduğundan emin olunca açın).
+
+ZAP raporları bu ayarların etkisini (HSTS ve güvenlik başlıkları) her deploy'da gösterir.
+
+---
+
+## Araştırma açısından konumlandırma
 
 Gerçekçi bir DevSecOps boru hattında bu araçların **hepsi yer alır ve pipeline testbed'inde birlikte çalıştırılır**. Ancak akademik makalede bu araçların **üstlendiği roller ve dahil edildikleri araştırma soruları (RQ) birbirinden farklıdır**.
 
@@ -160,35 +178,3 @@ Makaleyi yazarken savunmayı şu net ayrımla kurmak gerekir:
 * **Çekirdek Araştırma Katkısı (Core Contribution):** Uç bilişim olay akışlarının ve platform bağlamlarının statik leke analizi (SAST) motorları tarafından yakalanma boşlukları (RQ2 ve RQ3).
 * **Destekleyici Güvenlik Mimarisi (Supporting Pipeline):** SCA, Secret Scanning, IaC ve DAST kapılarının oluşturduğu tam kapsamlı DevSecOps boru hattı. Bu katman, çalışmanın soyut bir kod analizinden ibaret kalmayıp endüstri standardı gerçek bir CI/CD teslim zincirinde test edildiğini ve toplam süre maliyetini (RQ4) kanıtlar.
 
-Testbed deponuzdaki GitHub Actions iş akışında bu araçların tamamı çalışmalı; ancak istatistiksel hipotez testinde (McNemar) sadece leke analizi yapabilen SAST araçlarının ikiz çıktıları karşılaştırılmalıdır.
-
-
-
-Yapılanlar
-devsecops-pipeline.yml planın katmanlarını izliyor:
-
-Hijyen: actionlint ve zizmor, checksum'lı ve sabit sürümlü. Orta ve üstü bulguda pipeline duruyor.
-Sır ve SCA: Gitleaks (tüm geçmiş), OSV-Scanner ve dört proje için npm audit --audit-level=high.
-SAST ve config: Semgrep CE (--error), Trivy misconfig (HIGH/CRITICAL) ve ayrı bir CodeQL job'u.
-Build ve test: needs ile tüm kapılara bağlı. Prisma validate/generate, vitest, client ve admin lint'i, iki build.
-CD: Yalnızca test branch'ine push'ta, staging environment'ı ile çalışıyor. API Worker'ı, ardından iki Pages projesi deploy ediliyor.
-Bunlar dışında:
-
-Tetikleyici pull_request. pull_request_target kullanılmadı.
-Workflow izinleri contents: read. Yalnızca CodeQL'e ek olarak security-events: write verildi.
-Action'lar commit SHA'sına sabitlendi. download-artifact SHA'sını gh api ile doğruladım.
-Araç sürümleri, araştırma workflow'undakiyle aynı.
-Yerel katman: Husky eklendi (kökte prepare script'i). .husky/pre-commit dev.db ve .sqlite dosyalarını engelliyor, gitleaks kuruluysa onu çalıştırıyor. eslint-plugin-security, client (.eslintrc.cjs) ve admin (eslint.config.js) projelerine eklendi.
-
-Kaldırılan: deploy.yml. Yeni pipeline aynı staging deploy'unu yaptığı için iki kez deploy olurdu.
-
-Dikkat
-İlk çalıştırma büyük ihtimalle kırmızı olur. Pipeline plandaki gibi fail-closed. api/wrangler.toml içinde 14 ve 74. satırlarda düz yazılı ADMIN_JWT_SECRET var ve Gitleaks ya da Semgrep bunu yakalayabilir. Sırrı wrangler secret put ile taşımanızı öneririm. Bu, yaptığım bir değişiklik değil, repodaki mevcut durum.
-Plan main push'unda deploy diyor, ama repoda staging test branch'inden çıkıyor. Mevcut davranışı korudum. main için production deploy istiyorsanız söyleyin, job'u eklerim.
-workflow-security.yml ve araştırma workflow'u dokunulmadan duruyor. Hijyen işi artık ana pipeline'da da var.
-Bu repo ayarları kodla yapılamıyor, elle yapmanız gerekiyor:
-GitHub'da staging environment'ını oluşturmak.
-Cloudflare Pages'te "Automatic Git Deployments"ı kapatmak.
-API token'ı en az yetkiyle sınırlamak.
-Preview ortamlarını canlı D1 ve R2'den ayırıp Cloudflare Access arkasına almak.
-Plandaki DAST (ZAP) opsiyonel olduğu için eklemedim

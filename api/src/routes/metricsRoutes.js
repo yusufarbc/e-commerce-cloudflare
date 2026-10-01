@@ -15,10 +15,16 @@ router.get('/gtm.js', async (c) => {
     if (!id) {
         return c.text('Missing container id', 400);
     }
+    // Only real GTM container ids; anything else could smuggle extra query parameters.
+    if (!/^GTM-[A-Z0-9]{4,12}$/.test(id)) {
+        return c.text('Invalid container id', 400);
+    }
 
     try {
-        const targetUrl = `https://www.googletagmanager.com/gtm.js?id=${id}`;
-        
+        // Fixed host; the id is added as an encoded query parameter, never concatenated.
+        const targetUrl = new URL('https://www.googletagmanager.com/gtm.js');
+        targetUrl.searchParams.set('id', id);
+
         // Fetch original container from Google
         const response = await fetch(targetUrl, {
             headers: {
