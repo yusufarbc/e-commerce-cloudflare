@@ -59,8 +59,12 @@ in Default SAST Gates for Event-Driven Serverless Edge Applications*
   edilebilir, her fixed dayanıklı); `research-checks.yml` CI'da çalıştırıyor.
 - [x] Dizin yapısı sadeleştirildi: `research/serverless-sast-study/*` →
   `research/*` (yazarın düzeni).
-- [ ] Held-out varyantlar (ikinci yazar veya dış kaynak) ve korpusu 40–60
-  çifte genişletme.
+- [x] Held-out dış kaynak (preregistration §5 yedek yolu), ilk 4 çift: X001
+  (DVSA fiş anahtarı → D1), X002 (DVSA feedback + SecBench.js kodlanmış
+  traversal → R2), X003 (CloudBench HTTP → kuyruk → consumer → fetch), X004
+  (CloudBench/DVSA cron ile ikinci derece SQLi). Kod kopyalanmadı, desen
+  uyarlandı; kaynak ve lisans `ground_truth.csv` notlarında. Oracle'lar: 88 test.
+- [ ] Korpusu 40–60 çifte genişletme (dev + held-out varyantlar).
 
 ## Aşamalar ve takvim
 
