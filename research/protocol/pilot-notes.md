@@ -136,3 +136,31 @@ anlamlı değildir ve makaleye sonuç olarak girmez.
   `req.body`'yi de eşledi (C004 ctrl/express TP); cron'un `fetch` ile çektiği
   feed kaynak olarak modellenmemiş (C004 event FN); kural yalnızca CWE-89'u
   kapsıyor.
+
+## e1-02 — dev seti 10 çift (2026-10-02)
+
+Run `36926793067`, profil `default+custom`. Dev: C001–C010. Held-out puanlanmadı.
+
+| Konfigürasyon | ctrl | express | hono | event | FP (fixed) |
+| --- | --- | --- | --- | --- | --- |
+| CodeQL | 10/10 | 4/10 | 0/10 | 0/10 | 8/40 |
+| Semgrep varsayılan | 4/10 | 4/10 | 0/10 | 0/10 | 0/40 |
+| Semgrep özel (`rules/edge`) | 2/10 | 2/10 | 4/10 | 3/10 | 0/40 |
+| Semgrep / Opengrep pattern | 4/10 | 4/10 | 4/10 | 4/10 | 0/40 |
+
+| Konfigürasyon | H1 ctrl–express | H2b express–hono | H2a express–event | hono–event |
+| --- | --- | --- | --- | --- |
+| CodeQL | b=6 c=0, p=0.031 (Holm ×3 → 0.094) | b=4 c=0, p=0.125 | b=4 c=0, p=0.125 | b=0 c=0 |
+| Semgrep varsayılan | b=0 c=0 | b=4 c=0, p=0.125 | b=4 c=0, p=0.125 | b=0 c=0 |
+| Semgrep özel | b=0 c=0 | b=0 c=2, p=0.50 | b=1 c=2, p=1.00 | b=1 c=0 |
+
+- Örüntü e1-01 ile aynı: kalibrasyon 10/10; CodeQL D1/R2 sink'lerini hiç
+  yakalamıyor, yalnız SSRF'te Express kolunu buluyor; varsayılan araçlar
+  hiçbir Hono veya event kolunu yakalamıyor.
+- CodeQL FP: SSRF fixed ikizlerinin tamamında (ctrl ve express, 8/40)
+  host allowlist'i sanitizer sayılmadı.
+- Özel kural C008'de dört kolu da yakaladı (`$MESSAGE.body` hem
+  `msg.body.object.key`'i hem Express `req.body`'yi eşliyor); M4'te
+  ayrıştırılacak.
+- Ön koşu; makaleye sonuç olarak girmez. Son RQ2 analizi dev + held-out
+  (SQL 10, SSRF 10 çift) ile, kurallar dondurulduktan sonra yapılır.
