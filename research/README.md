@@ -1,4 +1,6 @@
-# Serverless Event Kaynaklarında SAST Kör Noktaları
+# Same Sink, Different Source
+
+Cloudflare Workers'ta çerçeve ve event kaynağı kapsamı: varsayılan SAST kapılarının kör noktaları.
 
 Bu dizin, serverless uygulamalarda HTTP dışı olay kaynaklarının statik analiz
 araçları tarafından ne ölçüde tanındığını inceleyen makale çalışmasını ana
