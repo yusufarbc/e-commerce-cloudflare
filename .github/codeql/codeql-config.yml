@@ -1,0 +1,6 @@
+name: product-codeql
+
+# The research corpus contains intentionally vulnerable code; it is analysed by
+# security-research.yml with its own config, never by the product gate.
+paths-ignore:
+  - research/**

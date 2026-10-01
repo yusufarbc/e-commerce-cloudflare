@@ -1,0 +1,65 @@
+name: Workflow Security Checks
+
+on:
+  pull_request:
+    paths:
+      - .github/workflows/**
+      - research/serverless-sast-study/protocol/tool-versions.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  workflow-security:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install pinned actionlint
+        shell: bash
+        run: |
+          curl --fail --location --silent --show-error \
+            https://github.com/rhysd/actionlint/releases/download/v1.7.12/actionlint_1.7.12_linux_amd64.tar.gz \
+            --output "$RUNNER_TEMP/actionlint.tar.gz"
+          echo '8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8  '"$RUNNER_TEMP/actionlint.tar.gz" | sha256sum --check
+          tar --extract --gzip --file "$RUNNER_TEMP/actionlint.tar.gz" --directory "$RUNNER_TEMP" actionlint
+          chmod +x "$RUNNER_TEMP/actionlint"
+
+      - name: Validate workflow syntax
+        shell: bash
+        run: |
+          "$RUNNER_TEMP/actionlint"
+
+      - name: Install pinned zizmor
+        shell: bash
+        run: |
+          curl --fail --location --silent --show-error \
+            https://github.com/zizmorcore/zizmor/releases/download/v1.30.1/zizmor-x86_64-unknown-linux-gnu.tar.gz \
+            --output "$RUNNER_TEMP/zizmor.tar.gz"
+          echo 'e65324f4430c2717591937edcec90ccbefaf14c174f8ec9415e03ca875b46e1a  '"$RUNNER_TEMP/zizmor.tar.gz" | sha256sum --check
+          tar --extract --gzip --file "$RUNNER_TEMP/zizmor.tar.gz" --directory "$RUNNER_TEMP" zizmor
+          chmod +x "$RUNNER_TEMP/zizmor"
+
+      - name: Audit workflows with zizmor
+        shell: bash
+        run: |
+          set +e
+          "$RUNNER_TEMP/zizmor" --collect=workflows . 2>&1 | tee zizmor-report.txt
+          status=${PIPESTATUS[0]}
+          printf 'zizmor_exit_code=%s\n' "$status" >> "$GITHUB_STEP_SUMMARY"
+          exit 0
+
+      - name: Upload workflow security report
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: workflow-security-${{ github.run_id }}
+          path: zizmor-report.txt
+          if-no-files-found: warn
+          retention-days: 30

@@ -8,7 +8,8 @@
   "main": "src/app.js",
   "scripts": {
     "dev": "npx wrangler dev",
-    "seed": "node prisma/seed.js"
+    "seed": "node prisma/seed.js",
+    "test": "vitest run"
   },
   "prisma": {
     "seed": "node prisma/seed.js"
@@ -17,10 +18,11 @@
     "@prisma/adapter-d1": "^5.22.0",
     "@prisma/client": "^5.22.0",
     "hono": "^4.12.26",
-    "soap": "^1.9.3",
+    "soap": "^1.10.0",
     "zod": "^4.4.3"
   },
   "devDependencies": {
-    "prisma": "^5.22.0"
+    "prisma": "^5.22.0",
+    "vitest": "^4.1.11"
   }
 }

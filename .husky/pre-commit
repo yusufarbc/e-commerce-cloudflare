@@ -1,0 +1,12 @@
+# Block local DB files
+if git diff --cached --name-only | grep -E '(^|/)dev\.db$|\.sqlite$'; then
+  echo "HATA: Yerel SQLite/Prisma veritabani dosyalari commit edilemez!"
+  exit 1
+fi
+
+# Local secret scan (install: https://github.com/gitleaks/gitleaks)
+if command -v gitleaks >/dev/null 2>&1; then
+  gitleaks protect --staged --redact --verbose || exit 1
+else
+  echo "UYARI: gitleaks bulunamadi, yerel sir taramasi atlandi (CI yine tarar)."
+fi

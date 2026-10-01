@@ -1,0 +1,13 @@
+rules:
+  - id: parity.d1-template-query
+    message: D1 query is constructed with a template literal.
+    severity: WARNING
+    languages:
+      - javascript
+      - typescript
+    metadata:
+      cwe:
+        - "CWE-89"
+      purpose: semgrep-opengrep-engine-parity
+    patterns:
+      - pattern: $DB.prepare(`...${$VALUE}...`)

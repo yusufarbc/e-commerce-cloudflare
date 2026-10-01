@@ -27,8 +27,11 @@ const app = new Hono();
  * Global Middlewares
  */
 app.use('*', cors({
-    origin: (origin) => {
-        return origin;
+    // Only echo origins listed in CORS_ORIGIN (comma-separated); credentials are allowed,
+    // so reflecting arbitrary origins would expose admin sessions cross-site.
+    origin: (origin, c) => {
+        const allowed = (c.env.CORS_ORIGIN || '').split(',').map((o) => o.trim()).filter(Boolean);
+        return allowed.includes(origin) ? origin : null;
     },
     allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowHeaders: ['Content-Type', 'Authorization'],
@@ -51,23 +54,18 @@ app.get('/api/v1/health', (c) => {
     return c.json({ status: 'UP', timestamp: new Date() });
 });
 
-app.get('/api/v1/debug-db', async (c) => {
-    try {
-        const result = await c.env.DB.prepare("SELECT name FROM sqlite_master WHERE type='table'").all();
-        const urunler = await c.env.DB.prepare("SELECT * FROM urunler").all();
-        const kategoriler = await c.env.DB.prepare("SELECT * FROM kategoriler").all();
-        return c.json({ tables: result.results, urunler: urunler.results, kategoriler: kategoriler.results });
-    } catch(e) {
-        return c.json({ error: e.message, stack: e.stack }, 500);
-    }
-});
-
 // Admin Login (Public endpoint before jwt check)
 app.post('/api/v1/admin/login', async (c) => {
+    const adminEmail = c.env.ADMIN_EMAIL || 'admin@e-market.com';
+    const adminPassword = c.env.ADMIN_PASSWORD;
+
+    // Fail closed: no built-in password or signing key fallbacks.
+    if (!adminPassword || !config.adminJwtSecret) {
+        return c.json({ status: 'error', errorMessage: 'Yönetici girişi yapılandırılmamış.' }, 503);
+    }
+
     try {
         const { email, password } = await c.req.json();
-        const adminEmail = c.env.ADMIN_EMAIL || 'admin@e-market.com';
-        const adminPassword = c.env.ADMIN_PASSWORD || 'admin12345';
 
         if (email === adminEmail && password === adminPassword) {
             const payload = {

@@ -1,0 +1,10 @@
+case_id,pair_id,cwe,source_type,variant,file,sink_line,split,origin,notes
+C001-H-V,C001,CWE-89,http,vuln,cases/C001-d1-sqli/http_vuln.js,8,dev,injected,D1 template literal
+C001-H-F,C001,CWE-89,http,fixed,cases/C001-d1-sqli/http_fixed.js,,dev,injected,negative sample
+C001-Q-V,C001,CWE-89,queue,vuln,cases/C001-d1-sqli/queue_vuln.js,7,dev,injected,D1 template literal
+C001-Q-F,C001,CWE-89,queue,fixed,cases/C001-d1-sqli/queue_fixed.js,,dev,injected,negative sample
+O001-C-V,O001,CWE-798,config,vuln,organic/snapshot/wrangler.toml,14,heldout,organic,hardcoded ADMIN_JWT_SECRET in [vars]; alt line 74
+O002-C-V,O002,CWE-798,config,vuln,organic/snapshot/config.js,58,heldout,organic,default JWT secret fallback; alt line 39
+O003-H-V,O003,CWE-942,http,vuln,organic/snapshot/app.js,31,heldout,organic,CORS origin reflection with credentials true (line 37)
+O004-H-V,O004,CWE-306,http,vuln,organic/snapshot/app.js,54,heldout,organic,unauthenticated debug-db endpoint
+O005-H-V,O005,CWE-798,http,vuln,organic/snapshot/app.js,70,heldout,organic,default admin password fallback
