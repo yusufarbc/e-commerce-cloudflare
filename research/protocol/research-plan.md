@@ -4,8 +4,16 @@ Son güncelleme: 2026-09-30
 
 ## Çalışma başlığı
 
-*Same Sink, Different Source: A Paired Empirical Study of Taint-Source Coverage
-in Default SAST Gates for Event-Driven Serverless Edge Applications*
+*Same Sink, Different Source: Framework- and Event-Source Coverage of Default
+SAST Gates on Cloudflare Workers*
+
+**Ana mesaj (2026-10-02, yazar kararı):** Varsayılan SAST kapıları Cloudflare
+Workers çerçevesini (Hono, Workers handler'ları) ve onun event kaynaklarını
+(Queue, Cron, R2 bildirimleri, webhook) birlikte modellemiyor. Pilot ve ön
+koşularda varsayılan araçlar hiçbir Hono veya event kolunu yakalamadı; bu
+nedenle körlük event'e özgü değil, çerçeve ve kaynak modelinin birlikte
+eksikliği olarak raporlanır. Event'e özgü katkı, Hono'yu tanıyan özel
+kurallarla (H3) ayrıca incelenir.
 
 - Ölçek: dergi (hedef Software: Practice and Experience; yedek Turk J Elec Eng
   & Comp Sci).
