@@ -14,7 +14,9 @@
 | Config | Checkov | Varsayılan `wrangler` kapsaması testi | SARIF |
 | Config | Conftest/OPA | E3 özel `wrangler.toml` politikaları | JSON |
 
-Semgrep ve Opengrep motor karşılaştırması yalnızca
+Özel kurallar (`rules/edge/`) iki konfigürasyonla ölçülür: `semgrep-custom`
+(Semgrep CE, fonksiyon içi) ve `opengrep-custom-intrafile` (Opengrep
+`--taint-intrafile`). Semgrep ve Opengrep pattern motor karşılaştırması yalnızca
 `rules/pinned/engine-parity.yml` ile yapılır. Platforma duyarlı E3 sonucu
 `rules/edge/` ile ayrı raporlanır; böylece özel kural başarımı varsayılan araç
 başarımıyla karışmaz.
