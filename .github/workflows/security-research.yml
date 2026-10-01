@@ -22,9 +22,9 @@ permissions:
   contents: read
 
 env:
-  STUDY: research/serverless-sast-study
-  CORPUS: research/serverless-sast-study/corpus
-  OUT: research/serverless-sast-study/results/current
+  STUDY: research
+  CORPUS: research/corpus
+  OUT: research/results/current
   SEMGREP_VERSION: 1.178.0
   OPENGREP_VERSION: 1.30.0
   CHECKOV_VERSION: 3.3.20
@@ -102,7 +102,7 @@ jobs:
         uses: github/codeql-action/init@1190a975f95ce23525efb6a3fc21ea29567c1b52 # v3
         with:
           languages: javascript-typescript
-          config-file: ./research/serverless-sast-study/codeql-config.yml
+          config-file: ./research/codeql-config.yml
 
       - name: Start CodeQL timer
         if: inputs.profile != 'baseline'
@@ -115,7 +115,7 @@ jobs:
         continue-on-error: true
         uses: github/codeql-action/analyze@1190a975f95ce23525efb6a3fc21ea29567c1b52 # v3
         with:
-          output: research/serverless-sast-study/results/current/codeql
+          output: research/results/current/codeql
           upload: never
           upload-database: false
 
@@ -266,7 +266,7 @@ jobs:
           scan-ref: .
           scanners: vuln
           format: sarif
-          output: research/serverless-sast-study/results/current/trivy-vuln.sarif
+          output: research/results/current/trivy-vuln.sarif
           exit-code: "0"
 
       - name: Trivy corpus secret and config scan
@@ -277,10 +277,10 @@ jobs:
         with:
           version: v0.74.0
           scan-type: fs
-          scan-ref: research/serverless-sast-study/corpus
+          scan-ref: research/corpus
           scanners: secret,misconfig
           format: sarif
-          output: research/serverless-sast-study/results/current/trivy-corpus.sarif
+          output: research/results/current/trivy-corpus.sarif
           exit-code: "0"
 
       - name: Record Trivy time and status
@@ -344,6 +344,6 @@ jobs:
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: security-research-${{ inputs.profile }}-${{ inputs.repetition }}-${{ github.run_id }}
-          path: research/serverless-sast-study/results/current
+          path: research/results/current
           if-no-files-found: error
           retention-days: 30

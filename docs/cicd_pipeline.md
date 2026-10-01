@@ -76,6 +76,6 @@ Cloudflare Access (see the deployment guide).
 | Workflow | Trigger | Purpose |
 | --- | --- | --- |
 | `workflow-security.yml` | PRs touching workflows | actionlint and zizmor report |
-| `research-checks.yml` | PRs touching `research/serverless-sast-study` | ground-truth schema and analysis tests |
+| `research-checks.yml` | PRs touching `research` | ground-truth schema and analysis tests |
 | `security-research.yml` | manual | research measurement pipeline (all scanners, SARIF, timings) |
 | `backup.yml` | manual | encrypted export of the production D1 to Google Drive |

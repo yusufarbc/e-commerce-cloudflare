@@ -1,0 +1,62 @@
+case_id,pair_id,cwe,arm,source_type,variant,file,sink_line,split,origin,complexity,ts_types,notes
+C001-K-V,C001,CWE-89,ctrl,http,vuln,cases/C001-d1-sqli/ctrl_express_sqlite_vuln.js,10,dev,injected,intra,n,calibration: Express + better-sqlite3 template literal
+C001-K-F,C001,CWE-89,ctrl,http,fixed,cases/C001-d1-sqli/ctrl_express_sqlite_fixed.js,,dev,injected,intra,n,negative sample
+C001-E-V,C001,CWE-89,express,http,vuln,cases/C001-d1-sqli/http_express_vuln.js,8,dev,injected,intra,n,Express source + D1 template literal
+C001-E-F,C001,CWE-89,express,http,fixed,cases/C001-d1-sqli/http_express_fixed.js,,dev,injected,intra,n,negative sample
+C001-H-V,C001,CWE-89,hono,http,vuln,cases/C001-d1-sqli/http_hono_vuln.js,8,dev,injected,intra,n,Hono source + D1 template literal
+C001-H-F,C001,CWE-89,hono,http,fixed,cases/C001-d1-sqli/http_hono_fixed.js,,dev,injected,intra,n,negative sample
+C001-Q-V,C001,CWE-89,event,queue,vuln,cases/C001-d1-sqli/event_queue_vuln.js,7,dev,injected,intra,n,Queue body + D1 template literal
+C001-Q-F,C001,CWE-89,event,queue,fixed,cases/C001-d1-sqli/event_queue_fixed.js,,dev,injected,intra,n,negative sample
+C002-K-V,C002,CWE-22,ctrl,http,vuln,cases/C002-r2-path/ctrl_express_fs_vuln.js,8,dev,injected,intra,n,ctrl arm
+C002-E-V,C002,CWE-22,express,http,vuln,cases/C002-r2-path/http_express_vuln.js,7,dev,injected,intra,n,express arm
+C002-H-V,C002,CWE-22,hono,http,vuln,cases/C002-r2-path/http_hono_vuln.js,7,dev,injected,intra,n,hono arm
+C002-R-V,C002,CWE-22,event,r2,vuln,cases/C002-r2-path/event_r2_vuln.js,5,dev,injected,intra,n,event arm
+C002-K-F,C002,CWE-22,ctrl,http,fixed,cases/C002-r2-path/ctrl_express_fs_fixed.js,,dev,injected,intra,n,negative sample
+C002-E-F,C002,CWE-22,express,http,fixed,cases/C002-r2-path/http_express_fixed.js,,dev,injected,intra,n,negative sample
+C002-H-F,C002,CWE-22,hono,http,fixed,cases/C002-r2-path/http_hono_fixed.js,,dev,injected,intra,n,negative sample
+C002-R-F,C002,CWE-22,event,r2,fixed,cases/C002-r2-path/event_r2_fixed.js,,dev,injected,intra,n,negative sample
+C003-K-V,C003,CWE-918,ctrl,http,vuln,cases/C003-queue-ssrf/ctrl_express_nodefetch_vuln.js,7,dev,injected,intra,n,ctrl arm
+C003-E-V,C003,CWE-918,express,http,vuln,cases/C003-queue-ssrf/http_express_vuln.js,6,dev,injected,intra,n,express arm
+C003-H-V,C003,CWE-918,hono,http,vuln,cases/C003-queue-ssrf/http_hono_vuln.js,6,dev,injected,intra,n,hono arm
+C003-Q-V,C003,CWE-918,event,queue,vuln,cases/C003-queue-ssrf/event_queue_vuln.js,3,dev,injected,intra,n,event arm
+C003-K-F,C003,CWE-918,ctrl,http,fixed,cases/C003-queue-ssrf/ctrl_express_nodefetch_fixed.js,,dev,injected,intra,n,negative sample
+C003-E-F,C003,CWE-918,express,http,fixed,cases/C003-queue-ssrf/http_express_fixed.js,,dev,injected,intra,n,negative sample
+C003-H-F,C003,CWE-918,hono,http,fixed,cases/C003-queue-ssrf/http_hono_fixed.js,,dev,injected,intra,n,negative sample
+C003-Q-F,C003,CWE-918,event,queue,fixed,cases/C003-queue-ssrf/event_queue_fixed.js,,dev,injected,intra,n,negative sample
+C004-K-V,C004,CWE-89,ctrl,http,vuln,cases/C004-cron-sqli/ctrl_express_sqlite_vuln.js,12,dev,injected,intra,n,ctrl arm
+C004-E-V,C004,CWE-89,express,http,vuln,cases/C004-cron-sqli/http_express_vuln.js,10,dev,injected,intra,n,express arm
+C004-H-V,C004,CWE-89,hono,http,vuln,cases/C004-cron-sqli/http_hono_vuln.js,10,dev,injected,intra,n,hono arm
+C004-C-V,C004,CWE-89,event,cron,vuln,cases/C004-cron-sqli/event_cron_vuln.js,8,dev,injected,intra,n,event arm
+C004-K-F,C004,CWE-89,ctrl,http,fixed,cases/C004-cron-sqli/ctrl_express_sqlite_fixed.js,,dev,injected,intra,n,negative sample
+C004-E-F,C004,CWE-89,express,http,fixed,cases/C004-cron-sqli/http_express_fixed.js,,dev,injected,intra,n,negative sample
+C004-H-F,C004,CWE-89,hono,http,fixed,cases/C004-cron-sqli/http_hono_fixed.js,,dev,injected,intra,n,negative sample
+C004-C-F,C004,CWE-89,event,cron,fixed,cases/C004-cron-sqli/event_cron_fixed.js,,dev,injected,intra,n,negative sample
+C005-K-V,C005,CWE-22,ctrl,http,vuln,cases/C005-queue-path/ctrl_express_fs_vuln.js,8,dev,injected,intra,n,ctrl arm
+C005-E-V,C005,CWE-22,express,http,vuln,cases/C005-queue-path/http_express_vuln.js,7,dev,injected,intra,n,express arm
+C005-H-V,C005,CWE-22,hono,http,vuln,cases/C005-queue-path/http_hono_vuln.js,7,dev,injected,intra,n,hono arm
+C005-Q-V,C005,CWE-22,event,queue,vuln,cases/C005-queue-path/event_queue_vuln.js,5,dev,injected,intra,n,event arm
+C005-K-F,C005,CWE-22,ctrl,http,fixed,cases/C005-queue-path/ctrl_express_fs_fixed.js,,dev,injected,intra,n,negative sample
+C005-E-F,C005,CWE-22,express,http,fixed,cases/C005-queue-path/http_express_fixed.js,,dev,injected,intra,n,negative sample
+C005-H-F,C005,CWE-22,hono,http,fixed,cases/C005-queue-path/http_hono_fixed.js,,dev,injected,intra,n,negative sample
+C005-Q-F,C005,CWE-22,event,queue,fixed,cases/C005-queue-path/event_queue_fixed.js,,dev,injected,intra,n,negative sample
+C006-K-V,C006,CWE-918,ctrl,http,vuln,cases/C006-webhook-ssrf/ctrl_express_nodefetch_vuln.js,7,dev,injected,intra,n,ctrl arm
+C006-E-V,C006,CWE-918,express,http,vuln,cases/C006-webhook-ssrf/http_express_vuln.js,6,dev,injected,intra,n,express arm
+C006-H-V,C006,CWE-918,hono,http,vuln,cases/C006-webhook-ssrf/http_hono_vuln.js,6,dev,injected,intra,n,hono arm
+C006-W-V,C006,CWE-918,event,webhook,vuln,cases/C006-webhook-ssrf/event_webhook_vuln.js,3,dev,injected,intra,n,event arm
+C006-K-F,C006,CWE-918,ctrl,http,fixed,cases/C006-webhook-ssrf/ctrl_express_nodefetch_fixed.js,,dev,injected,intra,n,negative sample
+C006-E-F,C006,CWE-918,express,http,fixed,cases/C006-webhook-ssrf/http_express_fixed.js,,dev,injected,intra,n,negative sample
+C006-H-F,C006,CWE-918,hono,http,fixed,cases/C006-webhook-ssrf/http_hono_fixed.js,,dev,injected,intra,n,negative sample
+C006-W-F,C006,CWE-918,event,webhook,fixed,cases/C006-webhook-ssrf/event_webhook_fixed.js,,dev,injected,intra,n,negative sample
+C007-K-V,C007,CWE-89,ctrl,http,vuln,cases/C007-webhook-sqli/ctrl_express_sqlite_vuln.js,11,dev,injected,intra,n,ctrl arm
+C007-E-V,C007,CWE-89,express,http,vuln,cases/C007-webhook-sqli/http_express_vuln.js,9,dev,injected,intra,n,express arm
+C007-H-V,C007,CWE-89,hono,http,vuln,cases/C007-webhook-sqli/http_hono_vuln.js,9,dev,injected,intra,n,hono arm
+C007-W-V,C007,CWE-89,event,webhook,vuln,cases/C007-webhook-sqli/event_webhook_vuln.js,10,dev,injected,intra,n,event arm
+C007-K-F,C007,CWE-89,ctrl,http,fixed,cases/C007-webhook-sqli/ctrl_express_sqlite_fixed.js,,dev,injected,intra,n,negative sample
+C007-E-F,C007,CWE-89,express,http,fixed,cases/C007-webhook-sqli/http_express_fixed.js,,dev,injected,intra,n,negative sample
+C007-H-F,C007,CWE-89,hono,http,fixed,cases/C007-webhook-sqli/http_hono_fixed.js,,dev,injected,intra,n,negative sample
+C007-W-F,C007,CWE-89,event,webhook,fixed,cases/C007-webhook-sqli/event_webhook_fixed.js,,dev,injected,intra,n,negative sample
+O001-C-V,O001,CWE-798,organic,config,vuln,organic/snapshot/wrangler.toml,14,heldout,organic,na,n,hardcoded ADMIN_JWT_SECRET in [vars]; alt line 74
+O002-C-V,O002,CWE-798,organic,config,vuln,organic/snapshot/config.js,58,heldout,organic,na,n,default JWT secret fallback; alt line 39
+O003-H-V,O003,CWE-942,organic,http,vuln,organic/snapshot/app.js,31,heldout,organic,na,n,CORS origin reflection with credentials true (line 37)
+O004-H-V,O004,CWE-306,organic,http,vuln,organic/snapshot/app.js,54,heldout,organic,na,n,unauthenticated debug-db endpoint
+O005-H-V,O005,CWE-798,organic,http,vuln,organic/snapshot/app.js,70,heldout,organic,na,n,default admin password fallback
