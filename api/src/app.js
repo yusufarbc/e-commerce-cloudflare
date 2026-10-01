@@ -1,8 +1,10 @@
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
+import { secureHeaders } from 'hono/secure-headers';
 import { initConfig } from './config.js';
 import { getPrisma } from './prisma.js';
 import { errorHandler } from './middlewares/errorHandler.js';
+import { rateLimit } from './middlewares/rateLimit.js';
 
 // Sub-routers
 import productRoutes from './routes/productRoutes.js';
@@ -38,6 +40,18 @@ app.use('*', cors({
     maxAge: 600,
     credentials: true,
 }));
+
+// Security headers (HSTS, nosniff, X-Frame-Options, Referrer-Policy, ...). The API is
+// public and its GTM proxy script is loaded cross-origin by the storefront, so CORP
+// must allow cross-origin embedding.
+app.use('*', secureHeaders({ crossOriginResourcePolicy: 'cross-origin' }));
+
+// Rate limits (Workers Rate Limiting bindings in wrangler.toml). Registered after CORS so
+// 429 responses still carry CORS headers; stricter budget for order/payment/return flows.
+app.use('/api/*', rateLimit('API_RATE_LIMITER', 'api'));
+for (const path of ['/api/v1/orders/*', '/api/v1/payment/*', '/api/v1/returns/*']) {
+    app.use(path, rateLimit('SENSITIVE_RATE_LIMITER', 'sensitive'));
+}
 
 // Initialize database and configurations dynamically per isolate invocation
 app.use('*', async (c, next) => {

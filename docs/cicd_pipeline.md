@@ -21,7 +21,10 @@ PRs against `staging`.
 
 Both branches are protected by the `protect-production-staging` ruleset: no
 deletion, no force-push, changes only via PR, and the five gate checks below
-must pass.
+must pass. Each GitHub environment accepts deployments only from its own
+branch, and the `production` environment requires a reviewer: a production
+release waits for approval before the API deploy and again before the frontend
+deploy.
 
 ## Flow
 
@@ -29,15 +32,16 @@ must pass.
 graph LR
     H[Pipeline hygiene<br/>actionlint + zizmor] --> B
     S[Secrets & dependencies<br/>Gitleaks, OSV-Scanner, npm audit] --> B
-    C[SAST & config<br/>Semgrep CE, Trivy] --> B
+    C[SAST & config<br/>Semgrep CE, Opengrep, Trivy, Conftest] --> B
     Q[SAST<br/>CodeQL] --> B
-    B[Build and test<br/>Prisma, vitest, lint, build] --> DA[Deploy API<br/>D1 migrations + Worker]
+    B[Build and test<br/>Prisma, vitest, lint, build, SBOM] --> DA[Deploy API<br/>D1 migrations + Worker]
     DA --> DF[Deploy frontends<br/>storefront + admin Workers]
+    DF --> Z[DAST<br/>OWASP ZAP baseline]
 ```
 
 The four gate jobs run in parallel; `Build and test` needs all of them, and the
-deploy jobs run only on a **push** to `staging` or `production`. Pull requests
-run every gate and the build, never a deploy.
+deploy and DAST jobs run only on a **push** to `staging` or `production`. Pull
+requests run every gate and the build, never a deploy.
 
 ## Jobs
 
@@ -45,11 +49,12 @@ run every gate and the build, never a deploy.
 | --- | --- | --- |
 | Pipeline hygiene | actionlint, zizmor (pinned binaries, checksum-verified) | any medium+ zizmor finding |
 | Secrets and dependencies | Gitleaks over full history, OSV-Scanner, `npm audit --audit-level=high` in root/api/client/admin | any leak, any OSV finding, high/critical audit |
-| SAST and config | Semgrep CE (`p/javascript`, `p/typescript`, `p/owasp-top-ten`), Trivy misconfig | any Semgrep finding, HIGH/CRITICAL misconfig |
+| SAST and config | Trivy misconfig; Conftest `policy/wrangler.rego` on `api/wrangler.toml`; Semgrep CE with the JS/TS security rules of `semgrep/semgrep-rules` pinned to a commit; Opengrep with the Workers rules in `research/rules/edge` (`--taint-intrafile`) on `api/src` | HIGH/CRITICAL misconfig, any policy violation, any Semgrep or Opengrep finding |
 | SAST (CodeQL) | CodeQL `javascript-typescript` | analysis failure |
-| Build and test | `npm run ci:all`, `prisma validate/generate`, `npm test` (api), lint and build of client/admin with the environment's `VITE_API_URL` | any step |
+| Build and test | `npm run ci:all`, CycloneDX SBOMs (`npm sbom`) for root/api/client/admin uploaded as `sbom-cyclonedx`, `prisma validate/generate`, `npm test` (api), lint and build of client/admin with the environment's `VITE_API_URL` | any step |
 | Deploy API | `wrangler d1 migrations apply DB --remote`, `wrangler deploy --env <env>` | any step |
 | Deploy frontends | `wrangler deploy --env <env>` in `client/` and `admin/` (Workers static assets) | any step |
+| DAST | OWASP ZAP baseline (passive, 2-minute spider) against the storefront and `/api/v1/products` of the environment just deployed; HTML/JSON/Markdown report as `zap-<target>` artifact and in the job summary. The admin dashboard sits behind Cloudflare Access and is not scanned. Rule overrides with reasons go in `.zap/rules.tsv`. | any High risk alert |
 
 The research corpus under `research/` is intentionally vulnerable and is
 excluded from Semgrep, Trivy, Gitleaks and CodeQL here; it is measured by
@@ -57,9 +62,27 @@ excluded from Semgrep, Trivy, Gitleaks and CodeQL here; it is measured by
 
 ## Versions
 
-All actions are pinned to commit SHAs; Docker images and binaries are pinned by
-version and checksum or digest. Node.js 22.23.3 and Wrangler 4.145.0 are set
-in the workflow `env`.
+All actions are pinned to commit SHAs. Docker images (Gitleaks, OSV-Scanner,
+Conftest, ZAP) are pinned by digest, downloaded binaries (actionlint, zizmor,
+Opengrep) are verified by SHA-256, and Semgrep rules come from a fixed
+`semgrep-rules` commit instead of the live registry. Node.js 22.23.3 and
+Wrangler 4.145.0 are set in the workflow `env`.
+
+## Runtime protection
+
+The API Worker applies per-IP limits with the Workers Rate Limiting binding
+(`api/src/middlewares/rateLimit.js`, bindings in `api/wrangler.toml`): 300
+requests/minute on `/api/*` and 30 requests/minute on order, payment and return
+routes, answering `429` with `Retry-After`. Zone-level WAF, the free rate
+limiting rule, Bot Fight Mode and TLS/HSTS settings are configured in the
+Cloudflare dashboard; the steps are in `DEVSECOPS_PIPELINE.MD` section 5.3. Security headers come from Hono
+`secureHeaders` on the API and `public/_headers` on the storefront and admin.
+
+## Local hook
+
+`.husky/pre-commit` blocks local database files and runs Gitleaks on staged
+changes. Gitleaks is required: install the pinned version with
+`sh scripts/install-gitleaks.sh` (into the gitignored `.tools/`).
 
 ## Secrets
 

@@ -111,3 +111,6 @@ PayTR Direkt API/
 # Python
 __pycache__/
 *.py[cod]
+
+# ── Local tool binaries (scripts/install-gitleaks.sh) ─────────
+.tools/

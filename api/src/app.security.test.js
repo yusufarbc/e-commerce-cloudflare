@@ -39,6 +39,16 @@ describe('CORS', () => {
     });
 });
 
+describe('security headers', () => {
+    it('sets HSTS, nosniff and frame protection, and allows cross-origin script loading', async () => {
+        const res = await call('/api/v1/health');
+        expect(res.headers.get('Strict-Transport-Security')).toContain('max-age=');
+        expect(res.headers.get('X-Content-Type-Options')).toBe('nosniff');
+        expect(res.headers.get('X-Frame-Options')).toBe('SAMEORIGIN');
+        expect(res.headers.get('Cross-Origin-Resource-Policy')).toBe('cross-origin');
+    });
+});
+
 describe('removed endpoints', () => {
     it('no longer serves /api/v1/debug-db', async () => {
         expect((await call('/api/v1/debug-db')).status).toBe(404);
@@ -137,5 +147,30 @@ describe('adminAuth (Access JWT verification)', () => {
         await request(token);
         await request(token);
         expect(fetch).toHaveBeenCalledTimes(1);
+    });
+});
+
+describe('rate limiting (Workers Rate Limiting binding)', () => {
+    const limiter = (allow) => {
+        const calls = [];
+        return { calls, limit: async ({ key }) => { calls.push(key); return { success: allow }; } };
+    };
+
+    it('returns 429 with Retry-After when the general budget is exhausted', async () => {
+        const API_RATE_LIMITER = limiter(false);
+        const res = await call('/api/v1/health', { headers: { 'CF-Connecting-IP': '203.0.113.7' } },
+            { ...baseEnv, API_RATE_LIMITER });
+        expect(res.status).toBe(429);
+        expect(res.headers.get('Retry-After')).toBe('60');
+        expect(API_RATE_LIMITER.calls).toEqual(['api:203.0.113.7']);
+    });
+
+    it('applies the stricter budget to order, payment and return flows only', async () => {
+        const API_RATE_LIMITER = limiter(true);
+        const SENSITIVE_RATE_LIMITER = limiter(false);
+        const env = { ...baseEnv, API_RATE_LIMITER, SENSITIVE_RATE_LIMITER };
+        expect((await call('/api/v1/orders/123', {}, env)).status).toBe(429);
+        expect((await call('/api/v1/health', {}, env)).status).toBe(200);
+        expect(SENSITIVE_RATE_LIMITER.calls).toEqual(['sensitive:unknown']);
     });
 });

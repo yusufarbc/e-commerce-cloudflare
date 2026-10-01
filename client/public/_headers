@@ -1,0 +1,12 @@
+# Security headers for every static asset (Workers static assets reads this file).
+# The CSP leaves script and connect sources open on purpose: GTM loads tags from
+# Google domains and the Param 3D Secure page is written into this document.
+# Tightening script-src needs an end-to-end test of both flows.
+/*
+  Content-Security-Policy: frame-ancestors 'none'; base-uri 'self'; object-src 'none'; upgrade-insecure-requests
+  X-Frame-Options: DENY
+  X-Content-Type-Options: nosniff
+  Strict-Transport-Security: max-age=15552000; includeSubDomains
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: camera=(), microphone=(), geolocation=()
+  Cross-Origin-Opener-Policy: same-origin

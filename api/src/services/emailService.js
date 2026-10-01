@@ -1,4 +1,5 @@
 import { config, currentEnv } from '../config.js';
+import { escapeMarkup as esc, stripLineBreaks } from '../utils/escape.js';
 
 /**
  * Service for sending transactional emails via Cloudflare Workers Email Sending API.
@@ -52,7 +53,7 @@ export class EmailService {
 
             const rawMime = [
                 `From: ${this.sender.name} <${this.sender.email}>`,
-                `To: ${toName || toEmail} <${toEmail}>`,
+                `To: ${stripLineBreaks(toName || toEmail)} <${stripLineBreaks(toEmail)}>`,
                 `Subject: =?utf-8?B?${subjectBase64}?=`,
                 `MIME-Version: 1.0`,
                 `Content-Type: text/html; charset=utf-8`,
@@ -132,11 +133,11 @@ export class EmailService {
         const orderLink = `${config.clientUrl}/siparis-takip?token=${orderDetails.trackingToken}`;
 
         const content = `
-            <p>Sayın <strong>${toName}</strong>,</p>
+            <p>Sayın <strong>${esc(toName)}</strong>,</p>
             <p>Siparişiniz başarıyla alındı ve hazırlanıyor. Teşekkür ederiz!</p>
             
             <div style="background-color: #F4F4F4; padding: 20px; border-radius: 6px; margin: 25px 0; border-left: 4px solid #4f46e5;">
-                <p style="margin: 5px 0;"><strong>Sipariş No:</strong> #${orderDetails.orderNumber}</p>
+                <p style="margin: 5px 0;"><strong>Sipariş No:</strong> #${esc(orderDetails.orderNumber)}</p>
                 <p style="margin: 5px 0;"><strong>Toplam Tutar:</strong> <span style="font-size: 18px; color: #191919; font-weight: bold;">₺${Number(orderDetails.total).toFixed(2)}</span></p>
             </div>
 
@@ -169,13 +170,13 @@ export class EmailService {
         const reasonHtml = details.cancelReason
             ? `<div style="background-color: #F4F4F4; padding: 15px; border-left: 4px solid #dc2a12; margin: 20px 0; color: #191919;">
                  <strong style="display:block; margin-bottom:5px; color: #dc2a12;">İptal Nedeni:</strong>
-                 ${details.cancelReason}
+                 ${esc(details.cancelReason)}
                </div>`
             : '';
 
         const content = `
-            <p>Sayın <strong>${toName}</strong>,</p>
-            <p><strong>#${details.orderNumber}</strong> numaralı siparişiniz iptal edilmiştir.</p>
+            <p>Sayın <strong>${esc(toName)}</strong>,</p>
+            <p><strong>#${esc(details.orderNumber)}</strong> numaralı siparişiniz iptal edilmiştir.</p>
             
             ${reasonHtml}
             
@@ -222,8 +223,8 @@ export class EmailService {
             return `
                 <tr>
                     <td style="padding: 10px; border-bottom: 1px solid #eee;">${index + 1}</td>
-                    <td style="padding: 10px; border-bottom: 1px solid #eee;">${productName}</td>
-                    <td style="padding: 10px; border-bottom: 1px solid #eee;">${color}</td>
+                    <td style="padding: 10px; border-bottom: 1px solid #eee;">${esc(productName)}</td>
+                    <td style="padding: 10px; border-bottom: 1px solid #eee;">${esc(color)}</td>
                     <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: center;">${qty}</td>
                     <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right;">₺${unitPrice.toFixed(2)}</td>
                     <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right; font-weight: bold;">₺${lineTotal.toFixed(2)}</td>
@@ -235,10 +236,10 @@ export class EmailService {
             <p>Yeni bir sipariş alındı.</p>
 
             <div style="background-color: #F4F4F4; padding: 20px; border-radius: 6px; margin: 20px 0; border-left: 4px solid #4f46e5;">
-                <p style="margin: 5px 0;"><strong>Sipariş No:</strong> #${order.siparisNumarasi || '-'}</p>
-                <p style="margin: 5px 0;"><strong>Sipariş ID:</strong> ${order.id || '-'}</p>
-                <p style="margin: 5px 0;"><strong>Durum:</strong> ${order.durum || '-'}</p>
-                <p style="margin: 5px 0;"><strong>Ödeme Durumu:</strong> ${order.odemeDurumu || '-'}</p>
+                <p style="margin: 5px 0;"><strong>Sipariş No:</strong> #${esc(order.siparisNumarasi || '-')}</p>
+                <p style="margin: 5px 0;"><strong>Sipariş ID:</strong> ${esc(order.id || '-')}</p>
+                <p style="margin: 5px 0;"><strong>Durum:</strong> ${esc(order.durum || '-')}</p>
+                <p style="margin: 5px 0;"><strong>Ödeme Durumu:</strong> ${esc(order.odemeDurumu || '-')}</p>
                 <p style="margin: 5px 0;"><strong>Toplam:</strong> <strong>₺${Number(order.toplamTutar || 0).toFixed(2)}</strong></p>
                 <p style="margin: 5px 0;"><strong>Kargo:</strong> ₺${Number(order.kargoUcreti || 0).toFixed(2)}</p>
                 <p style="margin: 5px 0;"><strong>Oluşturulma:</strong> ${order.olusturulmaTarihi ? new Date(order.olusturulmaTarihi).toLocaleString('tr-TR') : '-'}</p>
@@ -246,17 +247,17 @@ export class EmailService {
 
             <h3 style="margin: 25px 0 10px 0;">Müşteri Bilgileri</h3>
             <div style="background-color: #F9F9F9; padding: 15px; border-radius: 6px;">
-                <p style="margin: 4px 0;"><strong>Ad Soyad:</strong> ${(order.ad || '')} ${(order.soyad || '')}</p>
-                <p style="margin: 4px 0;"><strong>E-posta:</strong> ${order.eposta || '-'}</p>
-                <p style="margin: 4px 0;"><strong>Telefon:</strong> ${order.telefon || '-'}</p>
+                <p style="margin: 4px 0;"><strong>Ad Soyad:</strong> ${esc(order.ad)} ${esc(order.soyad)}</p>
+                <p style="margin: 4px 0;"><strong>E-posta:</strong> ${esc(order.eposta || '-')}</p>
+                <p style="margin: 4px 0;"><strong>Telefon:</strong> ${esc(order.telefon || '-')}</p>
             </div>
 
             <h3 style="margin: 25px 0 10px 0;">Teslimat Adresi</h3>
             <div style="background-color: #F9F9F9; padding: 15px; border-radius: 6px;">
-                <p style="margin: 4px 0;"><strong>Adres:</strong> ${order.adres || '-'}</p>
-                <p style="margin: 4px 0;"><strong>İlçe / Şehir:</strong> ${order.ilce || '-'} / ${order.sehir || '-'}</p>
-                <p style="margin: 4px 0;"><strong>Posta Kodu:</strong> ${order.postaKodu || '-'}</p>
-                <p style="margin: 4px 0;"><strong>Ülke:</strong> ${order.ulke || 'Türkiye'}</p>
+                <p style="margin: 4px 0;"><strong>Adres:</strong> ${esc(order.adres || '-')}</p>
+                <p style="margin: 4px 0;"><strong>İlçe / Şehir:</strong> ${esc(order.ilce || '-')} / ${esc(order.sehir || '-')}</p>
+                <p style="margin: 4px 0;"><strong>Posta Kodu:</strong> ${esc(order.postaKodu || '-')}</p>
+                <p style="margin: 4px 0;"><strong>Ülke:</strong> ${esc(order.ulke || 'Türkiye')}</p>
             </div>
 
             <h3 style="margin: 25px 0 10px 0;">Sipariş Kalemleri</h3>

@@ -1,0 +1,4 @@
+# OWASP ZAP baseline rule overrides (zap-baseline.py -c).
+# Format: <plugin id><TAB><IGNORE|INFO|WARN|FAIL><TAB><reason>.
+# Every override needs a reason; the pipeline fails on any High risk alert regardless.
+10116	IGNORE	ZAP image is pinned by digest on purpose; it is upgraded by bumping ZAP_IMAGE, not at scan time.

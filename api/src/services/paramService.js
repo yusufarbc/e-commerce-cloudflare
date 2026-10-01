@@ -1,3 +1,5 @@
+import { escapeMarkup } from '../utils/escape.js';
+
 /**
  * ParamService — Param POS Payment Gateway Integration
  *
@@ -185,12 +187,12 @@ export class ParamService {
         <CLIENT_PASSWORD>${this.config.clientPassword}</CLIENT_PASSWORD>
       </G>
       <GUID>${this.config.guid}</GUID>
-      <KK_Sahibi>${buyer.name} ${buyer.surname}</KK_Sahibi>
-      <KK_No>${buyer.cardNumber}</KK_No>
-      <KK_SK_Ay>${cardExpMonth}</KK_SK_Ay>
-      <KK_SK_Yil>${cardExpYear}</KK_SK_Yil>
-      <KK_CVC>${buyer.cardCvc}</KK_CVC>
-      <KK_Sahibi_GSM>${cardHolderGSM}</KK_Sahibi_GSM>
+      <KK_Sahibi>${escapeMarkup(`${buyer.name} ${buyer.surname}`)}</KK_Sahibi>
+      <KK_No>${escapeMarkup(buyer.cardNumber)}</KK_No>
+      <KK_SK_Ay>${escapeMarkup(cardExpMonth)}</KK_SK_Ay>
+      <KK_SK_Yil>${escapeMarkup(cardExpYear)}</KK_SK_Yil>
+      <KK_CVC>${escapeMarkup(buyer.cardCvc)}</KK_CVC>
+      <KK_Sahibi_GSM>${escapeMarkup(cardHolderGSM)}</KK_Sahibi_GSM>
       <Hata_URL>${errorUrl}</Hata_URL>
       <Basarili_URL>${successUrl}</Basarili_URL>
       <Siparis_ID>${orderId}</Siparis_ID>
@@ -201,7 +203,7 @@ export class ParamService {
       <Islem_Hash>${hash}</Islem_Hash>
       <Islem_Guvenlik_Tip>3D</Islem_Guvenlik_Tip>
       <Islem_ID>${orderId}</Islem_ID>
-      <IPAdr>${buyer.ip || '127.0.0.1'}</IPAdr>
+      <IPAdr>${escapeMarkup(buyer.ip || '127.0.0.1')}</IPAdr>
       <Ref_URL>${this.config.callbackUrl}</Ref_URL>
       <Data1></Data1>
       <Data2></Data2>
@@ -331,7 +333,7 @@ export class ParamService {
         <CLIENT_PASSWORD>${this.config.clientPassword}</CLIENT_PASSWORD>
       </G>
       <GUID>${this.config.guid}</GUID>
-      <Bin>${bin}</Bin>
+      <Bin>${escapeMarkup(bin)}</Bin>
       <Tutar>${formattedAmount}</Tutar>
     </TP_Ozel_Oran_SK_Liste>`;
 
