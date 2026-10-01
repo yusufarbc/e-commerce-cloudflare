@@ -1,0 +1,4 @@
+# SHA-256 of held-out corpus files (normalised LF). Update when held-out cases are added.
+1d16e0b032e7422e97f918f9332f9a170ca5e8fb924cebd43fd97f1a4cd00638  corpus/organic/snapshot/app.js
+4c0c5c5f64f4bdb13290da7a06369670b7a452b918b7d5f28cdef290fee0d425  corpus/organic/snapshot/config.js
+0ebd20a853efbe941e3301ceac12dfb6a8856a50755ef132d46c521b7dc34306  corpus/organic/snapshot/wrangler.toml

@@ -48,9 +48,11 @@ in Default SAST Gates for Event-Driven Serverless Edge Applications*
   `hono`, `event`.
 - [x] Analiz iskeleti (`analysis/`: groundtruth, normalize, match, stats,
   score) ve 17 birim testi; `research-checks.yml` CI'da çalıştırıyor.
-- [ ] Preregistration taslak (v0.9); danışman onayı ve `protocol-v1` etiketi
-  bekliyor.
-- [ ] Dört kollu C001 ile pilot henüz koşmadı.
+- [x] Preregistration v1.0 donduruldu (`protocol-v1`, 2026-10-02); H2a birincil
+  karşılaştırması `express` – `event`. Danışman incelemesi sürüyor; öneriler
+  sapma kaydına işlenecek.
+- [x] Dört kollu C001 ile pilot-04 tamamlandı (`protocol/pilot-notes.md`).
+- [ ] Held-out için ikinci yazar bulunmadı; yedek yol preregistration §5'te.
 
 ## Aşamalar ve takvim
 

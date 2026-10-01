@@ -1,8 +1,8 @@
 # Ön Kayıt (Preregistration)
 
-Durum: **TASLAK v0.9**, 2026-10-01. Yazar ve danışman onayından sonra
-`protocol-v1` etiketiyle dondurulur. Dondurulduktan sonra yapılan her değişiklik
-§10'daki sapma kaydına tarih ve gerekçeyle yazılır.
+Durum: **v1.0, donduruldu** — 2026-10-02, `protocol-v1` etiketi. Yazar kararıyla
+donduruldu; danışman incelemesi sürüyor. Bundan sonraki her değişiklik (danışman
+önerileri dahil) §10'daki sapma kaydına tarih ve gerekçeyle yazılır.
 
 ## 1. Amaç ve kapsam
 
@@ -22,12 +22,20 @@ alınmaz, yalnızca RQ1 (genel durum) ve RQ4 (süre) için raporlanır.
 | H0 (kalibrasyon) | Araç, modellenmiş kaynak ve modellenmiş sink içeren kolu yakalar | `ctrl` kolunda recall > 0 |
 | H1 (sink modeli) | D1 sink'i, modellenmiş SQL sink'ine göre daha az yakalanır | `ctrl` – `express` |
 | H2b (çerçeve körlüğü) | Hono kaynağı, Express kaynağına göre daha az yakalanır | `express` – `hono` |
-| H2a (event-source körlüğü) | Event kaynağı, HTTP kaynağına göre daha az yakalanır | `hono` – `event` (birincil), `express` – `event` |
+| H2a (event-source körlüğü) | Event kaynağı, modellenmiş HTTP kaynağına göre daha az yakalanır | `express` – `event` (birincil), `hono` – `event` (ikincil) |
 | H3 (özel kurallar) | Platforma duyarlı kurallar held-out sette recall'u artırır, FPR'yi anlamlı artırmaz | default ile custom, held-out |
 
-**Birincil sonuç:** H2a, `hono` – `event` çift düzeyinde tespit farkı. Her araç
-ayrı test edilir. `hono` kolu olmadan event etkisi Express kaynak modelinden
-ayrılamaz; bu yüzden birincil karşılaştırma Hono ile yapılır.
+**Birincil sonuç:** H2a, `express` – `event` çift düzeyinde tespit farkı; her araç
+ayrı test edilir. İki kol aynı platform sink'ini kullanır, yalnızca kaynak (ve
+onu taşıyan çerçeve) değişir. Varsayılan araçların modellediği HTTP kaynağı
+Express olduğu için bu karşılaştırma varsayılan araçlarda bilgi taşır; pilot-04'te
+`hono` kolu da kaçırıldığında `hono` – `event` çifti bilgi taşımadı.
+
+**İkincil sonuç:** `hono` – `event`, kaynak etkisini Workers çerçevesi içinde
+yalıtır; özellikle Hono'yu modelleyen özel kurallarda (H3) yorumlanır.
+
+Karşılaştırmalar araç sonuçları görülmeden bu şekilde sabitlenir; referans kol
+araca göre değiştirilmez.
 
 ## 3. Kollar (arms)
 
@@ -77,7 +85,15 @@ CWE için H1, H2a ve H2b hesaplanmaz; ayrı tabloda raporlanır.
 - Enjekte vakalarda her (CWE × event kaynağı) hücresinin ilk varyantı dev'e,
   kalan varyantları held-out'a gider. Böylece held-out, kural yazarının görmediği
   taşıma desenlerini içerir.
-- Held-out vakaların en az üçte biri ikinci bir kişi tarafından yazılır.
+- Held-out vakaların en az üçte biri, kuralları yazmayan ikinci bir kişi
+  tarafından yazılır (hedef). İkinci kişi M1 bitişine kadar bulunamazsa:
+  held-out = organik vakalar + dış kaynaklı vakalar (`origin=external`;
+  SecBench.js, CloudBench gibi yayımlanmış benchmark'lardan Workers'a
+  uyarlanmış, kaynak ve lisansı `notes` alanında belirtilmiş). Yazarın
+  kendisinin yazdığı held-out vakalar ayrı raporlanır ve bu durum geçerlilik
+  tehditlerinde açıkça belirtilir.
+- Kural yazarı (yazar) held-out vaka dosyalarını `rules-frozen-v1` etiketinden
+  önce açmaz; dosyalar eklendikçe yalnızca özetleri kaydedilir.
 - Held-out vakalar yazıldıkça dosya listesinin SHA-256 özeti
   `protocol/heldout.sha256` dosyasına commit edilir.
 - `analysis.score` held-out satırlarını yalnızca `--heldout` bayrağıyla puanlar.
@@ -130,4 +146,5 @@ dosyanın commit SHA'sı buraya yazılır.
 | --- | --- | --- |
 | 2026-10-01 (dondurma öncesi) | `ctrl` kalibrasyon kolu eklendi | Pilot-03'te CodeQL ve varsayılan Semgrep Hono ikizini de kaçırdı; D1 sink'i modellenmemiş olabileceğinden Express+D1 kolu tek başına pozitif kontrol olamaz |
 | 2026-10-01 (dondurma öncesi) | C001 queue ikizi HTTP ikizleriyle aynı `SELECT` sink'ine eşitlendi | Önceki `UPDATE` iki değişkenli sink eşdeğerlik kuralını ihlal ediyordu (dev seti) |
-| 2026-10-02 (dondurma öncesi, karar bekliyor) | H2a birincil karşılaştırması gözden geçirilecek | Pilot-04'te `hono` ve `event` kollarını varsayılan araçların ikisi de kaçırdı, çift bilgi taşımadı. Seçenekler: (a) birincil karşılaştırmayı `express` – `event` yapmak (Express kaynağını modelleyen araçlarda bilgilendirici; ama sink ve çerçeve farkını da içerir), (b) `hono` – `event`'i koruyup yalnızca `hono`'nun yakalandığı araç/kural setlerinde test etmek (özel kurallar), (c) her araç için `ctrl`/`express`/`hono` içinde yakalanan en yakın HTTP kolunu referans almak. Karar dondurmadan önce yazar ve danışman tarafından verilecek. |
+| 2026-10-02 (dondurma öncesi) | H2a birincil karşılaştırması `express` – `event` oldu; `hono` – `event` ikincil | Pilot-04'te `hono` ve `event` kollarını varsayılan araçlar birlikte kaçırdı. Değerlendirilen seçenekler: (a) `express` – `event` (aynı sink, varsayılan araçlarda bilgilendirici), (b) `hono` – `event`'i yalnızca özel kurallarda test etmek (birincil testi varsayılan araçlardan çıkarır), (c) araç başına yakalanan en yakın HTTP kolunu referans almak (sonuca bağlı seçim, çoklu yol riski). (a) seçildi. |
+| 2026-10-02 (dondurma öncesi) | İkinci kişi bulunamazsa held-out için yedek yol tanımlandı | Bağımsız held-out yazarı henüz yok; dış kaynaklı vakalar ve şeffaf raporlama ile döngüsellik riski sınırlandırılır |
