@@ -11,3 +11,8 @@ paths = ['''^research/serverless-sast-study/corpus/''']
 description = "Burned demo JWT secret: public in history before research/organic-snapshot-v1, no longer used by the app"
 regexTarget = "match"
 regexes = ['''secure-admin-token-secret-12345''']
+
+[[allowlists]]
+description = "Cloudflare Access application Audience tag: a public identifier (shown in the Access login redirect), not a credential"
+regexTarget = "line"
+regexes = ['''^ACCESS_AUD = "[0-9a-f]{64}"''']
