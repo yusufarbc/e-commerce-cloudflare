@@ -1,0 +1,3 @@
+config,rule_regex,cwe
+gitleaks,.*,798
+trivy-corpus,(?i)secret|private-key|token|password,798

@@ -27,12 +27,15 @@ env:
   OUT: research/serverless-sast-study/results/current
   SEMGREP_VERSION: 1.178.0
   OPENGREP_VERSION: 1.30.0
-  OSV_SCANNER_VERSION: 2.6.0
-  GITLEAKS_VERSION: 8.30.1
-  TRIVY_VERSION: 0.74.0
   CHECKOV_VERSION: 3.3.20
-  CONFTEST_VERSION: 0.70.1
+  # Container images: tag for readability, digest for immutability.
+  OSV_SCANNER_IMAGE: ghcr.io/google/osv-scanner:v2.6.0@sha256:afd838850ac1a0fcc15ff4a041dc9ba11123c3f0d2666217a5f0fcf9222b55fa
+  GITLEAKS_IMAGE: ghcr.io/gitleaks/gitleaks:v8.30.1@sha256:c00b6bd0aeb3071cbcb79009cb16a60dd9e0a7c60e2be9ab65d25e6bc8abbb7f
+  CONFTEST_IMAGE: openpolicyagent/conftest:v0.70.1@sha256:82f23e0e1f3faf2f3798f4b1974676c1aed96b05c6656ec6820435c31867c532
 
+# Every scanner step records "tool,exit_code,version" in tools.csv and
+# "tool,ms" in timings.csv, then exits 0: a non-zero scanner exit is data
+# (findings or a crash, interpreted per tool during analysis), not a CI failure.
 jobs:
   experiment:
     name: ${{ inputs.profile }} / repetition ${{ inputs.repetition }}
@@ -73,24 +76,26 @@ jobs:
         shell: bash
         run: |
           mkdir -p "$OUT"
-          printf 'tool,seconds\n' > "$OUT/timings.csv"
+          printf 'tool,ms\n' > "$OUT/timings.csv"
+          printf 'tool,exit_code,version\n' > "$OUT/tools.csv"
           jq -n \
             --arg profile "$RUN_PROFILE" \
             --arg repetition "$RUN_REPETITION" \
             --arg run_id "$GITHUB_RUN_ID" \
             --arg run_attempt "$GITHUB_RUN_ATTEMPT" \
             --arg commit "$GITHUB_SHA" \
-            '{profile:$profile,repetition:$repetition,run_id:$run_id,run_attempt:$run_attempt,commit:$commit}' \
+            --arg runner_image "${ImageOS:-unknown}-${ImageVersion:-unknown}" \
+            '{profile:$profile,repetition:$repetition,run_id:$run_id,run_attempt:$run_attempt,commit:$commit,runner_image:$runner_image}' \
             > "$OUT/run.json"
 
       - name: Baseline install and build
         shell: bash
         run: |
-          started=$(date +%s)
+          started=$(date +%s%3N)
           npm run ci:all
           npm run build --prefix client
           npm run build --prefix admin
-          printf 'baseline,%s\n' "$(( $(date +%s) - started ))" >> "$OUT/timings.csv"
+          printf 'baseline,%s\n' "$(( $(date +%s%3N) - started ))" >> "$OUT/timings.csv"
 
       - name: Initialize CodeQL
         if: inputs.profile != 'baseline'
@@ -102,29 +107,37 @@ jobs:
       - name: Start CodeQL timer
         if: inputs.profile != 'baseline'
         shell: bash
-        run: date +%s > "$RUNNER_TEMP/codeql-start"
+        run: date +%s%3N > "$RUNNER_TEMP/codeql-start"
 
       - name: Analyze with CodeQL
+        id: codeql
         if: inputs.profile != 'baseline'
+        continue-on-error: true
         uses: github/codeql-action/analyze@1190a975f95ce23525efb6a3fc21ea29567c1b52 # v3
         with:
           output: research/serverless-sast-study/results/current/codeql
           upload: never
+          upload-database: false
 
-      - name: Record CodeQL time
+      - name: Record CodeQL time and status
         if: inputs.profile != 'baseline' && always()
         shell: bash
+        env:
+          CODEQL_OUTCOME: ${{ steps.codeql.outcome }}
         run: |
           started=$(cat "$RUNNER_TEMP/codeql-start")
-          printf 'codeql,%s\n' "$(( $(date +%s) - started ))" >> "$OUT/timings.csv"
+          printf 'codeql,%s\n' "$(( $(date +%s%3N) - started ))" >> "$OUT/timings.csv"
+          rc=0; [[ "$CODEQL_OUTCOME" == success ]] || rc=1
+          version=$(find /opt/hostedtoolcache/CodeQL -maxdepth 1 -mindepth 1 -printf '%f\n' 2>/dev/null | sort | tail -1)
+          printf 'codeql,%s,%s\n' "$rc" "${version:-unknown}" >> "$OUT/tools.csv"
 
       - name: Semgrep default pinned rules
         if: inputs.profile != 'baseline'
-        continue-on-error: true
         shell: bash
         run: |
-          started=$(date +%s)
+          started=$(date +%s%3N)
           python -m pip install "semgrep==$SEMGREP_VERSION"
+          set +e
           semgrep scan \
             --config .research-tools/semgrep-rules/javascript \
             --config .research-tools/semgrep-rules/typescript \
@@ -132,45 +145,57 @@ jobs:
             --sarif \
             --output "$OUT/semgrep-default.sarif" \
             "$CORPUS"
+          rc_default=$?
           semgrep scan \
             --config "$STUDY/rules/pinned" \
             --metrics off \
             --sarif \
             --output "$OUT/semgrep-engine-parity.sarif" \
             "$CORPUS"
-          printf 'semgrep,%s\n' "$(( $(date +%s) - started ))" >> "$OUT/timings.csv"
+          rc_parity=$?
+          set -e
+          version=$(semgrep --version)
+          printf 'semgrep,%s\n' "$(( $(date +%s%3N) - started ))" >> "$OUT/timings.csv"
+          printf 'semgrep-default,%s,%s\n' "$rc_default" "$version" >> "$OUT/tools.csv"
+          printf 'semgrep-engine-parity,%s,%s\n' "$rc_parity" "$version" >> "$OUT/tools.csv"
 
       - name: Opengrep engine-parity scan
         if: inputs.profile != 'baseline'
-        continue-on-error: true
         shell: bash
         run: |
-          started=$(date +%s)
+          started=$(date +%s%3N)
           curl --fail --location --silent --show-error \
             "https://github.com/opengrep/opengrep/releases/download/v$OPENGREP_VERSION/opengrep_manylinux_x86" \
             --output "$RUNNER_TEMP/opengrep"
           echo '35779bdd72e92129c8df2a77f0c55e8c08356801ea92591ef32108d6b28d564c  '"$RUNNER_TEMP/opengrep" | sha256sum --check
           chmod +x "$RUNNER_TEMP/opengrep"
+          set +e
           "$RUNNER_TEMP/opengrep" scan \
             --config "$STUDY/rules/pinned" \
             --sarif \
             --output "$OUT/opengrep-engine-parity.sarif" \
             "$CORPUS"
-          printf 'opengrep,%s\n' "$(( $(date +%s) - started ))" >> "$OUT/timings.csv"
+          rc=$?
+          set -e
+          printf 'opengrep,%s\n' "$(( $(date +%s%3N) - started ))" >> "$OUT/timings.csv"
+          printf 'opengrep-engine-parity,%s,%s\n' "$rc" "$("$RUNNER_TEMP/opengrep" --version)" >> "$OUT/tools.csv"
 
       - name: Semgrep custom Cloudflare rules
         if: inputs.profile == 'default+custom'
-        continue-on-error: true
         shell: bash
         run: |
-          started=$(date +%s)
+          started=$(date +%s%3N)
+          set +e
           semgrep scan \
             --config "$STUDY/rules/edge" \
             --metrics off \
             --sarif \
             --output "$OUT/semgrep-custom.sarif" \
             "$CORPUS"
-          printf 'semgrep-custom,%s\n' "$(( $(date +%s) - started ))" >> "$OUT/timings.csv"
+          rc=$?
+          set -e
+          printf 'semgrep-custom,%s\n' "$(( $(date +%s%3N) - started ))" >> "$OUT/timings.csv"
+          printf 'semgrep-custom,%s,%s\n' "$rc" "$(semgrep --version)" >> "$OUT/tools.csv"
 
       - name: Remove scanner rule checkout before repository scans
         if: inputs.profile != 'baseline' && always()
@@ -179,52 +204,61 @@ jobs:
 
       - name: OSV-Scanner dependency scan
         if: inputs.profile != 'baseline'
-        continue-on-error: true
         shell: bash
         run: |
-          started=$(date +%s)
-          docker run --rm --volume "$PWD:/src" \
-            "ghcr.io/google/osv-scanner:v$OSV_SCANNER_VERSION" \
+          started=$(date +%s%3N)
+          set +e
+          docker run --rm --volume "$PWD:/src" "$OSV_SCANNER_IMAGE" \
             scan source --recursive /src --format sarif \
             > "$OUT/osv-scanner.sarif"
-          printf 'osv-scanner,%s\n' "$(( $(date +%s) - started ))" >> "$OUT/timings.csv"
+          rc=$?
+          set -e
+          printf 'osv-scanner,%s\n' "$(( $(date +%s%3N) - started ))" >> "$OUT/timings.csv"
+          printf 'osv-scanner,%s,%s\n' "$rc" "$OSV_SCANNER_IMAGE" >> "$OUT/tools.csv"
 
       - name: npm audit comparison reports
         if: inputs.profile != 'baseline'
-        continue-on-error: true
         shell: bash
         run: |
-          started=$(date +%s)
+          started=$(date +%s%3N)
           for project in root api client admin; do
             case "$project" in
               root) directory="$GITHUB_WORKSPACE" ;;
               *) directory="$GITHUB_WORKSPACE/$project" ;;
             esac
-            (cd "$directory" && npm audit --json > "$GITHUB_WORKSPACE/$OUT/npm-audit-$project.json") || true
+            set +e
+            (cd "$directory" && npm audit --json > "$GITHUB_WORKSPACE/$OUT/npm-audit-$project.json")
+            rc=$?
+            set -e
+            printf 'npm-audit-%s,%s,%s\n' "$project" "$rc" "npm $(npm --version)" >> "$OUT/tools.csv"
           done
-          printf 'npm-audit,%s\n' "$(( $(date +%s) - started ))" >> "$OUT/timings.csv"
+          printf 'npm-audit,%s\n' "$(( $(date +%s%3N) - started ))" >> "$OUT/timings.csv"
 
       - name: Gitleaks corpus scan
         if: inputs.profile != 'baseline'
-        continue-on-error: true
         shell: bash
         run: |
-          started=$(date +%s)
-          docker run --rm --volume "$PWD:/repo" \
-            "ghcr.io/gitleaks/gitleaks:v$GITLEAKS_VERSION" \
+          started=$(date +%s%3N)
+          set +e
+          docker run --rm --volume "$PWD:/repo" "$GITLEAKS_IMAGE" \
             dir "/repo/$CORPUS" \
             --exit-code 0 \
             --report-format sarif \
             --report-path "/repo/$OUT/gitleaks.sarif"
-          printf 'gitleaks,%s\n' "$(( $(date +%s) - started ))" >> "$OUT/timings.csv"
+          rc=$?
+          set -e
+          printf 'gitleaks,%s\n' "$(( $(date +%s%3N) - started ))" >> "$OUT/timings.csv"
+          printf 'gitleaks,%s,%s\n' "$rc" "$GITLEAKS_IMAGE" >> "$OUT/tools.csv"
 
       - name: Start Trivy timer
         if: inputs.profile != 'baseline'
         shell: bash
-        run: date +%s > "$RUNNER_TEMP/trivy-start"
+        run: date +%s%3N > "$RUNNER_TEMP/trivy-start"
 
       - name: Trivy repository vulnerability scan
+        id: trivy_vuln
         if: inputs.profile != 'baseline'
+        continue-on-error: true
         uses: aquasecurity/trivy-action@d2a0b60797ff03db6132bd4e2b293f9b37081297 # master on 2026-09-28
         with:
           version: v0.74.0
@@ -236,7 +270,9 @@ jobs:
           exit-code: "0"
 
       - name: Trivy corpus secret and config scan
+        id: trivy_corpus
         if: inputs.profile != 'baseline'
+        continue-on-error: true
         uses: aquasecurity/trivy-action@d2a0b60797ff03db6132bd4e2b293f9b37081297 # master on 2026-09-28
         with:
           version: v0.74.0
@@ -247,31 +283,43 @@ jobs:
           output: research/serverless-sast-study/results/current/trivy-corpus.sarif
           exit-code: "0"
 
-      - name: Record Trivy time
+      - name: Record Trivy time and status
         if: inputs.profile != 'baseline' && always()
         shell: bash
+        env:
+          TRIVY_VULN_OUTCOME: ${{ steps.trivy_vuln.outcome }}
+          TRIVY_CORPUS_OUTCOME: ${{ steps.trivy_corpus.outcome }}
         run: |
           started=$(cat "$RUNNER_TEMP/trivy-start")
-          printf 'trivy,%s\n' "$(( $(date +%s) - started ))" >> "$OUT/timings.csv"
+          printf 'trivy,%s\n' "$(( $(date +%s%3N) - started ))" >> "$OUT/timings.csv"
+          rc=0; [[ "$TRIVY_VULN_OUTCOME" == success ]] || rc=1
+          printf 'trivy-vuln,%s,v0.74.0\n' "$rc" >> "$OUT/tools.csv"
+          rc=0; [[ "$TRIVY_CORPUS_OUTCOME" == success ]] || rc=1
+          printf 'trivy-corpus,%s,v0.74.0\n' "$rc" >> "$OUT/tools.csv"
 
       - name: Checkov config scan
         if: inputs.profile != 'baseline'
-        continue-on-error: true
         shell: bash
         run: |
-          started=$(date +%s)
+          started=$(date +%s%3N)
           python -m pip install "checkov==$CHECKOV_VERSION"
+          set +e
+          # Checkov prints a banner on stdout, so write SARIF to a file instead.
           checkov --directory "$CORPUS" --output sarif --quiet --soft-fail \
-            > "$OUT/checkov.sarif"
-          printf 'checkov,%s\n' "$(( $(date +%s) - started ))" >> "$OUT/timings.csv"
+            --output-file-path "$RUNNER_TEMP/checkov"
+          rc=$?
+          set -e
+          mv "$RUNNER_TEMP/checkov/results_sarif.sarif" "$OUT/checkov.sarif" || rc=99
+          printf 'checkov,%s\n' "$(( $(date +%s%3N) - started ))" >> "$OUT/timings.csv"
+          printf 'checkov,%s,%s\n' "$rc" "$(checkov --version)" >> "$OUT/tools.csv"
 
       - name: Conftest custom wrangler policies
         if: inputs.profile == 'default+custom'
-        continue-on-error: true
         shell: bash
         run: |
-          started=$(date +%s)
+          started=$(date +%s%3N)
           mapfile -t configs < <(find "$CORPUS" -type f \( -name 'wrangler.toml' -o -name 'wrangler.json' -o -name 'wrangler.jsonc' \))
+          rc=0
           if (( ${#configs[@]} == 0 )); then
             printf '[]\n' > "$OUT/conftest.json"
           else
@@ -279,13 +327,17 @@ jobs:
             for config in "${configs[@]}"; do
               container_paths+=("/project/$config")
             done
-            docker run --rm --volume "$PWD:/project" \
-              "openpolicyagent/conftest:v$CONFTEST_VERSION" \
+            set +e
+            docker run --rm --volume "$PWD:/project" "$CONFTEST_IMAGE" \
               test "${container_paths[@]}" \
               --policy "/project/$STUDY/rules/conftest" \
+              --all-namespaces \
               --output json > "$OUT/conftest.json"
+            rc=$?
+            set -e
           fi
-          printf 'conftest,%s\n' "$(( $(date +%s) - started ))" >> "$OUT/timings.csv"
+          printf 'conftest,%s\n' "$(( $(date +%s%3N) - started ))" >> "$OUT/timings.csv"
+          printf 'conftest,%s,%s\n' "$rc" "$CONFTEST_IMAGE" >> "$OUT/tools.csv"
 
       - name: Upload experiment results
         if: always()

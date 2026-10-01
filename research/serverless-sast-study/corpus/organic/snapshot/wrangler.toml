@@ -1,0 +1,116 @@
+name = "e-commerce-cloudflare"
+main = "src/app.js"
+compatibility_date = "2026-02-01"
+compatibility_flags = [ "nodejs_compat" ]
+
+[vars]
+NODE_ENV = "development"
+CORS_ORIGIN = "*"
+CLIENT_URL = "http://localhost:3000"
+API_URL = "http://localhost:8787"
+ORDER_NOTIFICATION_EMAIL = "siparis@ecommerceflaredev.web.tr"
+CDN_URL = "https://cdn.ecommerceflaredev.web.tr"
+GOOGLE_MERCHANT_TOKEN = "test-token"
+ADMIN_JWT_SECRET = "secure-admin-token-secret-12345"
+
+# ── Active Payment Provider ─────────────────────────────────────────────────
+# Options: "iyzico" | "param" | "paytr"
+PAYMENT_PROVIDER = "iyzico"
+
+# ── iyzico credentials (development sandbox) ─────────────────────────────────
+# Secrets (API keys) must be set via: wrangler secret put IYZICO_API_KEY
+IYZICO_BASE_URL = "https://sandbox-api.iyzipay.com"
+
+# ── Param POS credentials (disabled - uncomment to switch provider) ──────────
+# PARAM_CLIENT_CODE = "test"
+# PARAM_CLIENT_USERNAME = "test"
+# PARAM_CLIENT_PASSWORD = "test"
+# PARAM_GUID = "00000000-0000-0000-0000-000000000000"
+# PARAM_BASE_URL = "https://testposws.param.com.tr/turkpos.ws/service_turkpos_prod.asmx?wsdl"
+
+# ── PayTR credentials (disabled - uncomment to switch provider) ──────────────
+# PAYTR_MERCHANT_ID = ""
+# PAYTR_MERCHANT_KEY = ""
+# PAYTR_MERCHANT_SALT = ""
+
+# ── E-posta (SMTP) ───────────────────────────────────────────────────────────
+SMTP_SENDER = "E-Market <siparis@ecommerceflaredev.web.tr>"
+SMTP_REPLY_TO = "siparis@ecommerceflaredev.web.tr"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "ecommerce-d1-staging"
+database_id = "b22222ad-c1ef-4626-8dd4-9781c88ecbef"
+migrations_dir = "migrations"
+
+[[r2_buckets]]
+binding = "IMAGES_BUCKET"
+bucket_name = "ecommerce-r2-staging"
+preview_bucket_name = "ecommerce-r2-staging"
+
+[[send_email]]
+name = "EMAIL"
+
+[triggers]
+crons = [ "0 2 * * *" ] # Everyday at 02:00 AM UTC
+
+# ========================================================
+# ⚙️ Cloudflare Environments Configuration
+# ========================================================
+
+# 🧪 Staging (Deployed from 'test' branch)
+[env.staging]
+name = "e-commerce-cloudflare-staging"
+route = "api.ecommerceflaredev.web.tr/*"
+
+[env.staging.vars]
+NODE_ENV = "staging"
+CORS_ORIGIN = "*"
+CLIENT_URL = "https://ecommerceflaredev.web.tr"
+API_URL = "https://api.ecommerceflaredev.web.tr"
+ORDER_NOTIFICATION_EMAIL = "siparis@ecommerceflaredev.web.tr"
+CDN_URL = "https://cdn.ecommerceflaredev.web.tr"
+GOOGLE_MERCHANT_TOKEN = "test-token"
+ADMIN_JWT_SECRET = "secure-admin-token-secret-12345"
+
+# ── Active Payment Provider ───────────────────────────────────────────────────
+PAYMENT_PROVIDER = "iyzico"
+
+# ── iyzico credentials ────────────────────────────────────────────────────────
+# Secrets: wrangler secret put IYZICO_API_KEY --env staging
+#          wrangler secret put IYZICO_SECRET_KEY --env staging
+IYZICO_BASE_URL = "https://sandbox-api.iyzipay.com"
+
+# ── Param POS (disabled) ──────────────────────────────────────────────────────
+# PARAM_CLIENT_CODE = ""
+# PARAM_CLIENT_USERNAME = ""
+# PARAM_CLIENT_PASSWORD = ""
+# PARAM_GUID = ""
+# PARAM_BASE_URL = "https://posws.param.com.tr/turkpos.ws/service_turkpos_prod.asmx?wsdl"
+
+# ── PayTR (disabled) ──────────────────────────────────────────────────────────
+# PAYTR_MERCHANT_ID = ""
+# PAYTR_MERCHANT_KEY = ""
+# PAYTR_MERCHANT_SALT = ""
+
+# ── E-posta (SMTP) ────────────────────────────────────────────────────────────
+SMTP_SENDER = "E-Market <siparis@ecommerceflaredev.web.tr>"
+SMTP_REPLY_TO = "siparis@ecommerceflaredev.web.tr"
+
+[[env.staging.d1_databases]]
+binding = "DB"
+database_name = "ecommerce-d1-staging"
+database_id = "b22222ad-c1ef-4626-8dd4-9781c88ecbef"
+migrations_dir = "migrations"
+
+[[env.staging.r2_buckets]]
+binding = "IMAGES_BUCKET"
+bucket_name = "ecommerce-r2-staging"
+preview_bucket_name = "ecommerce-r2-staging"
+
+[[env.staging.send_email]]
+name = "EMAIL"
+
+# 🚀 Production environment removed — staging-only deployment
+# [env.production] section removed as non-staging D1/R2 resources were deleted.
+# Only [env.staging] is active for test branch CI/CD deploys.

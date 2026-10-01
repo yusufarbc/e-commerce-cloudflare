@@ -32,6 +32,11 @@ tools:
   actionlint: 1.7.12
   trufflehog: 3.97.9
 
+images:
+  osv_scanner: ghcr.io/google/osv-scanner:v2.6.0@sha256:afd838850ac1a0fcc15ff4a041dc9ba11123c3f0d2666217a5f0fcf9222b55fa
+  gitleaks: ghcr.io/gitleaks/gitleaks:v8.30.1@sha256:c00b6bd0aeb3071cbcb79009cb16a60dd9e0a7c60e2be9ab65d25e6bc8abbb7f
+  conftest: openpolicyagent/conftest:v0.70.1@sha256:82f23e0e1f3faf2f3798f4b1974676c1aed96b05c6656ec6820435c31867c532
+
 rule_sources:
   semgrep_rules:
     repository: semgrep/semgrep-rules

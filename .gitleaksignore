@@ -1,0 +1,11 @@
+# Historical findings only (files removed in 0f9d1ef), reviewed 2026-09-30:
+# - Param POS vendor sample JWT for dev.param.com.tr, expired 2021-06
+# - documentation placeholders (sk_live_abc123, curl examples) in deleted .agents/ skills
+575feac306639a19c2969ffc6eef581db96c2993:PARAM-API-Kullanim-Ornekleri/AssetAPI-PHP/Main.php:jwt:7
+e30f8d5f66748a18fa950c78c0f8fab8e1c722e8:.agents/skills/cloudflare/references/argo-smart-routing/README.md:curl-auth-header:13
+e30f8d5f66748a18fa950c78c0f8fab8e1c722e8:.agents/skills/cloudflare/references/argo-smart-routing/api.md:curl-auth-header:27
+e30f8d5f66748a18fa950c78c0f8fab8e1c722e8:.agents/skills/cloudflare/references/argo-smart-routing/api.md:curl-auth-header:84
+e30f8d5f66748a18fa950c78c0f8fab8e1c722e8:.agents/skills/cloudflare/references/bindings/patterns.md:generic-api-key:82
+e30f8d5f66748a18fa950c78c0f8fab8e1c722e8:.agents/skills/cloudflare/references/bindings/patterns.md:generic-api-key:182
+e30f8d5f66748a18fa950c78c0f8fab8e1c722e8:.agents/skills/cloudflare/references/pipelines/api.md:curl-auth-header:113
+e30f8d5f66748a18fa950c78c0f8fab8e1c722e8:.agents/skills/workers-best-practices/references/rules.md:generic-api-key:82
