@@ -1,0 +1,250 @@
+[
+  {
+    "pair": "C008",
+    "dir": "C008-r2-key-sqli",
+    "kind": "sql",
+    "event": "r2",
+    "flow": "key_split",
+    "route": "/api/v1/corpus/c008/run",
+    "webhookRoute": "/api/v1/corpus/c008/webhooks/partner",
+    "attack": {
+      "key": "orders/nope' OR '1'='1.json"
+    },
+    "allowed": null,
+    "files": {
+      "ctrl": "ctrl_express_sqlite",
+      "express": "http_express",
+      "hono": "http_hono",
+      "event": "event_r2"
+    }
+  },
+  {
+    "pair": "C009",
+    "dir": "C009-cron-ssrf",
+    "kind": "ssrf",
+    "event": "cron",
+    "flow": "direct",
+    "route": "/api/v1/corpus/c009/run",
+    "webhookRoute": "/api/v1/corpus/c009/webhooks/partner",
+    "attack": {
+      "callbackUrl": "http://169.254.169.254/latest/meta-data/"
+    },
+    "allowed": {
+      "callbackUrl": "https://hooks.partner.example/notify"
+    },
+    "files": {
+      "ctrl": "ctrl_express_nodefetch",
+      "express": "http_express",
+      "hono": "http_hono",
+      "event": "event_cron"
+    }
+  },
+  {
+    "pair": "C010",
+    "dir": "C010-r2-key-ssrf",
+    "kind": "ssrf",
+    "event": "r2",
+    "flow": "key_decode",
+    "route": "/api/v1/corpus/c010/run",
+    "webhookRoute": "/api/v1/corpus/c010/webhooks/partner",
+    "attack": {
+      "key": "callbacks/http%3A%2F%2F169.254.169.254%2Flatest%2Fmeta-data%2F"
+    },
+    "allowed": {
+      "key": "callbacks/https%3A%2F%2Fhooks.partner.example%2Fnotify"
+    },
+    "files": {
+      "ctrl": "ctrl_express_nodefetch",
+      "express": "http_express",
+      "hono": "http_hono",
+      "event": "event_r2"
+    }
+  },
+  {
+    "pair": "C011",
+    "dir": "C011-queue-helper-sqli",
+    "kind": "sql",
+    "event": "queue",
+    "flow": "helper_sql",
+    "route": "/api/v1/corpus/c011/run",
+    "webhookRoute": "/api/v1/corpus/c011/webhooks/partner",
+    "attack": {
+      "sku": "nope' OR '1'='1"
+    },
+    "allowed": null,
+    "files": {
+      "ctrl": "ctrl_express_sqlite",
+      "express": "http_express",
+      "hono": "http_hono",
+      "event": "event_queue"
+    }
+  },
+  {
+    "pair": "C012",
+    "dir": "C012-webhook-spread-sqli",
+    "kind": "sql",
+    "event": "webhook",
+    "flow": "spread_sql",
+    "route": "/api/v1/corpus/c012/run",
+    "webhookRoute": "/api/v1/corpus/c012/webhooks/partner",
+    "attack": {
+      "sku": "nope' OR '1'='1"
+    },
+    "allowed": null,
+    "files": {
+      "ctrl": "ctrl_express_sqlite",
+      "express": "http_express",
+      "hono": "http_hono",
+      "event": "event_webhook"
+    }
+  },
+  {
+    "pair": "C013",
+    "dir": "C013-cron-map-sqli",
+    "kind": "sql",
+    "event": "cron",
+    "flow": "map_chain",
+    "route": "/api/v1/corpus/c013/run",
+    "webhookRoute": "/api/v1/corpus/c013/webhooks/partner",
+    "attack": {
+      "sku": "nope' OR '1'='1"
+    },
+    "allowed": null,
+    "files": {
+      "ctrl": "ctrl_express_sqlite",
+      "express": "http_express",
+      "hono": "http_hono",
+      "event": "event_cron"
+    }
+  },
+  {
+    "pair": "C014",
+    "dir": "C014-queue-optchain-sqli",
+    "kind": "sql",
+    "event": "queue",
+    "flow": "optional_chain",
+    "route": "/api/v1/corpus/c014/run",
+    "webhookRoute": "/api/v1/corpus/c014/webhooks/partner",
+    "attack": {
+      "order": {
+        "item": {
+          "sku": "nope' OR '1'='1"
+        }
+      }
+    },
+    "allowed": null,
+    "files": {
+      "ctrl": "ctrl_express_sqlite",
+      "express": "http_express",
+      "hono": "http_hono",
+      "event": "event_queue"
+    }
+  },
+  {
+    "pair": "C015",
+    "dir": "C015-queue-base-ssrf",
+    "kind": "ssrf",
+    "event": "queue",
+    "flow": "concat_base",
+    "route": "/api/v1/corpus/c015/run",
+    "webhookRoute": "/api/v1/corpus/c015/webhooks/partner",
+    "attack": {
+      "base": "http://169.254.169.254"
+    },
+    "allowed": {
+      "base": "https://hooks.partner.example"
+    },
+    "files": {
+      "ctrl": "ctrl_express_nodefetch",
+      "express": "http_express",
+      "hono": "http_hono",
+      "event": "event_queue"
+    }
+  },
+  {
+    "pair": "C016",
+    "dir": "C016-webhook-spread-ssrf",
+    "kind": "ssrf",
+    "event": "webhook",
+    "flow": "spread_ssrf",
+    "route": "/api/v1/corpus/c016/run",
+    "webhookRoute": "/api/v1/corpus/c016/webhooks/partner",
+    "attack": {
+      "callbackUrl": "http://169.254.169.254/latest/meta-data/"
+    },
+    "allowed": {
+      "callbackUrl": "https://hooks.partner.example/notify"
+    },
+    "files": {
+      "ctrl": "ctrl_express_nodefetch",
+      "express": "http_express",
+      "hono": "http_hono",
+      "event": "event_webhook"
+    }
+  },
+  {
+    "pair": "C017",
+    "dir": "C017-queue-host-ssrf",
+    "kind": "ssrf",
+    "event": "queue",
+    "flow": "template_host",
+    "route": "/api/v1/corpus/c017/run",
+    "webhookRoute": "/api/v1/corpus/c017/webhooks/partner",
+    "attack": {
+      "host": "169.254.169.254"
+    },
+    "allowed": {
+      "host": "hooks.partner.example"
+    },
+    "files": {
+      "ctrl": "ctrl_express_nodefetch",
+      "express": "http_express",
+      "hono": "http_hono",
+      "event": "event_queue"
+    }
+  },
+  {
+    "pair": "C018",
+    "dir": "C018-webhook-helper-ssrf",
+    "kind": "ssrf",
+    "event": "webhook",
+    "flow": "helper_ssrf",
+    "route": "/api/v1/corpus/c018/run",
+    "webhookRoute": "/api/v1/corpus/c018/webhooks/partner",
+    "attack": {
+      "callbackUrl": "http://169.254.169.254/latest/meta-data/"
+    },
+    "allowed": {
+      "callbackUrl": "https://hooks.partner.example/notify"
+    },
+    "files": {
+      "ctrl": "ctrl_express_nodefetch",
+      "express": "http_express",
+      "hono": "http_hono",
+      "event": "event_webhook"
+    }
+  },
+  {
+    "pair": "C019",
+    "dir": "C019-cron-urlobj-ssrf",
+    "kind": "ssrf",
+    "event": "cron",
+    "flow": "url_object",
+    "route": "/api/v1/corpus/c019/run",
+    "webhookRoute": "/api/v1/corpus/c019/webhooks/partner",
+    "attack": {
+      "origin": "http://169.254.169.254",
+      "path": "/latest/meta-data/"
+    },
+    "allowed": {
+      "origin": "https://hooks.partner.example",
+      "path": "/notify"
+    },
+    "files": {
+      "ctrl": "ctrl_express_nodefetch",
+      "express": "http_express",
+      "hono": "http_hono",
+      "event": "event_cron"
+    }
+  }
+]
