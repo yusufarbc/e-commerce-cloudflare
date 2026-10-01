@@ -25,7 +25,9 @@ in Default SAST Gates for Event-Driven Serverless Edge Applications*
     (Express) koluna göre daha düşüktür.
   - **H2b (framework blindness):** Hono HTTP kolunda recall, Express koluna göre
     daha düşüktür.
-  - Birincil metrik: çift düzeyinde tespit farkı (event − Express).
+  - Birincil metrik: çift düzeyinde tespit farkı (Hono − event). Ayrıntılar,
+    kalibrasyon kolu (`ctrl`) ve sink modeli hipotezi (H1)
+    `protocol/preregistration.md` içinde.
 - **RQ3:** Platforma duyarlı özel kurallar, held-out sette recall'u precision'ı
   bozmadan artırıyor mu?
 - **RQ4:** Kapıların CI süresine ek yükü nedir?
@@ -41,10 +43,14 @@ in Default SAST Gates for Event-Driven Serverless Edge Applications*
 - [x] Organik vakalar `research/organic-snapshot-v1` etiketiyle donduruldu ve
   `corpus/organic/` altına O001–O005 olarak alındı; uygulamada düzeltildi.
 - [x] Ürün pipeline'ı (`devsecops-pipeline.yml`) korpusu taramıyor.
-- [ ] Express pozitif kontrol kolu yok (zorunlu).
-- [ ] Protokol dondurulmadı (M0).
-- [ ] `baseline` ve `default+custom` profilleri henüz koşmadı.
-- [ ] Analiz betikleri yok.
+- [x] Üç profil pilot-03'te koştu (`protocol/pilot-notes.md`).
+- [x] C001 dört kola taşındı: `ctrl` (Express + better-sqlite3), `express`,
+  `hono`, `event`.
+- [x] Analiz iskeleti (`analysis/`: groundtruth, normalize, match, stats,
+  score) ve 17 birim testi; `research-checks.yml` CI'da çalıştırıyor.
+- [ ] Preregistration taslak (v0.9); danışman onayı ve `protocol-v1` etiketi
+  bekliyor.
+- [ ] Dört kollu C001 ile pilot henüz koşmadı.
 
 ## Aşamalar ve takvim
 
@@ -90,13 +96,13 @@ in Default SAST Gates for Event-Driven Serverless Edge Applications*
 
 ### M1 — Korpus
 
-- Yapı: `corpus/cases/Cxxx-<cwe>-<slug>/{http_express,http_hono,event_<type>}_{vuln,fixed}.js`.
-  Her çiftte 6 dosya olur. C001 bu adlandırmaya taşınır ve Express ikizi
-  eklenir.
+- Yapı: `corpus/cases/Cxxx-<cwe>-<slug>/{ctrl_express_<lib>,http_express,http_hono,event_<type>}_{vuln,fixed}.js`.
+  Her çiftte 8 dosya olur (C001 tamamlandı).
 - Sink ve iş mantığı bayt düzeyinde aynıdır; ikizler yalnızca adapter
   satırında farklılaşır. Adım sayısı eşitlenemezse `complexity` kovaryatı olur.
-- `ground_truth.csv` yeni sütunları: `arm`, `event_source`, `complexity`,
-  `ts_types`. Şema kontrolü `analysis/check_ground_truth.py` ile yapılır.
+- `ground_truth.csv` yeni sütunları: `arm`, `complexity`, `ts_types` (event
+  kaynağı `source_type` sütununda). Şema kontrolü:
+  `python -m analysis.groundtruth`.
 - CWE × kaynak hedefi:
 
   | CWE | Sink | Event kaynakları |
@@ -121,10 +127,11 @@ in Default SAST Gates for Event-Driven Serverless Edge Applications*
 
 - 3 profil × 1 koşu. Pilot kapısı: kararlı çıktı üretmeyen araç kapsamdan
   çıkarılır ve bu karar kayda geçer.
-- `analysis/` (Python + `uv`): `normalize.py` (SARIF/JSON → `findings.csv`,
-  `cwe_map.csv`), `match.py`, `stats.py`, `make_tables.py`, `fetch.ps1`.
-- `pytest`: doğru eşleşme, ±3 sınırı, fixed dosyada FP, yanlış CWE, yinelenen
-  bulgu.
+- `analysis/` yalnızca Python standart kütüphanesiyle: `groundtruth.py`,
+  `normalize.py`, `match.py`, `stats.py`, `score.py` (yapıldı); kalanlar
+  `make_tables.py`, `fetch.ps1`, Cochran's Q ve GLMM.
+- `unittest` (yapıldı): doğru eşleşme, ±3 sınırı, fixed dosyada FP, yanlış CWE,
+  yinelenen bulgu, SARIF ayrıştırma, McNemar/Wilson.
 
 **Tamamlanma ölçütü:** temiz checkout ve indirilmiş artifact'lerle tüm tablolar
 tek komutla üretiliyor.
