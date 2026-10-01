@@ -39,6 +39,16 @@ describe('CORS', () => {
     });
 });
 
+describe('security headers', () => {
+    it('sets HSTS, nosniff and frame protection, and allows cross-origin script loading', async () => {
+        const res = await call('/api/v1/health');
+        expect(res.headers.get('Strict-Transport-Security')).toContain('max-age=');
+        expect(res.headers.get('X-Content-Type-Options')).toBe('nosniff');
+        expect(res.headers.get('X-Frame-Options')).toBe('SAMEORIGIN');
+        expect(res.headers.get('Cross-Origin-Resource-Policy')).toBe('cross-origin');
+    });
+});
+
 describe('removed endpoints', () => {
     it('no longer serves /api/v1/debug-db', async () => {
         expect((await call('/api/v1/debug-db')).status).toBe(404);
