@@ -4,7 +4,7 @@ on:
   pull_request:
     paths:
       - .github/workflows/**
-      - research/serverless-sast-study/protocol/tool-versions.yml
+      - research/protocol/tool-versions.yml
   workflow_dispatch:
 
 permissions:

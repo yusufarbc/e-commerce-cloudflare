@@ -5,7 +5,7 @@ useDefault = true
 
 [[allowlists]]
 description = "Research corpus: intentionally vulnerable snapshots, scanned by security-research.yml"
-paths = ['''^research/serverless-sast-study/corpus/''']
+paths = ['''^research/corpus/''']
 
 [[allowlists]]
 description = "Burned demo JWT secret: public in history before research/organic-snapshot-v1, no longer used by the app"
