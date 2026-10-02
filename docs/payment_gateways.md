@@ -1,226 +1,189 @@
-# Payment Gateway Configuration Guide
+# Ödeme Sağlayıcıları Yapılandırma Rehberi
 
-E-Market supports three of Turkey's leading payment gateways through a single, decoupled interface. Switching between gateways requires changing only one environment variable — no code changes needed.
+E-Market, Türkiye'nin önde gelen üç ödeme sağlayıcısını tek ve bağımsız bir
+arayüz üzerinden destekler. Sağlayıcı değiştirmek için tek bir ortam
+değişkenini değiştirmek yeterlidir; kod değişikliği gerekmez.
 
 ---
 
-## Supported Gateways
+## Desteklenen sağlayıcılar
 
-| Gateway | Protocol | 3D Secure | Sandbox |
+| Sağlayıcı | Protokol | 3D Secure | Test ortamı |
 | :--- | :--- | :--- | :--- |
-| **Param POS** | SOAP/XML over HTTPS | ✅ Yes | ✅ Yes |
-| **iyzico** | REST/JSON | ✅ Yes | ✅ Yes |
-| **PayTR** | HMAC-signed POST | ✅ Yes | ✅ Yes |
+| **Param POS** | HTTPS üzerinden SOAP/XML | ✅ | ✅ |
+| **iyzico** | REST/JSON | ✅ | ✅ (sandbox) |
+| **PayTR** | HMAC imzalı doğrudan POST | ✅ | ✅ (mağaza panelinden test modu) |
 
 ---
 
-## Selecting a Gateway
+## Sağlayıcı seçimi
 
-Set the `PAYMENT_PROVIDER` variable in `api/.env` (local) or in your Wrangler environment:
+Sağlayıcı, `api/wrangler.toml` içinde ortam bazında `PAYMENT_PROVIDER`
+değişkeniyle seçilir:
 
-```env
-# Options: param | iyzico | paytr
-PAYMENT_PROVIDER=param
+```toml
+[env.staging.vars]
+PAYMENT_PROVIDER = "iyzico"   # param | iyzico | paytr
 ```
 
-The API's payment service layer reads this variable at runtime and routes all checkout requests to the appropriate gateway implementation. No rebuilds or deployments are required when switching between test gateways during development.
+API'nin ödeme servisi (`api/src/services/paymentService.js`) bu değeri her
+istekte okur ve işlemi ilgili sağlayıcı servisine yönlendirir (Strategy
+deseni). Değişiklik bir sonraki deploy ile devreye girer.
+
+**Sırlar `vars` içine yazılmaz.** API anahtarları, parolalar ve merchant
+key'ler `wrangler secret put <AD> --env <ortam>` ile verilir. CI'daki Conftest
+politikası `vars` içinde sır benzeri bir anahtar görürse deploy'u durdurur.
+Yerel geliştirmede bu değerler `api/.dev.vars` dosyasına yazılır (gitignore'da;
+şablon: `api/.dev.vars.example`).
+
+Geri dönüş (callback) adresleri `API_URL` değişkeninden türetilir
+(ör. `https://staging-api.ecommerceflaredev.web.tr`).
+
+---
+
+## Ödeme akışı
+
+Üç sağlayıcı da aynı akışı izler:
+
+```text
+Vitrin                      Worker API                    Sağlayıcı / Banka
+  |-- POST /api/v1/orders/checkout -->|                          |
+  |<-- { orderId } (sipariş bekliyor) |                          |
+  |-- POST /api/v1/payment/initiate ->|                          |
+  |                                   |-- 3D Secure başlatma --->|
+  |                                   |<-- 3D Secure HTML -------|
+  |<-- { ucdHtml } -------------------|                          |
+  |-- HTML sayfaya yazılır, tarayıcı bankanın 3D sayfasına gider |
+  |-- Kullanıcı SMS şifresini bankanın sayfasında girer -------->|
+  |                                   |<-- POST /api/v1/payment/callback/<sağlayıcı>
+  |                                   |-- sonucu doğrular, siparişi günceller
+  |<-- vitrindeki sonuç sayfasına yönlendirme                    |
+```
+
+Sipariş gövdesi API'de zod şemasıyla doğrulanır
+(`api/src/validators/orderValidator.js`). Kart bilgisi yalnızca ödeme
+başlatma isteğinde sağlayıcıya iletilir ve veritabanına yazılmaz. Sağlayıcıya
+giden XML ve HTML içindeki müşteri verileri `escapeMarkup` ile kaçışlanır.
+
+| Sağlayıcı | Callback yolu |
+| --- | --- |
+| Param POS | `/api/v1/payment/callback/param/success`, `/api/v1/payment/callback/param/error` |
+| iyzico | `/api/v1/payment/callback/iyzico` |
+| PayTR | `/api/v1/payment/callback/paytr` |
+
+Taksit seçenekleri `GET /api/v1/payment/installments` ile alınır (destekleyen
+sağlayıcılarda).
 
 ---
 
 ## 1. Param POS (SOAP)
 
-Param POS is a widely-used Turkish payment infrastructure provider. E-Market integrates via their SOAP/XML web service.
+Param POS yaygın kullanılan bir Türk ödeme altyapısıdır. E-Market, Param'ın
+SOAP/XML web servisiyle harici bir SOAP kütüphanesi kullanmadan doğrudan
+`fetch` ile konuşur (`api/src/services/paramService.js`).
 
-### Environment Variables
+| Değişken | Tür | Açıklama |
+| --- | --- | --- |
+| `PAYMENT_PROVIDER` | var | `param` |
+| `PARAM_BASE_URL` | var | Test: `https://testposws.param.com.tr/turkpos.ws/service_turkpos_prod.asmx?wsdl`, canlı: `https://posws.param.com.tr/turkpos.ws/service_turkpos_prod.asmx?wsdl` |
+| `PARAM_CLIENT_CODE` | secret | Müşteri kodu |
+| `PARAM_CLIENT_USERNAME` | secret | Kullanıcı adı |
+| `PARAM_CLIENT_PASSWORD` | secret | Parola |
+| `PARAM_GUID` | secret | Üye işyeri GUID'i |
 
-```env
-PAYMENT_PROVIDER=param
+3D Secure başlatma `TP_WMD_UCD` çağrısıyla yapılır. Param, sonucu başarı veya
+hata callback'ine POST eder.
 
-PARAM_CLIENT_CODE=your-client-code
-PARAM_CLIENT_USERNAME=your-username
-PARAM_CLIENT_PASSWORD=your-password
-PARAM_GUID=your-guid-string
-
-# Test endpoint (use for local development):
-PARAM_BASE_URL=https://testposws.param.com.tr/turkpos.ws/service_turkpos_prod.asmx?wsdl
-
-# Production endpoint:
-# PARAM_BASE_URL=https://posws.param.com.tr/turkpos.ws/service_turkpos_prod.asmx?wsdl
-```
-
-### 3D Secure Flow
-
-```
-Storefront         Worker API          Param POS
-    |                   |                   |
-    |-- POST /checkout ->|                   |
-    |                   |-- SOAP TP_WMD_UCD→|
-    |                   |<-- 3D Redirect URL|
-    |<-- { redirect_url}|                   |
-    |-- Browser redirected to Param's 3D page
-    |-- User enters card OTP on bank page   |
-    |-- Param redirects back → /payment/callback
-    |-- POST /payment/callback (Param result)
-    |                   |-- SOAP TP_KK_Verify →|
-    |                   |<-- Success/Fail result |
-    |<-- Order confirmed|                   |
-```
-
-### Getting Credentials
-
-Contact [Param](https://www.param.com.tr) for a merchant account. Test credentials for the sandbox environment are provided during the application process.
+**Kimlik bilgileri:** Üye işyeri hesabı için [Param](https://www.param.com.tr)
+ile iletişime geçin. Test ortamı bilgileri başvuru sürecinde verilir.
 
 ---
 
 ## 2. iyzico (REST)
 
-iyzico is a popular Turkish fintech payment provider with a clean REST API.
+iyzico, REST API sunan yaygın bir Türk ödeme kuruluşudur
+(`api/src/services/iyzicoService.js`).
 
-### Environment Variables
+| Değişken | Tür | Açıklama |
+| --- | --- | --- |
+| `PAYMENT_PROVIDER` | var | `iyzico` |
+| `IYZICO_BASE_URL` | var | Sandbox: `https://sandbox-api.iyzipay.com`, canlı: `https://api.iyzipay.com` |
+| `IYZICO_API_KEY` | secret | API anahtarı |
+| `IYZICO_SECRET_KEY` | secret | Gizli anahtar |
 
-```env
-PAYMENT_PROVIDER=iyzico
+iyzico 3D Secure başlatma çağrısı bir HTML içeriği döner; vitrin bunu sayfaya
+yazar. iyzico sonucu `/api/v1/payment/callback/iyzico` adresine POST eder ve
+API ödemeyi iyzico'da doğrular.
 
-IYZICO_API_KEY=your-api-key
-IYZICO_SECRET_KEY=your-secret-key
-
-# Sandbox endpoint:
-IYZICO_BASE_URL=https://sandbox-api.iyzipay.com
-
-# Production endpoint:
-# IYZICO_BASE_URL=https://api.iyzipay.com
-```
-
-### 3D Secure Flow
-
-```
-Storefront         Worker API          iyzico API
-    |                   |                   |
-    |-- POST /checkout ->|                   |
-    |                   |-- POST /payment/3dsecure/initialize →
-    |                   |<-- { htmlContent (3D form) }
-    |<-- Render iframe  |                   |
-    |-- User enters OTP in iyzico's 3D iframe
-    |-- iyzico POSTs result to /payment/callback
-    |-- POST /payment/callback (iyzico token)
-    |                   |-- POST /payment/3dsecure/auth →
-    |                   |<-- Success/Fail result
-    |<-- Order confirmed|                   |
-```
-
-### Getting Credentials
-
-Register at [iyzico.com](https://www.iyzico.com) → Merchant Panel → API Keys. Sandbox credentials are provided immediately upon registration.
+**Kimlik bilgileri:** [iyzico.com](https://www.iyzico.com) → Üye İşyeri Paneli
+→ API Anahtarları. Sandbox bilgileri kayıttan hemen sonra verilir.
 
 ---
 
-## 3. PayTR (HMAC Direct Post)
+## 3. PayTR (HMAC imzalı doğrudan POST)
 
-PayTR uses an HMAC-signed token system for secure payment processing. It's widely used for high-volume Turkish e-commerce.
+PayTR, HMAC imzalı token sistemiyle çalışır
+(`api/src/services/paytrService.js`).
 
-### Environment Variables
-
-```env
-PAYMENT_PROVIDER=paytr
-
-PAYTR_MERCHANT_ID=your-merchant-id
-PAYTR_MERCHANT_KEY=your-merchant-key
-PAYTR_MERCHANT_SALT=your-merchant-salt
-
-PAYTR_BASE_URL=https://www.paytr.com
-```
+| Değişken | Tür | Açıklama |
+| --- | --- | --- |
+| `PAYMENT_PROVIDER` | var | `paytr` |
+| `PAYTR_BASE_URL` | var | `https://www.paytr.com` |
+| `PAYTR_MERCHANT_ID` | secret | Mağaza numarası |
+| `PAYTR_MERCHANT_KEY` | secret | Mağaza parolası (HMAC anahtarı) |
+| `PAYTR_MERCHANT_SALT` | secret | Mağaza gizli anahtarı (salt) |
 
 > [!NOTE]
-> PayTR does not offer a traditional sandbox environment. Use their test card numbers on the live integration in test mode (activated in the merchant panel).
+> PayTR ayrı bir sandbox ortamı sunmaz. Mağaza panelinden test modunu açıp
+> PayTR'nin test kartlarıyla canlı entegrasyon üzerinde deneme yapın.
 
-### 3D Secure Flow
+API, sipariş bilgileri ve mağaza bilgilerinden PayTR'nin istediği
+`paytr_token` değerini HMAC-SHA256 ile üretir ve tarayıcıyı PayTR'nin
+`/odeme` adresine otomatik gönderilen bir formla yönlendirir. Sonuç
+`/api/v1/payment/callback/paytr` adresine gelir.
 
-```
-Storefront         Worker API          PayTR
-    |                   |                   |
-    |-- POST /checkout ->|                   |
-    |                   |-- POST /odeme/api/v1 (HMAC token) →
-    |                   |<-- { token }
-    |<-- Render PayTR iframe (token)
-    |-- User enters card in PayTR's iframe
-    |-- PayTR POSTs result to /payment/callback
-    |-- POST /payment/callback (PayTR result)
-    |<-- Order confirmed|                   |
-```
-
-### HMAC Token Generation
-
-The API generates the required HMAC hash from order details and merchant credentials:
-
-```javascript
-import crypto from 'node:crypto';
-
-function generatePayTRToken(env, orderData) {
-  const hashStr = [
-    env.PAYTR_MERCHANT_ID,
-    orderData.email,
-    orderData.paymentAmount, // in kuruş (1 TL = 100 kuruş)
-    orderData.merchantOid,
-    orderData.okUrl,
-    orderData.failUrl,
-    orderData.currency,
-    orderData.testMode,
-    env.PAYTR_MERCHANT_SALT
-  ].join('');
-
-  return crypto
-    .createHmac('sha256', env.PAYTR_MERCHANT_KEY)
-    .update(hashStr)
-    .digest('base64');
-}
-```
-
-### Getting Credentials
-
-Register at [paytr.com](https://www.paytr.com) → Merchant application → After approval, credentials are provided in the merchant panel.
+**Kimlik bilgileri:** [paytr.com](https://www.paytr.com) üzerinden mağaza
+başvurusu yapın. Onaydan sonra bilgiler mağaza panelinde yer alır.
 
 ---
 
-## Local Development
+## Yerel geliştirme
 
-For local development, use test/sandbox credentials. Never use production credentials locally.
+Yerelde yalnızca test/sandbox bilgilerini kullanın; canlı bilgileri asla
+yerelde kullanmayın. `api/.dev.vars` örneği:
 
-In `api/.env`:
 ```env
-NODE_ENV=development
-PAYMENT_PROVIDER=param  # or iyzico or paytr
-
-# Use test credentials from your gateway's developer portal
+IYZICO_API_KEY=sandbox-anahtariniz
+IYZICO_SECRET_KEY=sandbox-gizli-anahtariniz
 ```
 
 > [!IMPORTANT]
-> The `api/.env` file is listed in `.gitignore` and must never be committed to version control. Use `api/.env.example` as a template (it contains only placeholder values).
+> `api/.dev.vars` gitignore'dadır ve asla commit edilmemelidir. Pre-commit
+> hook'undaki Gitleaks taraması ve CI'daki Gitleaks kapısı yanlışlıkla eklenen
+> sırları yakalar.
 
 ---
 
-## Adding a New Gateway
+## Yeni sağlayıcı ekleme
 
-The payment service is implemented using a **Strategy Pattern**. To add a new gateway (e.g., `stripe`):
+Ödeme servisi **Strategy deseni** ile yazılmıştır. Yeni bir sağlayıcı (ör.
+`stripe`) eklemek için:
 
-1. Create `api/src/services/payment/stripeService.js` implementing the common interface:
-   - `initiatePayment(orderData, env)` → returns `{ redirectUrl }` or `{ htmlContent }`
-   - `verifyPayment(callbackData, env)` → returns `{ success, transactionId }`
-
-2. Register the strategy in `api/src/services/paymentService.js`:
-   ```javascript
-   const GATEWAYS = {
-     param:  () => import('./payment/paramService.js'),
-     iyzico: () => import('./payment/iyzicoService.js'),
-     paytr:  () => import('./payment/paytrService.js'),
-     stripe: () => import('./payment/stripeService.js'), // new
-   };
-   ```
-
-3. Set `PAYMENT_PROVIDER=stripe` in your environment.
+1. `api/src/services/stripeService.js` dosyasını, `paymentService.js`
+   içindeki `IPaymentProvider` sözleşmesine uyacak şekilde oluşturun:
+   - `startPaymentProcess(order, basketItems, buyer)` → en az
+     `{ status, ucdHtml }`
+   - `verifyCallback(callbackData)` → `{ status, paymentId, siparisNumarasi, ... }`
+   - `cancelPayment(paymentId, reason)` → `{ status, message }`
+   - `getInstallmentOptions(bin, amount)` → desteklenmiyorsa boş dizi
+2. Servisi `api/src/container.js` içinde oluşturup `PaymentService`'e verin
+   ve `paymentService.js` içindeki sağlayıcı seçimine yeni bir dal ekleyin.
+3. Callback yolunu `api/src/routes/paymentRoutes.js` dosyasına ekleyin.
+4. Ortamda `PAYMENT_PROVIDER = "stripe"` yapın.
 
 ---
 
-## Related Documentation
+## İlgili dokümanlar
 
-- [KVKK Compliance](kvkk_compliance.md) — how payment PII is handled at the edge
-- [Cloudflare Deployment Guide](cloudflare_deployment_guide.md) — setting secrets in Wrangler
+- [KVKK Uyumu](kvkk_compliance.md): kişisel verilerin uçta nasıl işlendiği
+- [Cloudflare Deploy Rehberi](cloudflare_deployment_guide.md): ortamlar ve sırlar

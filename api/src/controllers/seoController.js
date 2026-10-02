@@ -19,7 +19,7 @@ export class SeoController {
    * Includes all active products and categories
    */
   getSitemap = asyncHandler(async (req, res, next) => {
-    const baseUrl = config.clientUrl || 'https://e-market.com';
+    const baseUrl = config.clientUrl || 'https://ecommerceflaredev.web.tr';
     const today = new Date().toISOString().split('T')[0];
 
     // Fetch active products through productRepository

@@ -29,7 +29,7 @@ export const SEO = ({
     const { settings } = useSettings();
     const siteTitle = settings.siteAdi || 'E-Market';
     const fullTitle = title ? `${title} | ${siteTitle}` : siteTitle;
-    const siteUrl = typeof window !== 'undefined' ? window.location.origin : 'https://e-market.com';
+    const siteUrl = typeof window !== 'undefined' ? window.location.origin : 'https://ecommerceflaredev.web.tr';
     const defaultDescription = settings.hakkindaMetni || 'E-Market - En uygun fiyatlarla binlerce ürün kapınızda. Hızlı kargo ve güvenli ödeme.';
     const defaultKeywords = 'e-ticaret, online alışveriş, uygun fiyatlı ürünler, hızlı teslimat, güvenli ödeme';
 

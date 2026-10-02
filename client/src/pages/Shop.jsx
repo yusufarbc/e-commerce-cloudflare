@@ -149,7 +149,7 @@ export function Shop() {
                 description={seoDescription}
                 keywords={activeCategory ? `${activeCategory.ad}, alışveriş, e-market` : undefined}
                 structuredData={structuredData}
-                canonical={activeCategory ? `https://e-market.com/magaza?kategori=${activeCategory.slug || activeCategory.id}` : 'https://e-market.com/magaza'}
+                canonical={activeCategory ? `https://ecommerceflaredev.web.tr/magaza?kategori=${activeCategory.slug || activeCategory.id}` : 'https://ecommerceflaredev.web.tr/magaza'}
             />
 
             <div className="container mx-auto px-4 py-6 md:py-10">

@@ -70,7 +70,7 @@ export const ShippingInfo = () => {
             <ol className="list-decimal pl-5 mb-4 space-y-1">
                 <li>Kargo görevlisine <strong>tutanak</strong> tutturun</li>
                 <li>Hasarlı ürünün fotoğrafını çekin</li>
-                <li>24 saat içinde <strong>bilgi@e-market.com</strong> adresine bildirimde bulunun</li>
+                <li>24 saat içinde <strong>bilgi@ecommerceflaredev.web.tr</strong> adresine bildirimde bulunun</li>
             </ol>
         </div>
     );

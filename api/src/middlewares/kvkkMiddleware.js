@@ -75,8 +75,10 @@ export function sanitizeObject(obj) {
         for (const [key, val] of Object.entries(obj)) {
             // Sensitive key names matched directly
             const lowerKey = key.toLowerCase();
+            // Values under these keys are personal data whatever their format (a name or an
+            // address does not match the e-mail/phone patterns), so they are replaced whole.
             if (['email', 'eposta', 'phone', 'telefon', 'fullname', 'adsoyad', 'address', 'adres', 'tc', 'tckn'].includes(lowerKey)) {
-                cleaned[key] = typeof val === 'string' ? sanitizeString(val) : '[MASKED]';
+                cleaned[key] = '[MASKED]';
             } else {
                 cleaned[key] = sanitizeObject(val);
             }

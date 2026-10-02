@@ -22,7 +22,7 @@ export function PreliminaryInfoForm() {
                         <li><strong>Adres:</strong> Karaköy Mah. Rıhtım Cd. No: 15 Beyoğlu / İstanbul</li>
                         <li><strong>Mersis No:</strong> 0123456789012345</li>
                         <li><strong>Telefon:</strong> 0850 000 00 00</li>
-                        <li><strong>E-posta:</strong> bilgi@e-market.com</li>
+                        <li><strong>E-posta:</strong> bilgi@ecommerceflaredev.web.tr</li>
                     </ul>
                 </section>
 

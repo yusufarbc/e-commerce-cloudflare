@@ -51,7 +51,7 @@ const faqs = [
             },
             {
                 q: "İade işlemi nasıl yapılır?",
-                a: "İade talebinizi bilgi@e-market.com adresine e-posta ile bildirin. Talebiniz onaylandıktan sonra iade kargo kodunuzu alacaksınız. Ürünü orijinal ambalajında, kullanılmamış ve hasarsız olarak kargolayın."
+                a: "İade talebinizi bilgi@ecommerceflaredev.web.tr adresine e-posta ile bildirin. Talebiniz onaylandıktan sonra iade kargo kodunuzu alacaksınız. Ürünü orijinal ambalajında, kullanılmamış ve hasarsız olarak kargolayın."
             },
             {
                 q: "İade kargo ücreti kime aittir?",
@@ -72,11 +72,11 @@ const faqs = [
             },
             {
                 q: "Stokta olmayan ürünü sipariş edebilir miyim?",
-                a: "Stokta olmayan ürünler için bilgi@e-market.com adresinden bizimle iletişime geçebilirsiniz. Ürünün tedarik edilebilirliğini kontrol edip size dönüş yaparız."
+                a: "Stokta olmayan ürünler için bilgi@ecommerceflaredev.web.tr adresinden bizimle iletişime geçebilirsiniz. Ürünün tedarik edilebilirliğini kontrol edip size dönüş yaparız."
             },
             {
                 q: "Toplu sipariş için indirim var mı?",
-                a: "Toplu alımlarınız için özel fiyat teklifleri sunuyoruz. Detaylı bilgi için bilgi@e-market.com adresinden bize ulaşabilirsiniz."
+                a: "Toplu alımlarınız için özel fiyat teklifleri sunuyoruz. Detaylı bilgi için bilgi@ecommerceflaredev.web.tr adresinden bize ulaşabilirsiniz."
             }
         ]
     },
@@ -175,7 +175,7 @@ export function FAQPage() {
                             WhatsApp İletişim
                         </a>
                         <a
-                            href="mailto:bilgi@e-market.com"
+                            href="mailto:bilgi@ecommerceflaredev.web.tr"
                             className="inline-flex items-center gap-2 bg-corporate-black text-indigo-600 px-6 py-3 rounded-lg font-bold hover:bg-gray-800 transition-all hover:scale-105"
                         >
                             E-posta Gönder

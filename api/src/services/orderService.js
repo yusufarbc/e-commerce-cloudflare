@@ -74,7 +74,7 @@ export class OrderService {
 
         // Safeguard: Block orders exceeding 100kg limits
         if (totalWeight > 100) {
-            throw new Error('Order total weight exceeds 100kg limit. Please contact satis@e-market.com or our WhatsApp line for bulk cargo shipping pricing.');
+            throw new Error('Order total weight exceeds 100kg limit. Please contact satis@ecommerceflaredev.web.tr or our WhatsApp line for bulk cargo shipping pricing.');
         }
 
         // Shipping Fee Logic (Dynamic Multi-Policy Pricing)

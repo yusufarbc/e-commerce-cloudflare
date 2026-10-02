@@ -6,7 +6,7 @@ import { useSettings } from '../context/SettingsContext';
 export function ContactPage() {
     const { settings } = useSettings();
     const siteTitle = settings.siteAdi || 'E-Market';
-    const email = settings.iletisimEmail || 'bilgi@e-market.com';
+    const email = settings.iletisimEmail || 'bilgi@ecommerceflaredev.web.tr';
     const rawNum = settings.whatsappNumarasi || '';
     const cleanNum = rawNum.replace(/[^0-9]/g, '') || '908500000000';
     const phone = settings.telefon || '0850 000 00 00';

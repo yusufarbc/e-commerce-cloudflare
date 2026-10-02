@@ -1,203 +1,226 @@
-# KVKK & GDPR Compliance Guide
+# KVKK ve GDPR Uyum Rehberi
 
-E-Market is designed from the ground up for Turkish data privacy law (**KVKK** — Kişisel Verilerin Korunması Kanunu, Law No. 6698) and is architecturally aligned with **GDPR** (EU General Data Protection Regulation). This document explains the compliance measures built into the platform and what you need to configure before going live.
+E-Market, 6698 sayılı Kişisel Verilerin Korunması Kanunu'na (**KVKK**) göre
+tasarlanmıştır ve mimari olarak AB Genel Veri Koruma Tüzüğü (**GDPR**) ile de
+uyumludur. Bu doküman platforma yerleşik uyum önlemlerini ve yayına almadan
+önce yapılandırmanız gerekenleri anlatır.
 
 > [!IMPORTANT]
-> This document is for technical guidance only and does not constitute legal advice. Consult a qualified Turkish data protection lawyer (avukat) for a formal KVKK compliance assessment of your deployment.
+> Bu doküman yalnızca teknik rehberlik içindir ve hukuki görüş değildir.
+> Kurulumunuzun resmi KVKK uyum değerlendirmesi için veri koruma alanında
+> uzman bir avukata danışın.
 
 ---
 
-## KVKK Key Principles
+## KVKK'nın temel ilkeleri
 
-KVKK, modeled closely on GDPR, establishes the following requirements relevant to e-commerce operations:
+KVKK, GDPR'a çok benzer biçimde e-ticaret için şu gereklilikleri getirir:
 
-| Requirement | E-Market Implementation |
+| Gereklilik | E-Market'teki karşılığı |
 | :--- | :--- |
-| **Lawful basis for processing** | Consent collected via CMP before any analytics tracking |
-| **Data minimization** | IP masking, PII scrubbing at the edge |
-| **Purpose limitation** | Analytics data used only for stated purposes |
-| **Storage limitation** | Database backups encrypted and access-controlled |
-| **Right to erasure** | Admin panel soft-delete for customer records |
-| **Right to access** | Customer order history available via storefront |
-| **Data breach notification** | Handled via KVKK Kurulu notification within 72 hours |
+| **İşlemenin hukuki dayanağı** | Analitik izlemeden önce CMP ile açık rıza alınır |
+| **Veri minimizasyonu** | Uçta (Worker'da) IP maskeleme ve kişisel veri temizleme |
+| **Amaçla sınırlılık** | Analitik veriler yalnızca belirtilen amaçlarla kullanılır |
+| **Saklama sınırlaması** | Veritabanı yedekleri şifreli ve erişimi kısıtlıdır |
+| **Silme hakkı** | Kişisel alanlar admin panelinden silinir veya anonimleştirilir |
+| **Erişim hakkı** | Müşteri siparişini takip bağlantısıyla görüntüler |
+| **İhlal bildirimi** | Kişisel Verileri Koruma Kurulu'na 72 saat içinde bildirim |
 
 ---
 
-## 1. Edge-Level Privacy Protections
+## 1. Uç düzeyde gizlilik korumaları
 
-These are active by default in the Cloudflare Worker and require no configuration.
+Bu korumalar Cloudflare Worker'ında varsayılan olarak açıktır ve yapılandırma
+gerektirmez. Kod: `api/src/middlewares/kvkkMiddleware.js`; tüm
+`/api/v1/metrics/*` yollarında (GTM ve GA4 proxy'si) çalışır.
 
-### IP Address Masking
+### IP adresi maskeleme
 
-Before any analytics event is forwarded to Google Analytics 4, the client's IP address is anonymized:
+Bir analitik olayı Google Analytics 4'e iletilmeden önce istemcinin IP adresi
+anonimleştirilir ve GA4'e `uip` parametresiyle yalnızca maskeli adres gider:
 
-```javascript
-// api/src/routes/metricsRoutes.js
-const rawIp = c.req.header('cf-connecting-ip') || '';
-// Remove last octet: 192.168.1.123 → 192.168.1.0
-const maskedIp = rawIp.replace(/\.\d+$/, '.0');
-```
+- IPv4: son oktet sıfırlanır (`203.0.113.42` → `203.0.113.0`).
+- IPv6: arayüz kimliğini taşıyan son 64 bit atılır
+  (`2001:db8:85a3:8d3:1319:8a2e:370:7348` → `2001:db8:85a3:8d3::`).
 
-This prevents the full IP address (which is classified as personal data under KVKK) from being transmitted to third-party analytics services.
+Böylece KVKK'ya göre kişisel veri sayılan tam IP adresi üçüncü taraf analitik
+servislerine aktarılmaz.
 
-### PII Scrubbing
+### Kişisel veri temizleme
 
-All analytics event payloads are scanned and cleaned before forwarding:
+Analitik isteklerin sorgu dizgesi ve gövdesi iletilmeden önce temizlenir:
 
-```javascript
-// api/src/utils/piiScrubber.js
-const EMAIL_PATTERN = /[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}/g;
-const PHONE_PATTERN = /(\+?90|0)?[\s\-]?\(?\d{3}\)?[\s\-]?\d{3}[\s\-]?\d{2}[\s\-]?\d{2}/g;
-const TC_ID_PATTERN = /\b\d{11}\b/g; // Turkish National ID (TC Kimlik No)
+- Serbest metindeki e-posta adresleri `[MASKED_EMAIL]`, Türk cep telefonu
+  numaraları `[MASKED_PHONE]` ile değiştirilir.
+- Anahtar adı kişisel veri belirten alanların (`email`, `eposta`, `phone`,
+  `telefon`, `fullname`, `adsoyad`, `address`, `adres`, `tc`, `tckn`) değeri,
+  biçiminden bağımsız olarak tamamen `[MASKED]` yapılır. Ad veya adres gibi
+  e-posta/telefon kalıbına uymayan veriler de böylece dışarı çıkmaz.
 
-function scrubPII(payload) {
-  const str = JSON.stringify(payload);
-  return JSON.parse(
-    str
-      .replace(EMAIL_PATTERN, '[email]')
-      .replace(PHONE_PATTERN, '[phone]')
-      .replace(TC_ID_PATTERN, '[tc-id]')
-  );
-}
-```
-
-The scrubber removes:
-- Email addresses
-- Turkish phone numbers (GSM and landline formats)
-- Turkish National ID numbers (TC Kimlik Numarası)
+Bu davranış `kvkkMiddleware.test.js` ile test edilir.
 
 ---
 
-## 2. Cookie Consent Management (CMP)
+## 2. Çerez rıza yönetimi (CMP)
 
-### Legal Requirement
+### Yasal gereklilik
 
-Under KVKK and Turkey's secondary legislation on electronic communications, **any cookie that is not strictly necessary** for the service to function requires the user's explicit, informed, and freely given consent before being set.
+KVKK ve elektronik haberleşmeye ilişkin ikincil mevzuat uyarınca, hizmetin
+çalışması için **zorunlu olmayan her çerez**, yerleştirilmeden önce
+kullanıcının açık, bilgilendirilmiş ve özgür iradesiyle verdiği rızayı
+gerektirir. Buna şunlar dahildir:
 
-This includes:
-- Analytics cookies (GA4, GTM)
-- Marketing/advertising cookies (Google Ads, Facebook Pixel)
-- Preference cookies (language, currency)
+- Analitik çerezleri (GA4, GTM)
+- Pazarlama ve reklam çerezleri (Google Ads, Facebook Pixel)
+- Tercih çerezleri (dil, para birimi)
 
-### Google Consent Mode v2 Integration
+### Google Consent Mode v2 entegrasyonu
 
-E-Market integrates with **Google Consent Mode v2** to ensure that analytics tags respect user consent choices. See the [Google Services Integration Guide](google_services.md) for the full technical implementation.
+E-Market, analitik etiketlerinin kullanıcının rıza tercihine uyması için
+**Google Consent Mode v2** ile entegre çalışır. Teknik ayrıntılar için
+[Google Servisleri Entegrasyon Rehberi](google_services.md)'ne bakın.
 
-**Key behavior:**
-- **Before consent is given**: GTM sends anonymous, cookieless pings only. No user-identifying data is stored.
-- **After "Accept"**: Full GA4 measurement with behavioral data.
-- **After "Reject"**: GA4 uses **Behavioral Modeling** to estimate metrics without personal data. Your reports remain statistically useful without violating the law.
+**Temel davranış:**
 
-### CMP Options
+- **Rıza verilmeden önce:** GTM yalnızca anonim, çerezsiz ping'ler gönderir;
+  kullanıcıyı tanımlayan veri saklanmaz.
+- **"Kabul et" sonrası:** Davranış verisiyle tam GA4 ölçümü yapılır.
+- **"Reddet" sonrası:** GA4, kişisel veri olmadan metrikleri tahmin etmek
+  için **davranışsal modelleme** kullanır; raporlar yasayı ihlal etmeden
+  istatistiksel olarak kullanılabilir kalır.
 
-| Option | Notes |
+### CMP seçenekleri
+
+| Seçenek | Notlar |
 | :--- | :--- |
-| **Cookiebot** (cookiebot.com) | KVKK-ready, auto-scans cookies, pre-built Consent Mode v2 integration |
-| **Iubenda** (iubenda.com) | Has Turkish-language policy templates |
-| **Custom CMP** | Build your own using the pattern in [Google Services docs](google_services.md#6-kvkk-compliant-consent-mode-v2) |
+| **Cookiebot** (cookiebot.com) | KVKK'ya hazır, çerezleri otomatik tarar, hazır Consent Mode v2 entegrasyonu |
+| **Iubenda** (iubenda.com) | Türkçe politika şablonları sunar |
+| **Özel CMP** | [Google servisleri dokümanındaki](google_services.md#6-kvkk-uyumlu-consent-mode-v2) kalıpla kendiniz geliştirin |
 
-The CMP widget must be displayed on the **first page load** before any analytics code fires. The `consent default` GTM command (set to `denied`) ensures this ordering is enforced.
+CMP penceresi, herhangi bir analitik kodu çalışmadan önce **ilk sayfa
+yüklemesinde** gösterilmelidir. `denied` olarak ayarlanan `consent default`
+GTM komutu bu sıralamayı garanti eder.
 
 ---
 
-## 3. Data Stored in D1 Database
+## 3. D1 veritabanında saklanan veriler
 
-### What Is Stored
+### Saklananlar
 
-The D1 database contains:
-
-| Table | Personal Data | Retention |
+| Tablo | Kişisel veri | Saklama |
 | :--- | :--- | :--- |
-| `siparisler` (Orders) | Name, email, shipping address, phone | Until fulfillment + legal retention period |
-| `iadeler` (Returns) | Same as orders | Until return processed + legal period |
-| Customer session (JWT) | Email (in signed token) | 24-hour token expiry |
+| `siparisler` | Ad, soyad, e-posta, telefon, teslimat adresi | Sipariş tamamlanana kadar + yasal saklama süresi |
+| `iade_talepleri` | Siparişe bağlı iade bilgileri ve gerekçe | İade sonuçlanana kadar + yasal saklama süresi |
+| `islem_gecmisi` | Sipariş durum değişiklikleri | Siparişle birlikte |
 
-### What Is NOT Stored
+Müşteri hesabı yoktur. Müşteri siparişine, sipariş sırasında üretilen rastgele
+bir takip token'ı (`crypto.randomUUID()`) içeren bağlantıyla erişir.
 
-- Payment card numbers (handled entirely by gateway — Param, iyzico, or PayTR)
-- Passwords (admin-only auth, no customer accounts in v1)
-- Raw IP addresses (masked before any storage)
+### Saklanmayanlar
 
-### Right to Erasure (KVKK Art. 7)
+- Kart numaraları: Kart bilgisi yalnızca ödeme isteği sırasında ödeme
+  sağlayıcısına (Param, iyzico veya PayTR) iletilir ve veritabanına yazılmaz.
+- Parolalar: Müşteri hesabı yoktur; admin girişi Cloudflare Access ile yapılır.
+- Ham IP adresleri: Analitiğe yalnızca maskeli IP gider.
 
-When a customer requests deletion of their data:
+### Silme hakkı (KVKK md. 7)
 
-1. Locate the order records in the Admin Dashboard
-2. Delete or anonymize the personal fields (name, email, phone, address)
-3. Retain the order totals and product IDs for accounting/legal purposes (Turkish Commercial Law requires 10-year financial record retention)
+Bir müşteri verilerinin silinmesini istediğinde:
+
+1. Admin panelinde ilgili sipariş kayıtlarını bulun.
+2. Kişisel alanları (ad, e-posta, telefon, adres) silin veya anonimleştirin.
+3. Muhasebe ve yasal yükümlülükler için sipariş tutarlarını ve ürün
+   kimliklerini saklayın (Türk Ticaret Kanunu ve Vergi Usul Kanunu ticari
+   defter ve belgelerin 10 yıl saklanmasını öngörür).
 
 ---
 
-## 4. KVKK Aydınlatma Metni (Privacy Notice)
+## 4. KVKK Aydınlatma Metni
 
-KVKK requires a **Aydınlatma Metni** (Data Subject Information Notice) to be clearly accessible on your storefront. This document must include:
+KVKK, vitrinde açıkça erişilebilir bir **Aydınlatma Metni** bulunmasını
+zorunlu kılar. Vitrindeki taslak metin `client/public/legal/kvkk.html`
+dosyasındadır. Metin şunları içermelidir:
 
-1. **Data Controller Identity** — your company name, address, and KEP (registered e-mail) address
-2. **Purpose of Processing** — e.g., order fulfillment, shipping, customer service
-3. **Legal Basis** — contractual necessity (Art. 5/2-c), legal obligation (Art. 5/2-ç), or consent (Art. 5/1)
-4. **Data Recipients** — Cloudflare (hosting), payment gateways, email provider (Brevo), Google (analytics — only if consent given)
-5. **Retention Periods** — per table/purpose
-6. **Data Subject Rights** — right to access, correct, erase, object, restrict, and portability
+1. **Veri sorumlusunun kimliği:** şirket unvanı, adresi ve KEP adresi
+2. **İşleme amaçları:** ör. sipariş, kargo, müşteri hizmetleri
+3. **Hukuki sebepler:** sözleşmenin ifası (md. 5/2-c), hukuki yükümlülük
+   (md. 5/2-ç) veya açık rıza (md. 5/1)
+4. **Aktarılan taraflar:** Cloudflare (barındırma ve e-posta gönderimi), ödeme
+   sağlayıcıları, Google (analitik; yalnızca rıza varsa)
+5. **Saklama süreleri:** tablo ve amaç bazında
+6. **İlgili kişinin hakları:** erişim, düzeltme, silme, itiraz, kısıtlama ve
+   taşınabilirlik
 
 > [!NOTE]
-> The KVKK Aydınlatma Metni must be written in **Turkish** as the storefront targets Turkish users. Include a link in the footer of every page and at the checkout form.
+> Bağlantıyı her sayfanın alt bilgisine ve ödeme formuna ekleyin.
 
 ---
 
-## 5. Data Processor Agreements (Veri İşleyen Sözleşmesi)
+## 5. Veri işleyen sözleşmeleri
 
-As the operator of this e-commerce system, you are the **Veri Sorumlusu** (Data Controller). Your service providers are **Veri İşleyenler** (Data Processors). You must have a Data Processing Agreement (DPA) with each:
+Bu e-ticaret sistemini işleten olarak **veri sorumlusu** sizsiniz; hizmet
+sağlayıcılarınız **veri işleyendir**. Her biriyle bir veri işleme sözleşmesi
+(DPA) yapmanız gerekir:
 
-| Processor | DPA Location |
+| Veri işleyen | DPA |
 | :--- | :--- |
 | **Cloudflare** | [cloudflare.com/gdpr/](https://www.cloudflare.com/gdpr/) |
 | **Google** (Analytics/Workspace) | [cloud.google.com/terms/data-processing-addendum](https://cloud.google.com/terms/data-processing-addendum) |
-| **Brevo** (Email) | [brevo.com/legal/termsofuse/](https://www.brevo.com/legal/termsofuse/) |
-| **iyzico** / **Param** / **PayTR** | Request directly from the gateway's legal/compliance team |
+| **iyzico** / **Param** / **PayTR** | Doğrudan sağlayıcının hukuk/uyum ekibinden isteyin |
 
 ---
 
-## 6. International Data Transfers
+## 6. Yurt dışına veri aktarımı
 
-KVKK Art. 9 restricts transfers of personal data to countries without "adequate protection" unless:
-- Explicit consent is obtained, or
-- A data transfer contract is in place
+KVKK md. 9, kişisel verilerin yurt dışına aktarımını kanunda belirtilen
+şartlara bağlar (yeterlilik kararı, uygun güvenceler veya istisnai haller).
+Aktarım yapılan her hizmet için hangi şartın sağlandığını kayıt altına alın.
 
-**Cloudflare**: Uses European data centers when configured. Enable **Regional Services** in Cloudflare to restrict processing to Turkey/EU only. See Cloudflare's [Data Localization Suite](https://www.cloudflare.com/data-localization/).
+**Cloudflare:** İşlemeyi belirli bölgelerle sınırlamak için Cloudflare'in
+[Data Localization Suite](https://www.cloudflare.com/data-localization/)
+özelliklerine (ör. Regional Services) bakın.
 
-**Google Analytics**: GA4 data is processed in Google's data centers (primarily US/EU). The `consent default: denied` approach means no personal data leaves Turkey until the user consents.
+**Google Analytics:** GA4 verileri Google'ın veri merkezlerinde (ağırlıklı
+olarak ABD/AB) işlenir. `consent default: denied` yaklaşımında kullanıcı rıza
+verene kadar kişisel veri gönderilmez.
 
 ---
 
-## 7. Security Measures
+## 7. Güvenlik önlemleri
 
-KVKK Art. 12 requires appropriate technical and administrative security measures:
+KVKK md. 12 uygun teknik ve idari güvenlik önlemlerini zorunlu kılar:
 
-| Measure | Status |
+| Önlem | Durum |
 | :--- | :--- |
-| HTTPS (TLS) for all traffic | ✅ Enforced by Cloudflare |
-| JWT authentication for admin | ✅ Implemented (24-hour expiry) |
-| Encrypted database backups | ✅ GPG symmetric encryption |
-| SAST security scanning in CI | ✅ Semgrep (ReDoS, injection) |
-| Dependency vulnerability scanning | ✅ Dependabot + GitHub CodeQL |
-| No plaintext secrets in code | ✅ All secrets via Wrangler secrets / GitHub Secrets |
+| Tüm trafikte HTTPS (TLS) ve HSTS | ✅ Cloudflare ve güvenlik başlıklarıyla |
+| Admin kimlik doğrulaması | ✅ Cloudflare Access; API, Access JWT'sini doğrular |
+| İstek sınırlama | ✅ Workers Rate Limiting (IP başına) |
+| Şifreli veritabanı yedekleri | ✅ GPG ile AES-256 simetrik şifreleme |
+| CI'da güvenlik taramaları | ✅ Gitleaks, OSV-Scanner, Semgrep, Opengrep, CodeQL, Trivy, Conftest, OWASP ZAP |
+| Bağımlılık güncellemeleri | ✅ Dependabot |
+| Kodda düz metin sır yok | ✅ Sırlar Wrangler secret'ları ve GitHub Secrets ile; Gitleaks ve Conftest denetler |
+
+Ayrıntılar: [DevSecOps hattı](devsecops_pipeline.md).
 
 ---
 
-## 8. KVKK Breach Notification
+## 8. Veri ihlali bildirimi
 
-If a personal data breach occurs:
+Bir kişisel veri ihlali olursa:
 
-1. **Contain** the breach (revoke compromised tokens, isolate affected systems)
-2. **Assess** the scope — what data was accessed, how many individuals affected
-3. **Notify KVKK Kurulu** within **72 hours** via the official reporting system at [kvkk.gov.tr](https://www.kvkk.gov.tr)
-4. **Notify affected individuals** if the breach poses a high risk to their rights
-5. Document the breach in an internal incident register
+1. İhlali **sınırlayın** (ele geçirilen token'ları iptal edin, etkilenen
+   sistemleri izole edin).
+2. Kapsamı **değerlendirin**: hangi verilere erişildi, kaç kişi etkilendi.
+3. **Kurul'a 72 saat içinde** [kvkk.gov.tr](https://www.kvkk.gov.tr)
+   üzerindeki resmi bildirim sistemiyle bildirin.
+4. İhlal ilgili kişilerin haklarını ciddi biçimde etkiliyorsa **ilgili
+   kişileri bilgilendirin**.
+5. İhlali kurum içi olay kaydına işleyin.
 
 ---
 
-## Related Documentation
+## İlgili dokümanlar
 
-- [Google Services Integration](google_services.md) — Consent Mode v2 implementation
-- [Google Drive Backup](google_drive_backup.md) — encrypted backup security
-- [Payment Gateway Guide](payment_gateways.md) — PCI-DSS compliance via gateways
+- [Google Servisleri Entegrasyonu](google_services.md): Consent Mode v2 uygulaması
+- [Google Drive Yedeği](google_drive_backup.md): şifreli yedek güvenliği
+- [Ödeme Sağlayıcıları Rehberi](payment_gateways.md): kart verisinin sağlayıcıda kalması

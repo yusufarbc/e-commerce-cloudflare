@@ -47,6 +47,9 @@ out/
 *.sql.gz
 *.sql.gz.gpg
 d1-backup*
+# Schema migrations and sample data are source code, not dumps
+!api/migrations/*.sql
+!api/prisma/seed.sql
 
 # ── Test Coverage ─────────────────────────────────────────────
 coverage/
@@ -108,9 +111,6 @@ PayTR Direkt API/
 *.db
 *.sqlite
 
-# Python
-__pycache__/
-*.py[cod]
 
 # ── Local tool binaries (scripts/install-gitleaks.sh) ─────────
 .tools/

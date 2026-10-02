@@ -1,0 +1,45 @@
+rules:
+  - id: cloudflare.r2.tainted-key
+    message: Untrusted Workers request or event data controls an R2 object key without a prefix check.
+    severity: ERROR
+    languages:
+      - javascript
+      - typescript
+    mode: taint
+    metadata:
+      cwe:
+        - "CWE-22: Improper Limitation of a Pathname to a Restricted Directory"
+      category: security
+      technology:
+        - cloudflare-workers
+      confidence: MEDIUM
+      references:
+        - https://developers.cloudflare.com/workers/
+    pattern-sources:
+      # Hono request data (Workers HTTP routes and incoming webhooks)
+      - pattern: $C.req.query(...)
+      - pattern: $C.req.param(...)
+      - pattern: $C.req.json()
+      - pattern: $C.req.text()
+      - pattern: $C.req.header(...)
+      # Cloudflare Queues and R2 event notifications: message bodies of a batch
+      - patterns:
+          - pattern-inside: |
+              for (const $MSG of $BATCH.messages) { ... }
+          - pattern: $MSG.body
+      # Cron/scheduled jobs: documents pulled from an external feed
+      - pattern: (await fetch(...)).json()
+    pattern-sinks:
+      - patterns:
+          - pattern-either:
+              - pattern: $BUCKET.get($KEY, ...)
+              - pattern: $BUCKET.put($KEY, ...)
+              - pattern: $BUCKET.delete($KEY)
+              - pattern: $BUCKET.head($KEY)
+          - metavariable-regex:
+              metavariable: $BUCKET
+              regex: (?i).*(bucket|r2|storage|assets|images).*
+          - pattern-not-inside: |
+              if (!$TARGET.startsWith($PREFIX)) return $RET;
+              ...
+          - focus-metavariable: $KEY

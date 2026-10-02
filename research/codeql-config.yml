@@ -1,7 +1,0 @@
-name: serverless-sast-study
-
-queries:
-  - uses: security-extended
-
-paths:
-  - research/corpus
