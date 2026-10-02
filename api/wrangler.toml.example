@@ -41,6 +41,8 @@ IYZICO_BASE_URL = "https://sandbox-api.iyzipay.com"
 #           run: wrangler secret put SMTP_PASS
 SMTP_SENDER = "E-Market <siparis@example.com>"
 SMTP_REPLY_TO = "bilgi@example.com"
+# E-mail provider: "cloudflare" (send_email binding) or "resend" (secret: RESEND_API_KEY)
+EMAIL_PROVIDER = "cloudflare"
 
 [[d1_databases]]
 binding = "DB"
@@ -79,6 +81,8 @@ PAYMENT_PROVIDER = "iyzico"
 IYZICO_BASE_URL = "https://sandbox-api.iyzipay.com"
 SMTP_SENDER = "E-Market <siparis@example.com>"
 SMTP_REPLY_TO = "bilgi@example.com"
+# E-mail provider: "cloudflare" (send_email binding) or "resend" (secret: RESEND_API_KEY)
+EMAIL_PROVIDER = "cloudflare"
 
 [[env.staging.d1_databases]]
 binding = "DB"
@@ -110,6 +114,8 @@ PAYMENT_PROVIDER = "iyzico"
 IYZICO_BASE_URL = "https://api.iyzipay.com"
 SMTP_SENDER = "E-Market <siparis@example.com>"
 SMTP_REPLY_TO = "bilgi@example.com"
+# E-mail provider: "cloudflare" (send_email binding) or "resend" (secret: RESEND_API_KEY)
+EMAIL_PROVIDER = "cloudflare"
 
 [[env.production.d1_databases]]
 binding = "DB"
