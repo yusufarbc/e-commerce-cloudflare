@@ -1,10 +1,13 @@
-# Google Services Integration Guide
+# Google Servisleri Entegrasyon Rehberi
 
-This guide covers the complete technical integration of Google's data platform with E-Market's serverless Cloudflare architecture. The stack covers four interconnected services — **Google Tag Manager (GTM)**, **Google Analytics 4 (GA4)**, **Google Search Console (GSC)**, and **Google Merchant Center (GMC)** — all wired together in a first-party, KVKK-compliant data pipeline.
+Bu rehber Google'ın veri platformunun E-Market'in sunucusuz Cloudflare
+mimarisiyle nasıl birleştiğini anlatır. Kapsanan servisler: **Google Tag
+Manager (GTM)**, **Google Analytics 4 (GA4)**, **Google Search Console (GSC)**
+ve **Google Merchant Center (GMC)**.
 
 ---
 
-## Architecture Overview
+## Mimariye genel bakış
 
 ```mermaid
 graph TD
@@ -12,194 +15,114 @@ graph TD
     classDef google fill:#4285F4,stroke:#fff,color:#fff
     classDef browser fill:#1e293b,stroke:#475569,color:#e2e8f0
 
-    Browser["User Browser\nReact Storefront"]:::browser
-    Worker["Cloudflare Workers API\nsGTM Proxy + KVKK Filter"]:::cf
-    GA4["Google Analytics 4\nEvent Processing"]:::google
-    GTM["Google Tag Manager\nServer Container"]:::google
-    GMC["Google Merchant Center\nProduct Catalog"]:::google
-    GSC["Google Search Console\nIndex & Crawl"]:::google
-    BQ["BigQuery\nRaw Event Warehouse"]:::google
+    Browser["Kullanıcı tarayıcısı\nReact vitrin"]:::browser
+    Worker["Cloudflare Workers API\nGTM proxy + KVKK filtresi"]:::cf
+    GTM["Google Tag Manager\nWeb container"]:::google
+    GA4["Google Analytics 4"]:::google
+    GMC["Google Merchant Center"]:::google
+    GSC["Google Search Console"]:::google
 
     Browser -->|"dataLayer.push(event)"| Browser
-    Browser -->|"Load /api/v1/metrics/gtm.js"| Worker
-    Browser -->|"POST /api/v1/metrics/collect"| Worker
-    Worker -->|"IP Masked + PII Scrubbed"| GTM
-    GTM --> GA4
-    GA4 --> BQ
-    Worker -->|"GET /api/v1/catalog/google-feed"| GMC
-    Worker -->|"GET /sitemap.xml"| GSC
+    Browser -->|"GET /api/v1/metrics/gtm.js?id=GTM-..."| Worker
+    Worker -->|"gtm.js indirilir, collect adresi yeniden yazılır"| GTM
+    Browser -->|"GET/POST /api/v1/metrics/collect"| Worker
+    Worker -->|"IP maskeli, kişisel veri temizlenmiş"| GA4
+    GMC -->|"GET /api/v1/catalog/google-feed"| Worker
+    GSC -->|"GET /api/v1/sitemap.xml"| Worker
 ```
 
-The core principle is that **no analytics traffic goes directly from the browser to Google**. Everything routes through the Cloudflare Worker, which masks IPs and scrubs PII before forwarding — making the pipeline 100% first-party and KVKK-compliant.
+Temel ilke: **GA4 ölçüm trafiği tarayıcıdan doğrudan Google'a gitmez.** GTM
+betiği ve GA4 olayları Cloudflare Worker üzerinden geçer. Worker iletmeden
+önce IP adresini maskeler ve kişisel verileri temizler. Ayrıntılar:
+[KVKK Uyumu](kvkk_compliance.md).
 
 ---
 
-## 1. Server-Side Google Tag Manager (sGTM)
+## 1. Yapılandırma: kimlikler admin panelinden gelir
 
-### Why Server-Side?
+İzleme kimlikleri kodda veya `wrangler.toml` içinde değil, admin panelindeki
+**Sistem Ayarları** ekranında tutulur (`sistem_ayarlari` tablosu):
 
-Client-side GTM (loaded directly from `googletagmanager.com`) has two critical problems in modern web:
+| Ayar | Alan | Kullanım |
+| --- | --- | --- |
+| GTM container kimliği | `gtmContainerId` | `GTM-XXXXXXX`; doluysa vitrin GTM'i proxy üzerinden yükler |
+| GA4 ölçüm kimliği | `ga4MeasurementId` | `G-XXXXXXXXXX`; GTM içindeki GA4 etiketinde kullanılır |
+| Meta Pixel kimliği | `metaPixelId` | Doluysa Meta Pixel yüklenir |
+| Merchant feed token'ı | `googleMerchantToken` | Doluysa ürün feed'i yalnızca `?token=` ile açılır |
 
-| Problem | Impact |
+Vitrin, açılışta `GET /api/v1/settings` ile bu ayarları alır
+(`client/src/context/SettingsContext.jsx`) ve GTM ile Pixel'i başlatır.
+
+---
+
+## 2. GTM proxy'si
+
+### Neden proxy?
+
+| Sorun | Etki |
 | :--- | :--- |
-| AdBlock / uBlock Origin blocks `googletagmanager.com` | Up to 30–40% analytics data loss |
-| Apple ITP (Intelligent Tracking Prevention) | Cookie lifetime capped to 1–7 days |
-| Third-party cookie deprecation | Cross-session tracking breaks |
+| Reklam engelleyiciler `googletagmanager.com` adresini engeller | Analitik veri kaybı |
+| Tarayıcıların izleme önleme özellikleri (ör. Safari ITP) | Çerez ömrü kısalır |
+| IP adresi ve kişisel veri doğrudan Google'a gider | KVKK riski |
 
-**Server-Side GTM solves all three.** The GTM script is served from your own domain (`/api/v1/metrics/gtm.js`), so it appears first-party to browsers and ad blockers alike.
+GTM betiği API alan adından sunulduğu için birinci taraf olarak görünür ve
+GA4 istekleri Worker'dan geçerken temizlenebilir.
 
-### How It Works in E-Market
+### E-Market'te nasıl çalışır
 
-The Cloudflare Worker (`api/src/routes/metricsRoutes.js`) acts as a transparent proxy for both the GTM loader script and the GA4 event collector:
+Kod: `api/src/routes/metricsRoutes.js` (tüm yollarda `kvkkMiddleware` çalışır).
 
-**GTM Script Proxy** — serves the GTM JavaScript from your domain:
+1. **`GET /api/v1/metrics/gtm.js?id=GTM-XXXXXXX`**
+   - `id`, `^GTM-[A-Z0-9]{4,12}$` kalıbına uymuyorsa istek 400 ile reddedilir.
+   - Worker, `https://www.googletagmanager.com/gtm.js` adresinden container'ı
+     indirir. Adres sabittir; kimlik yalnızca kodlanmış bir sorgu parametresi
+     olarak eklenir (SSRF koruması).
+   - Betik içindeki `www.google-analytics.com/g/collect` adresleri
+     `<API>/api/v1/metrics/collect` olarak yeniden yazılır ve betik
+     `Cache-Control: public, max-age=3600` ile döner.
+2. **`GET` veya `POST /api/v1/metrics/collect`**
+   - Sorgu dizgesi ve gövde kişisel veriden temizlenir.
+   - İstek `https://www.google-analytics.com/g/collect` adresine iletilir;
+     `uip` parametresi maskeli IP olur.
 
-```javascript
-// GET /api/v1/metrics/gtm.js
-app.get('/gtm.js', async (c) => {
-  const GTM_ID = c.env.GTM_CONTAINER_ID; // e.g. "GTM-XXXXXXX"
-  const targetUrl = `https://www.googletagmanager.com/gtm.js?id=${GTM_ID}`;
+### Vitrin tarafı
 
-  const response = await fetch(targetUrl, {
-    headers: { 'User-Agent': 'Cloudflare-Worker-sGTM-Proxy/1.0' }
-  });
+`client/src/utils/analytics.js` içindeki `initGTM(gtmId)` fonksiyonu
+`dataLayer`'ı başlatır ve `<API>/api/v1/metrics/gtm.js?id=<gtmId>` betiğini
+sayfaya ekler. HTML'e elle GTM snippet'i eklemeye gerek yoktur.
 
-  return c.text(await response.text(), 200, {
-    'Content-Type': 'application/javascript',
-    'Cache-Control': 'public, max-age=3600'
-  });
-});
-```
-
-**Analytics Event Collector** — receives events, strips PII, and forwards to GA4:
-
-```javascript
-// POST /api/v1/metrics/collect
-app.post('/collect', async (c) => {
-  const payload = await c.req.json();
-
-  // KVKK: Mask client IP (last octet → 0)
-  const rawIp = c.req.header('cf-connecting-ip') || '';
-  const maskedIp = rawIp.replace(/\.\d+$/, '.0');
-
-  // KVKK: Strip PII from payload
-  const safePayload = scrubPII(payload);
-
-  // Forward sanitized event to GA4 Measurement Protocol
-  await fetch(`https://www.google-analytics.com/mp/collect?measurement_id=${c.env.GA4_MEASUREMENT_ID}&api_secret=${c.env.GA4_API_SECRET}`, {
-    method: 'POST',
-    headers: { 'X-Forwarded-For': maskedIp },
-    body: JSON.stringify(safePayload)
-  });
-
-  return c.json({ status: 'ok' });
-});
-```
-
-### Storefront GTM Integration
-
-In the React storefront (`client/src/index.html`), load GTM from your own Worker endpoint instead of Google's servers:
-
-```html
-<!-- In <head>: Load GTM from your own domain (first-party) -->
-<script>
-  (function(w,d,s,l,i){
-    w[l]=w[l]||[];
-    w[l].push({'gtm.start': new Date().getTime(), event:'gtm.js'});
-    var f=d.getElementsByTagName(s)[0],
-        j=d.createElement(s),
-        dl=l!='dataLayer'?'&l='+l:'';
-    j.async=true;
-    // 👇 Point to your Worker, NOT googletagmanager.com
-    j.src='/api/v1/metrics/gtm.js?id='+i+dl;
-    f.parentNode.insertBefore(j,f);
-  })(window,document,'script','dataLayer','GTM-XXXXXXX');
-</script>
-
-<!-- In <body>: No-script fallback -->
-<noscript>
-  <iframe src="/api/v1/metrics/ns.html?id=GTM-XXXXXXX"
-    height="0" width="0" style="display:none;visibility:hidden"></iframe>
-</noscript>
-```
+> [!WARNING]
+> Meta Pixel (`initFacebookPixel`) proxy'den geçmez; doğrudan
+> `connect.facebook.net` adresinden yüklenir ve kişisel veri temizliği
+> uygulanmaz. Yalnızca kullanıcı pazarlama çerezlerine rıza verdikten sonra
+> yüklenmelidir (bkz. bölüm 6).
 
 ---
 
-## 2. Data Layer (dataLayer) Event Schemas
+## 3. dataLayer olayları
 
-The storefront pushes structured events to `window.dataLayer`. These are the standard schemas for E-Market's Turkish e-commerce context (TRY currency).
+Vitrin, GA4 e-ticaret şemasına uygun olayları `window.dataLayer`'a gönderir
+(para birimi TRY). Yardımcı fonksiyonlar `client/src/utils/analytics.js`
+içindedir:
 
-### Product View
+| Olay | Fonksiyon | Tetiklendiği yer |
+| --- | --- | --- |
+| `view_item` | `trackViewItem(product)` | Ürün detay sayfası |
+| `add_to_cart` | `trackAddToCart(product, quantity, selectedColor)` | Sepete ekleme |
+| `begin_checkout` | `trackBeginCheckout(cartItems, totalValue)` | Ödeme sayfası |
+| `purchase` | `trackPurchase(transactionId, cartItems, totalValue, shippingFee)` | Ödeme başarılı sayfası |
 
-```javascript
-window.dataLayer = window.dataLayer || [];
-window.dataLayer.push({ ecommerce: null }); // Clear previous ecommerce data
-
-window.dataLayer.push({
-  event: 'view_item',
-  ecommerce: {
-    currency: 'TRY',
-    value: 1250.00,
-    items: [{
-      item_id: 'p1',
-      item_name: 'Kablosuz Oyuncu Kulaklığı',
-      item_category: 'Bilgisayar Çevre Birimleri',
-      item_brand: 'SoundMax',
-      price: 1250.00,
-      quantity: 1
-    }]
-  }
-});
-```
-
-### Add to Cart
-
-```javascript
-window.dataLayer.push({ ecommerce: null });
-window.dataLayer.push({
-  event: 'add_to_cart',
-  ecommerce: {
-    currency: 'TRY',
-    value: 1250.00,
-    items: [{
-      item_id: 'p1',
-      item_name: 'Kablosuz Oyuncu Kulaklığı',
-      item_category: 'Bilgisayar Çevre Birimleri',
-      price: 1250.00,
-      quantity: 1
-    }]
-  }
-});
-```
-
-### Begin Checkout
-
-```javascript
-window.dataLayer.push({ ecommerce: null });
-window.dataLayer.push({
-  event: 'begin_checkout',
-  ecommerce: {
-    currency: 'TRY',
-    value: 3100.00,
-    items: [
-      { item_id: 'p1', item_name: 'Kablosuz Oyuncu Kulaklığı', price: 1250.00, quantity: 1 },
-      { item_id: 'p2', item_name: 'Mekanik Klavye (RGB)', price: 1850.00, quantity: 1 }
-    ]
-  }
-});
-```
-
-### Purchase (Conversion)
+Her olaydan önce `{ ecommerce: null }` gönderilir; böylece önceki olayın
+verisi GTM'de yeni olaya karışmaz. Örnek `purchase` olayı:
 
 ```javascript
 window.dataLayer.push({ ecommerce: null });
 window.dataLayer.push({
   event: 'purchase',
   ecommerce: {
-    transaction_id: 'ORD-2026-99432', // Unique order ID from D1
+    transaction_id: 'SIP-2026-99432', // sipariş numarası
     value: 3100.00,
-    tax: 496.00,           // 18% VAT (KDV)
-    shipping: 0,           // Free shipping
+    shipping: 0,
     currency: 'TRY',
     items: [
       { item_id: 'p1', item_name: 'Kablosuz Oyuncu Kulaklığı', price: 1250.00, quantity: 1 },
@@ -209,35 +132,34 @@ window.dataLayer.push({
 });
 ```
 
-> [!TIP]
-> Always push `{ ecommerce: null }` before each ecommerce event to prevent data from previous pushes contaminating the current event in GTM.
+GTM'de bu olaylar için GA4 Event etiketleri oluşturun ve "Send Ecommerce data"
+seçeneğiyle `dataLayer`'dan okuyun.
 
 ---
 
-## 3. Google Analytics 4 (GA4)
+## 4. Google Analytics 4
 
-### Setup
+### Kurulum
 
-1. Go to [analytics.google.com](https://analytics.google.com) → Create a **GA4 Property**
-2. Under **Data Streams** → Add Web Stream → enter your storefront URL
-3. Copy the **Measurement ID** (`G-XXXXXXXXXX`) and **API Secret** (from Measurement Protocol)
-4. Add to your Worker secrets:
+1. [analytics.google.com](https://analytics.google.com) üzerinde bir **GA4
+   mülkü** oluşturun.
+2. **Data Streams** → **Add Web Stream** ile vitrin adresini ekleyin.
+3. **Measurement ID** değerini (`G-XXXXXXXXXX`) kopyalayın ve admin panelinde
+   `ga4MeasurementId` alanına girin.
+4. GTM container'ında bu kimlikle bir **Google Tag** oluşturup tüm sayfalarda
+   tetikleyin. Container'ı yayınlayın ve kimliğini admin panelinde
+   `gtmContainerId` alanına girin.
 
-```bash
-npx wrangler secret put GA4_MEASUREMENT_ID --env production
-npx wrangler secret put GA4_API_SECRET --env production
-```
+### BigQuery aktarımı
 
-### BigQuery Export (Free with Google Workspace)
+GA4, ham olay verisini BigQuery'ye aktarabilir (günlük aktarım ücretsizdir;
+BigQuery depolama ve sorgu ücretleri ayrıca geçerlidir).
 
-GA4 can stream raw event data to BigQuery in real time at no extra cost if you have Google Workspace Business Standard or higher.
+1. GA4 → **Admin** → **BigQuery Links** → **Link**.
+2. GCP projenizi seçin.
+3. **Daily** veya **Streaming** aktarımı seçin.
 
-**Setup:**
-1. In GA4 → **Admin** → **BigQuery Links** → Link
-2. Select your GCP project (create one at [console.cloud.google.com](https://console.cloud.google.com) if needed)
-3. Choose **Streaming export** for real-time data
-
-**Example SQL query** — abandoned cart analysis:
+**Örnek sorgu**, terk edilmiş sepet analizi:
 
 ```sql
 SELECT
@@ -251,244 +173,162 @@ HAVING purchased_at IS NULL AND added_to_cart_at IS NOT NULL
 ORDER BY added_to_cart_at DESC;
 ```
 
-### Predictive Metrics
+### Tahmine dayalı metrikler
 
-Once GA4 has accumulated ~1,000 purchasers and ~1,000 non-purchasers in the past 28 days, it automatically activates:
-- **Purchase Probability** — likelihood a user will purchase in the next 7 days
-- **Churn Probability** — likelihood a returning user will not return in the next 7 days
-- **Revenue Prediction** — expected revenue from a user in the next 28 days
+GA4, son 28 günde yeterli sayıda satın alan ve almayan kullanıcı biriktiğinde
+(Google'ın eşiği yaklaşık 1.000'er kullanıcıdır) şu metrikleri açar:
 
-These become available as **Audiences** you can use for Google Ads remarketing.
+- **Satın alma olasılığı:** kullanıcının 7 gün içinde satın alma ihtimali
+- **Kayıp olasılığı:** aktif kullanıcının 7 gün içinde dönmeme ihtimali
+- **Gelir tahmini:** kullanıcıdan 28 gün içinde beklenen gelir
+
+Bu metrikler Google Ads yeniden pazarlaması için **kitle** olarak
+kullanılabilir.
 
 ---
 
-## 4. Google Search Console (GSC)
+## 5. Google Search Console ve yapısal veri
 
-### Setup
+### Sitemap
 
-1. Go to [search.google.com/search-console](https://search.google.com/search-console)
-2. Add your storefront domain as a property (use the **Domain** option for full coverage)
-3. Verify ownership via DNS TXT record (add through your DNS provider)
-4. Submit your sitemap:
+Sitemap, API Worker'ı tarafından D1'deki ürünlerden dinamik olarak üretilir
+(`api/src/controllers/seoController.js`):
 
-```
-https://your-storefront-domain.com/sitemap.xml
-```
+- `https://api.ecommerceflaredev.web.tr/sitemap.xml`
+- `https://api.ecommerceflaredev.web.tr/api/v1/sitemap.xml`
 
-The sitemap is dynamically generated by the Cloudflare Worker at `/sitemap.xml` and includes all product and category URLs from the D1 database.
+Vitrinin `robots.txt` dosyası ikinci adresi gösterir. Sitemap başka bir alt
+alan adında olduğundan GSC'de **Domain** türünde mülk (DNS TXT kaydıyla
+doğrulanan, tüm alt alan adlarını kapsayan) kullanın; ardından sitemap
+adresini **Sitemaps** bölümünden gönderin.
 
-### JSON-LD Structured Data
+### JSON-LD yapısal verisi
 
-Add JSON-LD Product schema to each product detail page. This enables **Rich Results** (price, availability, ratings) directly in Google Search:
-
-```jsx
-// In your React product detail component:
-function ProductStructuredData({ product }) {
-  const schema = {
-    "@context": "https://schema.org/",
-    "@type": "Product",
-    "name": product.name,
-    "description": product.description,
-    "image": `${import.meta.env.VITE_CDN_URL}/products/${product.id}.webp`,
-    "brand": {
-      "@type": "Brand",
-      "name": product.brand
-    },
-    "offers": {
-      "@type": "Offer",
-      "priceCurrency": "TRY",
-      "price": product.price.toFixed(2),
-      "availability": product.stock > 0
-        ? "https://schema.org/InStock"
-        : "https://schema.org/OutOfStock",
-      "seller": {
-        "@type": "Organization",
-        "name": "E-Market"
-      }
-    }
-  };
-
-  return (
-    <script
-      type="application/ld+json"
-      dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
-    />
-  );
-}
-```
+Ürün sayfaları, arama sonuçlarında fiyat ve stok bilgisinin (Rich Results)
+görünmesi için `Product` şemasında JSON-LD üretir
+(`client/src/utils/structuredData.js`, `client/src/components/SEO.jsx`).
+Canonical adresler `https://ecommerceflaredev.web.tr` alan adına göre
+üretilir.
 
 > [!NOTE]
-> Rich Results can take 2–4 weeks to appear after implementation. Use the [Rich Results Test](https://search.google.com/test/rich-results) tool to validate your markup immediately.
+> Rich Results'ın görünmesi haftalar sürebilir. İşaretlemeyi
+> [Rich Results Test](https://search.google.com/test/rich-results) aracıyla
+> hemen doğrulayabilirsiniz.
 
 ---
 
-## 5. Google Merchant Center (GMC)
+## 6. KVKK uyumlu Consent Mode v2
 
-### Setup
+KVKK ve GDPR, analitik ve pazarlama çerezlerinden önce kullanıcının açık
+rızasını ister. Google'ın **Consent Mode v2** özelliği bunu ölçüm
+doğruluğunu koruyarak uygular.
 
-1. Go to [merchants.google.com](https://merchants.google.com) and create an account
-2. Verify and claim your storefront domain
-3. Under **Products** → **Feeds** → **Add Feed** → choose **Scheduled Fetch**
-4. Set the fetch URL to:
-   ```
-   https://your-api-worker.workers.dev/api/v1/catalog/google-feed
-   ```
-5. Set fetch frequency to **daily**
+> [!IMPORTANT]
+> **Yayın öncesi yapılacak:** Vitrin şu an GTM ve Meta Pixel'i, ayarlar
+> yüklenir yüklenmez rıza beklemeden başlatıyor. Canlıya almadan önce bir CMP
+> (rıza yönetim platformu) ekleyin ve aşağıdaki varsayılan `denied` durumunu
+> GTM yüklenmeden önce ayarlayın. Meta Pixel'i yalnızca pazarlama rızasından
+> sonra başlatın.
 
-### Dynamic XML Feed
+### Nasıl çalışır
 
-The Worker generates the GMC-compatible feed live from D1:
+```text
+"Kabul et" → CMP rızayı günceller → GTM, GA4 etiketlerini tam veriyle çalıştırır
+"Reddet"   → durum denied kalır → GTM yalnızca çerezsiz, anonim ping gönderir
+```
+
+### Vitrin uygulaması
+
+Consent Mode varsayılanı GTM'den **önce** ayarlanmalıdır. E-Market'te bu,
+`initGTM` çağrısından önce yapılmalıdır:
 
 ```javascript
-// GET /api/v1/catalog/google-feed
-app.get('/google-feed', async (c) => {
-  const { results } = await c.env.DB.prepare(
-    'SELECT p.*, b.name as brandName FROM urunler p LEFT JOIN markalar b ON p.markaId = b.id WHERE p.aktif = 1'
-  ).all();
-
-  const baseUrl = c.env.CLIENT_URL || 'https://your-storefront.com';
-  const cdnUrl  = c.env.CDN_URL    || 'https://cdn.your-storefront.com';
-
-  let xml = `<?xml version="1.0" encoding="UTF-8"?>
-<rss version="2.0" xmlns:g="http://base.google.com/ns/1.0">
-<channel>
-  <title>E-Market Ürün Kataloğu</title>
-  <link>${baseUrl}</link>
-  <description>Cloudflare D1 veritabanından dinamik ürün kataloğu</description>`;
-
-  for (const p of results) {
-    xml += `
-  <item>
-    <g:id>${p.id}</g:id>
-    <g:title>${escapeXml(p.ad)}</g:title>
-    <g:description>${escapeXml(p.aciklama || '')}</g:description>
-    <g:link>${baseUrl}/urun/${p.slug}</g:link>
-    <g:image_link>${cdnUrl}/products/${p.id}.webp</g:image_link>
-    <g:price>${parseFloat(p.fiyat).toFixed(2)} TRY</g:price>
-    <g:availability>${p.stok > 0 ? 'in_stock' : 'out_of_stock'}</g:availability>
-    <g:brand>${escapeXml(p.brandName || 'E-Market')}</g:brand>
-    <g:condition>new</g:condition>
-    <g:google_product_category>Electronics</g:google_product_category>
-  </item>`;
-  }
-
-  xml += '\n</channel>\n</rss>';
-
-  return c.text(xml, 200, {
-    'Content-Type': 'application/xml; charset=UTF-8',
-    'Cache-Control': 'public, max-age=3600'
-  });
-});
-```
-
-### Meta / Instagram Catalog Cross-Sync
-
-The same XML feed endpoint is 100% compatible with **Meta Business Suite** (Facebook & Instagram Shopping). In Meta Business Suite:
-
-1. **Commerce Manager** → **Catalog** → **Data Sources** → **Add Data Source**
-2. Choose **Use a Data Feed** → **Scheduled Feed**
-3. Paste the same URL: `/api/v1/catalog/google-feed`
-
-One D1 database endpoint feeds Google Shopping, Google Images, Instagram Shopping, and Facebook Shops simultaneously.
-
-### Performance Max (PMax) Campaigns
-
-When the GMC feed and GA4 purchase conversions are both flowing:
-1. In **Google Ads** → **New Campaign** → **Performance Max**
-2. Link your GMC account and GA4 property
-3. Set a **ROAS (Return on Ad Spend)** target bidding strategy
-
-Google's AI will automatically allocate budget across Search, Shopping, Display, YouTube, and Discover to maximize conversions.
-
----
-
-## 6. KVKK-Compliant Consent Mode v2
-
-Turkish data protection law (KVKK) and EU GDPR both require explicit user consent before writing any analytical cookies. Google's **Consent Mode v2** is the mechanism to implement this while preserving measurement accuracy.
-
-### How It Works
-
-```
-User clicks "Accept" → CMP sets consent → GTM activates GA4 tags (full data)
-User clicks "Reject" → CMP sets denied → GTM sends anonymous pings only (no PII stored)
-```
-
-### Frontend Implementation
-
-Initialize Consent Mode **before** the GTM snippet loads:
-
-```javascript
-// Must come BEFORE the GTM <script> tag in <head>
 window.dataLayer = window.dataLayer || [];
 function gtag() { dataLayer.push(arguments); }
 
-// Set default denied state (KVKK safe default)
+// KVKK için güvenli varsayılan: her şey reddedilmiş
 gtag('consent', 'default', {
-  'analytics_storage': 'denied',
-  'ad_storage': 'denied',
-  'ad_user_data': 'denied',
-  'ad_personalization': 'denied',
-  'wait_for_update': 500 // Wait up to 500ms for CMP to update
+  analytics_storage: 'denied',
+  ad_storage: 'denied',
+  ad_user_data: 'denied',
+  ad_personalization: 'denied',
+  wait_for_update: 500 // CMP'nin güncellemesi için 500 ms bekle
 });
 ```
 
-When the user accepts consent (e.g., via a Cookiebot or custom CMP):
+Kullanıcı rıza verdiğinde CMP şunu çağırır:
 
 ```javascript
-// Called by your CMP when user clicks "Accept All"
 function onConsentAccepted() {
   gtag('consent', 'update', {
-    'analytics_storage': 'granted',
-    'ad_storage': 'granted',
-    'ad_user_data': 'granted',
-    'ad_personalization': 'granted'
+    analytics_storage: 'granted',
+    ad_storage: 'granted',
+    ad_user_data: 'granted',
+    ad_personalization: 'granted'
   });
 }
-
-// Called by your CMP when user clicks "Reject"
-function onConsentRejected() {
-  // Leave as 'denied' — GTM sends anonymous pings only
-  // No cookies are written, no PII is collected
-}
 ```
 
-### GTM Container Configuration
+Reddedildiğinde durum `denied` olarak kalır; çerez yazılmaz.
 
-In GTM Server Container, configure **Consent Initialization** triggers and set your GA4 tag to respect consent signals. GA4 will automatically model conversion data using **Behavioral Modeling** when consent is denied, so your reports stay statistically accurate even with partial consent.
+### GTM container ayarı
+
+GTM'de **Consent Initialization** tetikleyicisini kurun ve GA4 etiketinin rıza
+sinyallerine uymasını sağlayın. Rıza reddedildiğinde GA4, raporları
+istatistiksel olarak tutarlı tutmak için davranışsal modelleme kullanır.
 
 > [!IMPORTANT]
-> Under KVKK regulations enforced by the **KVKK Kurulu**, failing to obtain consent before writing analytical cookies can result in administrative fines. The Consent Mode v2 approach described here keeps your analytics pipeline fully compliant.
+> Analitik çerezlerinden önce rıza alınmaması Kişisel Verileri Koruma Kurulu
+> tarafından idari para cezasıyla sonuçlanabilir.
 
 ---
 
-## Environment Variables Reference
+## 7. Google Merchant Center
 
-Add these to your `api/wrangler.toml` (non-sensitive placeholders) and set real values as Wrangler secrets:
+### Merchant Center kurulumu
 
-```toml
-# wrangler.toml - placeholder values
-[vars]
-GTM_CONTAINER_ID   = "GTM-XXXXXXX"
-GA4_MEASUREMENT_ID = "G-XXXXXXXXXX"
-```
+1. [merchants.google.com](https://merchants.google.com) üzerinde hesap açın.
+2. Vitrin alan adını doğrulayıp sahiplenin.
+3. **Products** → **Feeds** → **Add Feed** → **Scheduled Fetch** seçin.
+4. Feed adresi olarak şunu girin:
 
-```bash
-# Set production secrets via Wrangler CLI
-npx wrangler secret put GA4_API_SECRET         --env production
-npx wrangler secret put GOOGLE_MERCHANT_TOKEN  --env production
-```
+   ```text
+   https://api.ecommerceflaredev.web.tr/api/v1/catalog/google-feed
+   ```
+   Admin panelinde bir feed token'ı tanımladıysanız adrese `?token=<token>`
+   ekleyin. Token tanımlı değilse feed herkese açıktır (yalnızca katalog
+   verisi içerir).
+5. Getirme sıklığını **günlük** yapın.
 
-| Variable | Description |
-| :--- | :--- |
-| `GTM_CONTAINER_ID` | Your GTM Web Container ID (e.g. `GTM-XXXXXXX`) |
-| `GA4_MEASUREMENT_ID` | GA4 Measurement ID (e.g. `G-XXXXXXXXXX`) |
-| `GA4_API_SECRET` | GA4 Measurement Protocol API Secret |
-| `GOOGLE_MERCHANT_TOKEN` | Verification token for Merchant Center domain claim |
+### Dinamik XML feed
+
+Feed, D1'deki aktif ürünlerden canlı üretilir
+(`api/src/controllers/feedController.js`). Aynı feed şu adreste de sunulur:
+`/api/v1/feeds/google`. Ürün adı, açıklaması, marka ve kategori gibi metin
+alanları XML için kaçışlanır; fiyat, stok durumu, görsel ve kargo bilgisi
+Merchant Center biçiminde verilir.
+
+### Meta / Instagram kataloğu
+
+Aynı XML feed, **Meta Commerce Manager** (Facebook ve Instagram Shopping) ile
+uyumludur:
+
+1. **Commerce Manager** → **Catalog** → **Data Sources** → **Add Data Source**.
+2. **Data Feed** → **Scheduled Feed** seçin.
+3. Aynı feed adresini yapıştırın.
+
+### Performance Max kampanyaları
+
+Merchant Center feed'i ve GA4 satın alma dönüşümleri birlikte çalışırken:
+
+1. **Google Ads** → **New Campaign** → **Performance Max** seçin.
+2. Merchant Center hesabını ve GA4 mülkünü bağlayın.
+3. **ROAS** hedefli teklif stratejisi belirleyin.
 
 ---
 
-## Related Documentation
+## İlgili dokümanlar
 
-- [CI/CD Pipeline](cicd_pipeline.md)
-- [KVKK Compliance Guide](kvkk_compliance.md)
-- [Google Drive Backup](google_drive_backup.md)
+- [KVKK Uyumu](kvkk_compliance.md)
+- [CI/CD Hattı](cicd_pipeline.md)
+- [Google Drive Yedeği](google_drive_backup.md)

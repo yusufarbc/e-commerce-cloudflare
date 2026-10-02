@@ -1,96 +1,111 @@
-# ⛅ Cloudflare Deployment Guide
+# ⛅ Cloudflare Deploy Rehberi
 
-E-Market runs entirely on Cloudflare Workers: the API is a Worker, and the
-storefront and admin panel are Workers with static assets. Deployments are
-done only by the CI/CD pipeline ([CI/CD Pipeline](cicd_pipeline.md)). This
-guide covers the one-time setup of the Cloudflare side, for example for a fork.
+E-Market tamamen Cloudflare Workers üzerinde çalışır: API bir Worker'dır,
+vitrin ve admin paneli de static assets kullanan Worker'lardır. Deploy yalnızca
+CI/CD hattıyla yapılır ([CI/CD Hattı](cicd_pipeline.md)). Bu rehber Cloudflare
+tarafındaki tek seferlik kurulumu anlatır (örneğin bir fork için).
 
-## Architecture per environment
+## Ortam başına mimari
 
-| Component | Worker name (staging / production) | Custom domain (staging / production) | Bindings |
+| Bileşen | Worker adı (staging / production) | Özel alan adı (staging / production) | Binding'ler |
 | --- | --- | --- | --- |
-| API | `e-commerce-cloudflare-staging` / `-production` | `staging-api.` / `api.` | D1 `DB`, R2 `IMAGES_BUCKET`, `EMAIL`, cron |
-| Storefront | `ecommerce-storefront-staging` / `-production` | `staging.` / apex | static assets (SPA) |
-| Admin | `ecommerce-admin-staging` / `-production` | `staging-admin.` / `admin.` | static assets + service binding `API` |
+| API | `e-commerce-cloudflare-staging` / `-production` | `staging-api.` / `api.` | D1 `DB`, R2 `IMAGES_BUCKET`, `EMAIL`, rate limit, cron |
+| Vitrin | `ecommerce-storefront-staging` / `-production` | `staging.` / kök alan adı | static assets (SPA) |
+| Admin | `ecommerce-admin-staging` / `-production` | `staging-admin.` / `admin.` | static assets + `API` service binding |
 
-Configuration lives in `api/wrangler.toml`, `client/wrangler.jsonc` and
-`admin/wrangler.jsonc`. Each environment has its own D1 database and R2
-bucket; `wrangler dev` and `preview_*` bindings use a separate preview D1/R2,
-so previews never touch live data.
+Yapılandırma `api/wrangler.toml`, `client/wrangler.jsonc` ve
+`admin/wrangler.jsonc` dosyalarındadır. Her ortamın kendi D1 veritabanı ve R2
+bucket'ı vardır. `wrangler dev` ve `preview_*` binding'leri ayrı bir preview
+D1/R2 kullanır; böylece önizlemeler canlı veriye hiç dokunmaz. Bu kural CI'da
+Conftest politikasıyla (`security/policy/wrangler.rego`) denetlenir.
 
-## One-time setup
+## Tek seferlik kurulum
 
 ### 1. Zone
 
-Add the domain to the Cloudflare account and point the registrar's nameservers
-to the two Cloudflare nameservers shown for the zone. Wait until the zone is
-**Active**. Workers custom domains create their DNS records and certificates
-automatically on the first deploy.
+Alan adını Cloudflare hesabına ekleyin ve kayıt firmasındaki nameserver'ları
+zone için gösterilen iki Cloudflare nameserver'ına yönlendirin. Zone
+**Active** olana kadar bekleyin. Workers özel alan adları, DNS kayıtlarını ve
+sertifikaları ilk deploy'da otomatik oluşturur.
 
-### 2. D1 and R2
+### 2. D1 ve R2
 
 ```bash
-npx wrangler d1 create <project>-d1-staging
-npx wrangler d1 create <project>-d1-production
-npx wrangler d1 create <project>-d1-preview
-npx wrangler r2 bucket create <project>-r2-staging
-npx wrangler r2 bucket create <project>-r2-production
-npx wrangler r2 bucket create <project>-r2-preview
+npx wrangler d1 create <proje>-d1-staging
+npx wrangler d1 create <proje>-d1-production
+npx wrangler d1 create <proje>-d1-preview
+npx wrangler r2 bucket create <proje>-r2-staging
+npx wrangler r2 bucket create <proje>-r2-production
+npx wrangler r2 bucket create <proje>-r2-preview
 ```
 
-Put the database IDs and bucket names into `api/wrangler.toml` (top level =
-preview, `[env.staging]`, `[env.production]`). Run Wrangler from a directory
-**without** a Wrangler config when creating resources, or from `api/`, so
-commands never pick up the wrong project.
+Veritabanı kimliklerini ve bucket adlarını `api/wrangler.toml` dosyasına yazın
+(üst düzey = preview, `[env.staging]`, `[env.production]`). Kaynak
+oluştururken Wrangler'ı Wrangler yapılandırması **olmayan** bir dizinden ya
+da `api/` içinden çalıştırın; böylece komutlar yanlış projeyi almaz.
 
-Migrations are applied by the pipeline before each API deploy. Sample data can
-be loaded into an environment with:
+Migration'lar her API deploy'undan önce pipeline tarafından uygulanır. Bir
+ortama örnek veri yüklemek için:
 
 ```bash
 cd api
 npm run seed:remote -- --env staging
 ```
 
-`prisma/seed.sql` starts with `DELETE` statements; do not run it against an
-environment with real data.
+`prisma/seed.sql` `DELETE` komutlarıyla başlar; gerçek veri içeren bir ortamda
+çalıştırmayın.
 
-### 3. Cloudflare Access for the admin panel
+### 3. Admin paneli için Cloudflare Access
 
-The admin panel has no password login. Cloudflare Access authenticates admins
-and the API verifies the Access token.
+Admin panelinde şifreyle giriş yoktur. Yöneticilerin kimliğini Cloudflare
+Access doğrular, API de Access token'ını doğrular.
 
 1. **Zero Trust → Access → Applications → Add an application → Self-hosted**
-   with the hostnames `admin.<domain>` and `staging-admin.<domain>`.
-2. Add an **Allow** policy for the admin e-mail addresses (one-time PIN works
-   without an identity provider).
-3. Recommended: **Settings → Cookies → HTTP Only** and **Binding cookie** on.
-4. Set in `api/wrangler.toml` for both environments:
-   - `ACCESS_TEAM_DOMAIN` = `<team>.cloudflareaccess.com`
-   - `ACCESS_AUD` = the application's Audience tag (also visible as `kid=` in
-     the Access login redirect URL)
+   seçin ve `admin.<alan-adı>` ile `staging-admin.<alan-adı>` adreslerini
+   ekleyin.
+2. Yönetici e-posta adresleri için bir **Allow** politikası ekleyin (one-time
+   PIN, kimlik sağlayıcısı olmadan çalışır).
+3. Önerilir: **Settings → Cookies** altında **HTTP Only** ve **Binding
+   cookie** açık olsun.
+4. `api/wrangler.toml` içinde iki ortam için şunları tanımlayın:
+   - `ACCESS_TEAM_DOMAIN` = `<takım>.cloudflareaccess.com`
+   - `ACCESS_AUD` = uygulamanın Audience etiketi (Access giriş yönlendirme
+     URL'sinde `kid=` olarak da görünür)
 
-How it fits together: the admin Worker serves the SPA and forwards `/api/*` to
-the API through the `API` service binding, so admin calls are same-origin and
-carry Access's `Cf-Access-Jwt-Assertion` header. The API's `adminAuth`
-middleware verifies that JWT (RS256, issuer, audience, expiry) against
-`https://<team>.cloudflareaccess.com/cdn-cgi/access/certs`. Requests to the
-API hostname without a valid assertion get 401; if the `ACCESS_*` values are
-missing the admin routes return 503. `workers_dev` and preview URLs are off
-for the admin Worker so Access cannot be bypassed.
+Parçalar nasıl birleşir: admin Worker'ı SPA'yı sunar ve `/api/*` isteklerini
+`API` service binding'i üzerinden API'ye iletir. Böylece admin çağrıları aynı
+origin'den gelir ve Access'in `Cf-Access-Jwt-Assertion` başlığını taşır.
+API'deki `adminAuth` middleware'i bu JWT'yi (RS256, issuer, audience, süre)
+`https://<takım>.cloudflareaccess.com/cdn-cgi/access/certs` adresindeki
+anahtarlarla doğrular. API alan adına geçerli bir assertion olmadan gelen
+istekler 401 alır. `ACCESS_*` değerleri eksikse admin yolları 503 döner.
+Access'in atlatılamaması için admin Worker'ında `workers_dev` ve preview
+URL'leri kapalıdır.
 
 ### 4. GitHub
 
-1. Create an **Account API token** (Manage Account → Account API Tokens) with:
-   Workers Scripts Edit, D1 Edit, Workers R2 Storage Edit, Account Settings
-   Read, and Zone Workers Routes Edit + Zone Read limited to the domain.
-2. Repository secrets: `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`.
-3. Branches `staging` and `production`, protected by a ruleset that requires
-   PRs and the pipeline's gate checks.
+1. Bir **Account API token** oluşturun (Manage Account → Account API Tokens).
+   Yetkiler: Workers Scripts Edit, D1 Edit, Workers R2 Storage Edit, Account
+   Settings Read, ayrıca alan adıyla sınırlı Zone Workers Routes Edit ve Zone
+   Read.
+2. Repo secret'ları: `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`.
+3. `staging` ve `production` dallarını oluşturun ve PR ile pipeline kapı
+   check'lerini zorunlu kılan bir ruleset ile koruyun.
+4. `staging` ve `production` GitHub ortamlarını oluşturun. Her ortam yalnızca
+   kendi dalından deploy kabul etsin; `production` için zorunlu reviewer
+   tanımlayın.
 
-Pushing to `staging` then deploys staging; promoting `staging` to `production`
-via PR deploys production.
+Bundan sonra `staging`'e push staging'e deploy eder; `staging`'i PR ile
+`production`'a taşımak production'a deploy eder.
 
-## Prerequisites for e-mail
+### 5. Zone güvenlik ayarları
 
-The `EMAIL` (`send_email`) binding needs **Email Routing** enabled on the zone
-with a verified destination address before order notifications can be sent.
+WAF, ücretsiz rate limiting kuralı, Bot Fight Mode ve TLS/HSTS ayarları
+Wrangler ile yönetilemez; panelden bir kez yapılır. Adımlar
+[devsecops_pipeline.md](devsecops_pipeline.md) bölüm 5.3'tedir.
+
+## E-posta için ön koşul
+
+`EMAIL` (`send_email`) binding'inin sipariş bildirimleri gönderebilmesi için
+zone'da **Email Routing** açık olmalı ve doğrulanmış bir hedef adres
+bulunmalıdır.

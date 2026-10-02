@@ -1,104 +1,102 @@
-# 🚀 CI/CD Pipeline
+# 🚀 CI/CD Hattı
 
-All builds and deployments run through one fail-closed GitHub Actions workflow:
+Tüm build ve deploy işlemleri, fail-closed çalışan tek bir GitHub Actions
+workflow'undan geçer:
 [`.github/workflows/devsecops-pipeline.yml`](../.github/workflows/devsecops-pipeline.yml).
-The design and the role of each tool are described in
-[`DEVSECOPS_PIPELINE.MD`](../DEVSECOPS_PIPELINE.MD).
+Tasarım ve her aracın rolü [`devsecops_pipeline.md`](devsecops_pipeline.md)
+dosyasında anlatılır.
 
-There is no other deploy path: no local deploy script and no Cloudflare Git
-integration, so code reaches Cloudflare only after every gate is green.
+Başka bir deploy yolu yoktur: yerel deploy betiği ve Cloudflare Git
+entegrasyonu bulunmaz. Kod Cloudflare'e ancak tüm kapılar yeşil olduğunda
+ulaşır.
 
-## Branches and environments
+## Dallar ve ortamlar
 
-| Branch | Environment | Storefront | Admin | API |
+| Dal | Ortam | Vitrin | Admin | API |
 | --- | --- | --- | --- | --- |
 | `staging` | staging | staging.ecommerceflaredev.web.tr | staging-admin.ecommerceflaredev.web.tr | staging-api.ecommerceflaredev.web.tr |
-| `production` (default) | production | ecommerceflaredev.web.tr | admin.ecommerceflaredev.web.tr | api.ecommerceflaredev.web.tr |
+| `production` (varsayılan) | production | ecommerceflaredev.web.tr | admin.ecommerceflaredev.web.tr | api.ecommerceflaredev.web.tr |
 
-Flow: feature branch → PR to `staging` → merge deploys staging → PR
-`staging` → `production` → merge deploys production. Dependabot also opens its
-PRs against `staging`.
+Akış: özellik dalı → `staging`'e PR → merge staging'e deploy eder →
+`staging` → `production` PR'ı → merge production'a deploy eder. Dependabot da
+PR'larını `staging`'e açar.
 
-Both branches are protected by the `protect-production-staging` ruleset: no
-deletion, no force-push, changes only via PR, and the five gate checks below
-must pass. Each GitHub environment accepts deployments only from its own
-branch, and the `production` environment requires a reviewer: a production
-release waits for approval before the API deploy and again before the frontend
-deploy.
+İki dal da `protect-production-staging` ruleset'iyle korunur: silme ve
+force-push yasaktır, değişiklik yalnızca PR ile yapılır ve aşağıdaki beş kapı
+check'i geçmelidir. Her GitHub ortamı yalnızca kendi dalından deploy kabul
+eder. `production` ortamı reviewer onayı ister: production yayını API
+deploy'undan önce ve frontend deploy'undan önce olmak üzere iki kez onay
+bekler.
 
-## Flow
+## Akış
 
 ```mermaid
 graph LR
-    H[Pipeline hygiene<br/>actionlint + zizmor] --> B
-    S[Secrets & dependencies<br/>Gitleaks, OSV-Scanner, npm audit] --> B
-    C[SAST & config<br/>Semgrep CE, Opengrep, Trivy, Conftest] --> B
+    H[Pipeline hijyeni<br/>actionlint + zizmor] --> B
+    S[Sırlar ve bağımlılıklar<br/>Gitleaks, OSV-Scanner, npm audit] --> B
+    C[SAST ve config<br/>Semgrep CE, Opengrep, Trivy, Conftest] --> B
     Q[SAST<br/>CodeQL] --> B
-    B[Build and test<br/>Prisma, vitest, lint, build, SBOM] --> DA[Deploy API<br/>D1 migrations + Worker]
-    DA --> DF[Deploy frontends<br/>storefront + admin Workers]
+    B[Build ve test<br/>Prisma, vitest, lint, build, SBOM] --> DA[API deploy<br/>D1 migration + Worker]
+    DA --> DF[Frontend deploy<br/>vitrin + admin Worker'ları]
     DF --> Z[DAST<br/>OWASP ZAP baseline]
 ```
 
-The four gate jobs run in parallel; `Build and test` needs all of them, and the
-deploy and DAST jobs run only on a **push** to `staging` or `production`. Pull
-requests run every gate and the build, never a deploy.
+Dört kapı job'u paralel çalışır. `Build and test` hepsine bağlıdır. Deploy ve
+DAST job'ları yalnızca `staging` veya `production` dalına yapılan **push**'ta
+çalışır. Pull request'ler tüm kapılardan ve build'den geçer, ama hiçbir zaman
+deploy etmez.
 
-## Jobs
+## Job'lar
 
-| Job | What it does | Fails on |
+| Job | Ne yapar | Ne zaman başarısız olur |
 | --- | --- | --- |
-| Pipeline hygiene | actionlint, zizmor (pinned binaries, checksum-verified) | any medium+ zizmor finding |
-| Secrets and dependencies | Gitleaks over full history, OSV-Scanner, `npm audit --audit-level=high` in root/api/client/admin | any leak, any OSV finding, high/critical audit |
-| SAST and config | Trivy misconfig; Conftest `policy/wrangler.rego` on `api/wrangler.toml`; Semgrep CE with the JS/TS security rules of `semgrep/semgrep-rules` pinned to a commit; Opengrep with the Workers rules in `research/rules/edge` (`--taint-intrafile`) on `api/src` | HIGH/CRITICAL misconfig, any policy violation, any Semgrep or Opengrep finding |
-| SAST (CodeQL) | CodeQL `javascript-typescript` | analysis failure |
-| Build and test | `npm run ci:all`, CycloneDX SBOMs (`npm sbom`) for root/api/client/admin uploaded as `sbom-cyclonedx`, `prisma validate/generate`, `npm test` (api), lint and build of client/admin with the environment's `VITE_API_URL` | any step |
-| Deploy API | `wrangler d1 migrations apply DB --remote`, `wrangler deploy --env <env>` | any step |
-| Deploy frontends | `wrangler deploy --env <env>` in `client/` and `admin/` (Workers static assets) | any step |
-| DAST | OWASP ZAP baseline (passive, 2-minute spider) against the storefront and `/api/v1/products` of the environment just deployed; HTML/JSON/Markdown report as `zap-<target>` artifact and in the job summary. The admin dashboard sits behind Cloudflare Access and is not scanned. Rule overrides with reasons go in `.zap/rules.tsv`. | any High risk alert |
+| Pipeline hygiene | actionlint, zizmor (sabit sürümlü, checksum'ı doğrulanan binary'ler) | orta ve üstü herhangi bir zizmor bulgusu |
+| Secrets and dependencies | Tüm geçmişte Gitleaks, OSV-Scanner, kök/api/client/admin için `npm audit --audit-level=high` | herhangi bir sızıntı, herhangi bir OSV bulgusu, high/critical audit bulgusu |
+| SAST and config | Trivy misconfig; `api/wrangler.toml` için Conftest `security/policy/wrangler.rego`; bir commit'e sabitlenmiş `semgrep/semgrep-rules` JS/TS güvenlik kurallarıyla Semgrep CE; `api/src` üzerinde `security/opengrep/` Workers kurallarıyla Opengrep (`--taint-intrafile`) | HIGH/CRITICAL misconfig, herhangi bir politika ihlali, herhangi bir Semgrep veya Opengrep bulgusu |
+| SAST (CodeQL) | CodeQL `javascript-typescript` | analiz hatası |
+| Build and test | `npm run ci:all`, kök/api/client/admin için CycloneDX SBOM'ları (`npm sbom`, `sbom-cyclonedx` artifact'i), `prisma validate/generate`, `npm test` (api), ortamın `VITE_API_URL` değeriyle client/admin lint ve build | herhangi bir adım |
+| Deploy API | `wrangler d1 migrations apply DB --remote`, `wrangler deploy --env <ortam>` | herhangi bir adım |
+| Deploy frontends | `client/` ve `admin/` içinde `wrangler deploy --env <ortam>` (Workers static assets) | herhangi bir adım |
+| DAST | Az önce deploy edilen ortamın vitrinine ve `/api/v1/products` adresine OWASP ZAP baseline (pasif, 2 dakikalık spider). Rapor (HTML/JSON/Markdown) `zap-<hedef>` artifact'i olarak yüklenir ve özeti job summary'ye yazılır. Admin paneli Cloudflare Access arkasında olduğu için taranmaz. Gerekçeli kural istisnaları `security/zap/rules.tsv` dosyasına yazılır. | herhangi bir High risk uyarısı |
 
-The research corpus under `research/` is intentionally vulnerable and is
-excluded from Semgrep, Trivy, Gitleaks and CodeQL here; it is measured by
-`security-research.yml` instead.
+## Sürümler
 
-## Versions
+Tüm action'lar commit SHA'larına sabitlenmiştir. Docker imajları (Gitleaks,
+OSV-Scanner, Conftest, ZAP) digest ile sabitlenir, indirilen binary'ler
+(actionlint, zizmor, Opengrep) SHA-256 ile doğrulanır ve Semgrep kuralları
+canlı registry yerine sabit bir `semgrep-rules` commit'inden alınır. Node.js
+22.23.3 ve Wrangler 4.145.0 workflow `env` bölümünde tanımlıdır.
 
-All actions are pinned to commit SHAs. Docker images (Gitleaks, OSV-Scanner,
-Conftest, ZAP) are pinned by digest, downloaded binaries (actionlint, zizmor,
-Opengrep) are verified by SHA-256, and Semgrep rules come from a fixed
-`semgrep-rules` commit instead of the live registry. Node.js 22.23.3 and
-Wrangler 4.145.0 are set in the workflow `env`.
+## Çalışma zamanı koruması
 
-## Runtime protection
+API Worker'ı, Workers Rate Limiting binding'i ile IP başına sınır uygular
+(`api/src/middlewares/rateLimit.js`, binding'ler `api/wrangler.toml` içinde):
+`/api/*` için dakikada 300, sipariş, ödeme ve iade yolları için dakikada 30
+istek. Sınır aşılınca `429` ve `Retry-After` döner. Zone düzeyindeki WAF,
+ücretsiz rate limiting kuralı, Bot Fight Mode ve TLS/HSTS ayarları Cloudflare
+panelinden yapılır; adımlar [devsecops_pipeline.md](devsecops_pipeline.md)
+bölüm 5.3'tedir. Güvenlik başlıkları API'de Hono `secureHeaders`, vitrin ve
+admin'de `public/_headers` dosyasından gelir.
 
-The API Worker applies per-IP limits with the Workers Rate Limiting binding
-(`api/src/middlewares/rateLimit.js`, bindings in `api/wrangler.toml`): 300
-requests/minute on `/api/*` and 30 requests/minute on order, payment and return
-routes, answering `429` with `Retry-After`. Zone-level WAF, the free rate
-limiting rule, Bot Fight Mode and TLS/HSTS settings are configured in the
-Cloudflare dashboard; the steps are in `DEVSECOPS_PIPELINE.MD` section 5.3. Security headers come from Hono
-`secureHeaders` on the API and `public/_headers` on the storefront and admin.
+## Yerel hook
 
-## Local hook
+`.husky/pre-commit` yerel veritabanı dosyalarını engeller ve staged
+değişiklikleri Gitleaks ile tarar. Gitleaks zorunludur; sabit sürümü
+`sh scripts/install-gitleaks.sh` ile kurun (gitignore'daki `.tools/` dizinine
+iner).
 
-`.husky/pre-commit` blocks local database files and runs Gitleaks on staged
-changes. Gitleaks is required: install the pinned version with
-`sh scripts/install-gitleaks.sh` (into the gitignored `.tools/`).
+## Sırlar
 
-## Secrets
-
-| Secret | Purpose |
+| Secret | Amaç |
 | --- | --- |
-| `CLOUDFLARE_API_TOKEN` | Account API token, least privilege: Workers Scripts, D1, Workers R2 Storage (Edit), Account Settings (Read), Zone Workers Routes (Edit) and Zone (Read) on `ecommerceflaredev.web.tr` |
-| `CLOUDFLARE_ACCOUNT_ID` | Cloudflare account ID |
+| `CLOUDFLARE_API_TOKEN` | En az yetkili hesap API token'ı: Workers Scripts, D1, Workers R2 Storage (Edit), Account Settings (Read), `ecommerceflaredev.web.tr` için Zone Workers Routes (Edit) ve Zone (Read) |
+| `CLOUDFLARE_ACCOUNT_ID` | Cloudflare hesap kimliği |
 
-The application itself has no deploy-time secrets: admin access is handled by
-Cloudflare Access (see the deployment guide).
+Uygulamanın kendisi deploy sırasında sır gerektirmez; admin erişimi
+Cloudflare Access ile sağlanır (bkz. deploy rehberi).
 
-## Other workflows
+## Diğer workflow'lar
 
-| Workflow | Trigger | Purpose |
+| Workflow | Tetikleyici | Amaç |
 | --- | --- | --- |
-| `workflow-security.yml` | PRs touching workflows | actionlint and zizmor report |
-| `research-checks.yml` | PRs touching `research` | ground-truth schema and analysis tests |
-| `security-research.yml` | manual | research measurement pipeline (all scanners, SARIF, timings) |
-| `backup.yml` | manual | encrypted export of the production D1 to Google Drive |
+| `backup.yml` | elle | Production D1 veritabanının şifreli olarak Google Drive'a aktarılması |

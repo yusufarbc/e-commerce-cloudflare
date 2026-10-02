@@ -15,16 +15,14 @@ Hat üç katmandan oluşur: **Yerel (VS Code) → GitHub Actions (CI kapıları)
 | **Gizli anahtar** | Gitleaks | Tüm git geçmişinde sır sızıntısı | `secrets-and-dependencies`, `.gitleaks.toml`, `.gitleaksignore` |
 | **SCA** | OSV-Scanner + npm audit | Dört `package-lock.json` (kök, api, client, admin) | `secrets-and-dependencies` |
 | **SAST** | Semgrep CE | Commit'e sabitlenmiş `semgrep-rules` JS/TS güvenlik kuralları | `code-and-config-security` |
-| **SAST (platform)** | Opengrep + özel Workers kuralları | D1, R2 ve `fetch` sink'lerine giden taint akışları (`--taint-intrafile`) | `code-and-config-security`, `research/rules/edge` |
+| **SAST (platform)** | Opengrep + özel Workers kuralları | D1, R2 ve `fetch` sink'lerine giden taint akışları (`--taint-intrafile`) | `code-and-config-security`, `security/opengrep/` |
 | **SAST** | GitHub CodeQL | Derin taint analizi | `codeql`, `.github/codeql/codeql-config.yml` |
 | **IaC / config** | Trivy (misconfig) | Yapılandırma dosyalarındaki güvensiz ayarlar | `code-and-config-security` |
-| **Politika** | Conftest (OPA) | `wrangler.toml` dağıtım politikası | `code-and-config-security`, `policy/wrangler.rego` |
+| **Politika** | Conftest (OPA) | `wrangler.toml` dağıtım politikası | `code-and-config-security`, `security/policy/wrangler.rego` |
 | **SBOM** | `npm sbom` (CycloneDX 1.5) | Dört paketin bileşen envanteri, 90 gün artifact | `build-and-test` → `sbom-cyclonedx` |
 | **CD** | Wrangler | Kapılardan geçen kodu Workers'a aktarma | `deploy-backend`, `deploy-frontend` |
-| **DAST** | OWASP ZAP baseline | Dağıtılan ortamda vitrin ve API'nin pasif taraması; High risk bulguda hata | `dast`, `.zap/rules.tsv` |
+| **DAST** | OWASP ZAP baseline | Dağıtılan ortamda vitrin ve API'nin pasif taraması; High risk bulguda hata | `dast`, `security/zap/rules.tsv` |
 | **Çalışma zamanı** | Workers Rate Limiting + Cloudflare WAF | İstemci başına istek sınırı; zone düzeyinde WAF | `api/src/middlewares/rateLimit.js`, bölüm 5 |
-
-TruffleHog ve Checkov yalnızca araştırma ölçüm hattında (`security-research.yml`) çalışır.
 
 ---
 
@@ -49,7 +47,7 @@ ESLint tarafında `eslint-plugin-security`, client ve admin projelerinde güvens
 
 ### 3. GitHub Actions (CI kapıları ve CD)
 
-Dosya: [`.github/workflows/devsecops-pipeline.yml`](.github/workflows/devsecops-pipeline.yml).
+Dosya: [`.github/workflows/devsecops-pipeline.yml`](../.github/workflows/devsecops-pipeline.yml).
 
 ```
 pipeline-hygiene ─────────┐
@@ -76,13 +74,13 @@ PR'lar tüm kapılardan ve build'den geçer ama deploy etmez. Her iki dal `prote
 
 **Kapıların ayrıntısı**
 
-- **Opengrep özel kuralları:** Araştırmada geliştirilen (`rules-frozen-v1`) Workers kuralları `api/src` üzerinde `--taint-intrafile --error` ile çalışır. İlk koşuda GTM proxy'sinde (`metricsRoutes.js`) URL'e eklenen kullanıcı girdisini yakaladı. Girdi artık allowlist regex'i ve `URLSearchParams` ile ekleniyor.
-- **Conftest (`policy/wrangler.rego`)** şunları reddeder:
+- **Opengrep özel kuralları:** `security/opengrep/` altındaki Workers kuralları (Hono, Queue, R2 bildirimi ve cron kaynakları; D1, R2 ve `fetch` sink'leri) `api/src` üzerinde `--taint-intrafile --error` ile çalışır. İlk koşuda GTM proxy'sinde (`metricsRoutes.js`) URL'e eklenen kullanıcı girdisini yakaladı. Girdi artık allowlist regex'i ve `URLSearchParams` ile ekleniyor.
+- **Conftest (`security/policy/wrangler.rego`)** şunları reddeder:
   - `vars` içinde sır benzeri anahtarlar (`SECRET`, `TOKEN`, `PASSWORD`, `API_KEY`, ...); bunlar `wrangler secret put` ile verilmelidir;
   - canlı D1/R2 kaynağına bağlanan preview binding'leri;
   - staging veya production'da `*` içeren `CORS_ORIGIN`.
 - **SBOM:** `npm sbom --sbom-format cyclonedx` dört paket için çalışır. Sonuç `sbom-cyclonedx` artifact'i olarak 90 gün saklanır.
-- **DAST:** Deploy'dan sonra ZAP baseline (pasif tarama, spider 2 dakika) iki hedefe gider: vitrin ve `API/api/v1/products`. Rapor (HTML, JSON, Markdown) artifact olarak yüklenir ve özeti job summary'ye yazılır. High risk (`riskcode 3`) uyarısı job'u kırmızıya çevirir. Admin paneli Access arkasında olduğu için taranmaz. Kural istisnaları gerekçesiyle birlikte `.zap/rules.tsv` dosyasına yazılır.
+- **DAST:** Deploy'dan sonra ZAP baseline (pasif tarama, spider 2 dakika) iki hedefe gider: vitrin ve `API/api/v1/products`. Rapor (HTML, JSON, Markdown) artifact olarak yüklenir ve özeti job summary'ye yazılır. High risk (`riskcode 3`) uyarısı job'u kırmızıya çevirir. Admin paneli Access arkasında olduğu için taranmaz. Kural istisnaları gerekçesiyle birlikte `security/zap/rules.tsv` dosyasına yazılır.
 
 > DAST deploy'dan sonra çalışır. Bu yüzden staging'deki bir High bulgu staging'i geri almaz, ama staging → production PR'ı açılmadan önce görünür olur. Production'da aynı tarama yayından hemen sonra koşar.
 
@@ -132,56 +130,3 @@ Wrangler zone düzeyindeki WAF kurallarını yönetemez. Bu ayarlar `ecommercefl
 6. **SSL/TLS:** Mod *Full (strict)*. *Edge Certificates* altında *Always Use HTTPS*, *Automatic HTTPS Rewrites*, *Minimum TLS Version* = 1.2 ve *HSTS* açık (max-age 6 ay, includeSubDomains; preload'u ancak tüm alt alanların HTTPS olduğundan emin olunca açın).
 
 ZAP raporları bu ayarların etkisini (HSTS ve güvenlik başlıkları) her deploy'da gösterir.
-
----
-
-## Araştırma açısından konumlandırma
-
-Gerçekçi bir DevSecOps boru hattında bu araçların **hepsi yer alır ve pipeline testbed'inde birlikte çalıştırılır**. Ancak akademik makalede bu araçların **üstlendiği roller ve dahil edildikleri araştırma soruları (RQ) birbirinden farklıdır**.
-
-Hepsini tek bir kefeye koyup aynı soruyla test etmek akademik olarak bir **kategori hatası** (*category mistake*) yaratır. Araçların makale kurgusundaki yeri ve iş bölümü şu şekildedir:
-
-### 1. Neden Çekirdek Deneyde (RQ2) Yalnızca SAST Vardır?
-
-Makalenin temel hipotezi (RQ2), *"Zafiyetli alıcı (sink) sabitken, girdi HTTP yerine bir olay kaynağından (kuyruk, cron, depolama) geldiğinde veri akış takibi (taint analysis) kopuyor mu?"* sorusudur.
-
-SAST dışındaki araçların çalışma prensipleri veri akışını izlemeye uygun değildir:
-
-* **SCA (Trivy, OSV-Scanner, npm audit):** Kaynak kodun veri akışına bakmaz; `package.json` içindeki bağımlılıkların bilinen CVE listeleriyle eşleşip eşleşmediğini denetler. Girdi ister HTTP olsun ister kuyruk mesajı, SCA her iki durumda da aynı sonucu verir.
-* **Gizli Anahtar Taraması (Gitleaks, TruffleHog):** Kod içerisine gömülmüş statik API anahtarlarını, token'ları ve yüksek entropili dizgileri arar; fonksiyon parametrelerinin nereye aktığıyla ilgilenmez.
-* **IaC Taraması (Checkov, OPA/Rego):** Uygulama mantığını değil, `wrangler.jsonc` veya Terraform gibi altyapı manifestolarındaki yetki ve yapılandırma hatalarını inceler.
-* **DAST (OWASP ZAP):** Çalışan uygulamaya dışarıdan HTTP/REST istekleri göndererek kara kutu testi yapar. DAST araçları mimari gereği arka planda çalışan bir Cloudflare Queue kuyruk mesajını, zamanlanmış Cron tetikleyicisini veya dahili R2 depolama olayını dışarıdan doğrudan tetikleyemez (olay kanallarına kördür).
-
-Bu nedenle, girdi kaynağının değişimini ölçen nedensel deneyde (RQ2) yalnızca leke analizi yapabilen SAST araçları (CodeQL, Semgrep CE, Opengrep) bağımsız değişkenle sınanır.
-
----
-
-### 2. DAST, SCA, Secret ve IaC Makalenin Neresinde Yer Alır?
-
-Bu araçlar dışlanmaz; makalenin farklı araştırma sorularında ve mimari katmanlarında kullanılır:
-
-* **RQ1 (Genel Kapsama ve Mevcut Durum):** Pipeline'daki varsayılan kontrollerin genel başarımı ölçülürken **tüm araçlar devrededir**. Projeye gömülü `ADMIN_JWT_SECRET` (Gitleaks), tescilli `wrangler.jsonc` aşırı yetkileri (Checkov), zafiyetli npm kütüphaneleri (OSV-Scanner) ve kod açıkları (SAST) birlikte raporlanır.
-* **RQ4 (Performans ve Maliyet Ölçümü):** Geliştirici deneyimi ve CI/CD gecikmesi ölçülürken **tam teşekküllü pipeline** koşturulur. "Tüm bu güvenlik kapıları (Gitleaks + OSV-Scanner + CodeQL + Semgrep + Checkov) iş akışına eklendiğinde derleme süresi ne kadar uzuyor?" sorusu (Overhead %) bu araçların toplamı üzerinden hesaplanır.
-* **DAST (Opsiyonel / Önizleme Katmanı):** Dinamik önizleme ortamı (*preview deployment*) ayağa kalktığında, OWASP ZAP API Scan yalnızca HTTP uç noktalarının temel sözleşme doğrulaması için çalıştırılabilir; ancak asenkron olayları tetikleyemeyeceği makalede bir kısıt (*limitation*) olarak not düşülür.
-
----
-
-### 3. Araçların Görev Dağılımı ve Katman Matrisi
-
-| Güvenlik Katmanı | Kullanılan Araçlar | İncelenen Zafiyet / Risk | Dahil Olduğu Soru |
-| --- | --- | --- | --- |
-| **SAST (Çekirdek Analiz)** | CodeQL, Semgrep CE, Opengrep | SQLi, Command Injection, SSRF, Deserialization | **RQ1, RQ2, RQ3, RQ4** |
-| **SCA (Bağımlılık)** | OSV-Scanner, npm audit | Bilinen paket açıkları (CVE'ler) | **RQ1, RQ4** |
-| **Secret Scanning** | Gitleaks, TruffleHog | Hardcoded JWT sırları, API token sızıntıları | **RQ1, RQ4** |
-| **IaC / Config** | Checkov, OPA / Conftest | `wrangler.jsonc` aşırı yetkili D1/R2 bağlamları | **RQ1, RQ3, RQ4** |
-| **DAST (Dinamik)** | OWASP ZAP | Dışa açık HTTP API arayüz testleri | **RQ1 (Opsiyonel / Önizleme)** |
-
----
-
-### 4. Akademik Metodoloji Açısından Doğru Konumlandırma
-
-Makaleyi yazarken savunmayı şu net ayrımla kurmak gerekir:
-
-* **Çekirdek Araştırma Katkısı (Core Contribution):** Uç bilişim olay akışlarının ve platform bağlamlarının statik leke analizi (SAST) motorları tarafından yakalanma boşlukları (RQ2 ve RQ3).
-* **Destekleyici Güvenlik Mimarisi (Supporting Pipeline):** SCA, Secret Scanning, IaC ve DAST kapılarının oluşturduğu tam kapsamlı DevSecOps boru hattı. Bu katman, çalışmanın soyut bir kod analizinden ibaret kalmayıp endüstri standardı gerçek bir CI/CD teslim zincirinde test edildiğini ve toplam süre maliyetini (RQ4) kanıtlar.
-
