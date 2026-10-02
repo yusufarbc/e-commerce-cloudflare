@@ -31,10 +31,62 @@ export class EmailService {
     }
 
     /**
+     * Sends an email through the provider selected by EMAIL_PROVIDER:
+     * "cloudflare" (default, Workers send_email binding) or "resend" (Resend REST API,
+     * key in the RESEND_API_KEY secret). Failures are logged, never thrown, so an
+     * e-mail problem cannot fail an order.
+     * @private
+     */
+    async _sendMail(mail) {
+        const provider = (currentEnv?.EMAIL_PROVIDER || 'cloudflare').toLowerCase().trim();
+        if (provider === 'resend') {
+            return this._sendViaResend(mail);
+        }
+        return this._sendViaCloudflare(mail);
+    }
+
+    /**
+     * Sends an email via the Resend API (https://resend.com/docs/api-reference/emails/send-email).
+     * The sender domain must be verified in Resend.
+     * @private
+     */
+    async _sendViaResend({ toEmail, toName, subject, htmlContent }) {
+        const apiKey = currentEnv?.RESEND_API_KEY;
+        if (!apiKey) {
+            console.warn('[Email] Email skipped: RESEND_API_KEY secret is not set');
+            return;
+        }
+
+        try {
+            const response = await fetch('https://api.resend.com/emails', {
+                method: 'POST',
+                headers: {
+                    Authorization: `Bearer ${apiKey}`,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    from: `${this.sender.name} <${this.sender.email}>`,
+                    to: [toName ? `${stripLineBreaks(toName)} <${stripLineBreaks(toEmail)}>` : stripLineBreaks(toEmail)],
+                    reply_to: this.replyTo.email,
+                    subject,
+                    html: htmlContent,
+                }),
+            });
+            if (!response.ok) {
+                console.error('[Email] Resend rejected the email: HTTP %s', response.status);
+                return;
+            }
+            console.log('[Email] Email sent successfully via Resend.');
+        } catch (error) {
+            console.error('[Email] Failed to send email via Resend:', error);
+        }
+    }
+
+    /**
      * Sends an email via Cloudflare Workers Email Routing Send Email API.
      * @private
      */
-    async _sendMail({ toEmail, toName, subject, htmlContent }) {
+    async _sendViaCloudflare({ toEmail, toName, subject, htmlContent }) {
         const env = currentEnv;
         if (!env || !env.EMAIL) {
             console.warn('[Email] Email skipped: Cloudflare EMAIL binding is not configured in c.env');
@@ -54,6 +106,10 @@ export class EmailService {
             const rawMime = [
                 `From: ${this.sender.name} <${this.sender.email}>`,
                 `To: ${stripLineBreaks(toName || toEmail)} <${stripLineBreaks(toEmail)}>`,
+                `Reply-To: ${this.replyTo.email}`,
+                // The send_email binding rejects a message without these ("invalid message-id").
+                `Date: ${new Date().toUTCString()}`,
+                `Message-ID: <${crypto.randomUUID()}@${this.sender.email.split('@')[1]}>`,
                 `Subject: =?utf-8?B?${subjectBase64}?=`,
                 `MIME-Version: 1.0`,
                 `Content-Type: text/html; charset=utf-8`,
