@@ -7,7 +7,7 @@ import { BaseRepository } from './baseRepository.js';
 export class OrderRepository extends BaseRepository {
     /**
      * Creates an instance of OrderRepository.
-     * @param {import('@prisma/client').PrismaClient} dbClient - Database client (PrismaClient).
+     * @param {import('../generated/prisma/client.ts').PrismaClient} dbClient - Database client (PrismaClient).
      */
     constructor(dbClient) {
         super(dbClient.siparis);

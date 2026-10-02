@@ -7,7 +7,7 @@ import { BaseRepository } from './baseRepository.js';
 export class CategoryRepository extends BaseRepository {
     /**
      * CategoryRepository örneği oluşturur.
-     * @param {import('@prisma/client').PrismaClient} dbClient - Veritabanı istemcisi (PrismaClient).
+     * @param {import('../generated/prisma/client.ts').PrismaClient} dbClient - Veritabanı istemcisi (PrismaClient).
      */
     constructor(dbClient) {
         super(dbClient.kategori);
