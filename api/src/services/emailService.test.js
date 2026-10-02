@@ -47,6 +47,26 @@ describe('EmailService with EMAIL_PROVIDER=resend', () => {
     });
 });
 
+describe('EmailService with the Cloudflare binding', () => {
+    it('builds a MIME message with Date, Message-ID and Reply-To', async () => {
+        const send = vi.fn().mockResolvedValue(undefined);
+        vi.doMock('cloudflare:email', () => ({
+            EmailMessage: class { constructor(from, to, raw) { Object.assign(this, { from, to, raw }); } },
+        }));
+        initConfig({ EMAIL: { send } });
+
+        await service()._sendMail(mail);
+
+        expect(send).toHaveBeenCalledOnce();
+        const { raw } = send.mock.calls[0][0];
+        const headers = raw.split('\r\n\r\n')[0];
+        expect(headers).toMatch(/^Date: .+ GMT$/m);
+        expect(headers).toMatch(/^Message-ID: <[0-9a-f-]{36}@example\.com>$/m);
+        expect(headers).toMatch(/^Reply-To: destek@example\.com$/m);
+        expect(headers).not.toMatch(/^Bcc:/m);
+    });
+});
+
 describe('EmailService default provider', () => {
     it('uses the Cloudflare binding and skips when it is absent', async () => {
         const fetchMock = vi.fn();

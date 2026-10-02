@@ -107,6 +107,9 @@ export class EmailService {
                 `From: ${this.sender.name} <${this.sender.email}>`,
                 `To: ${stripLineBreaks(toName || toEmail)} <${stripLineBreaks(toEmail)}>`,
                 `Reply-To: ${this.replyTo.email}`,
+                // The send_email binding rejects a message without these ("invalid message-id").
+                `Date: ${new Date().toUTCString()}`,
+                `Message-ID: <${crypto.randomUUID()}@${this.sender.email.split('@')[1]}>`,
                 `Subject: =?utf-8?B?${subjectBase64}?=`,
                 `MIME-Version: 1.0`,
                 `Content-Type: text/html; charset=utf-8`,
