@@ -1,0 +1,35 @@
+rules:
+  - id: cloudflare.d1.tainted-query
+    message: Untrusted Workers request or event data reaches a D1 query string without binding.
+    severity: ERROR
+    languages:
+      - javascript
+      - typescript
+    mode: taint
+    metadata:
+      cwe:
+        - "CWE-89: Improper Neutralization of Special Elements used in an SQL Command"
+      category: security
+      technology:
+        - cloudflare-workers
+      confidence: MEDIUM
+      references:
+        - https://developers.cloudflare.com/workers/
+    pattern-sources:
+      # Hono request data (Workers HTTP routes and incoming webhooks)
+      - pattern: $C.req.query(...)
+      - pattern: $C.req.param(...)
+      - pattern: $C.req.json()
+      - pattern: $C.req.text()
+      - pattern: $C.req.header(...)
+      # Cloudflare Queues and R2 event notifications: message bodies of a batch
+      - patterns:
+          - pattern-inside: |
+              for (const $MSG of $BATCH.messages) { ... }
+          - pattern: $MSG.body
+      # Cron/scheduled jobs: documents pulled from an external feed
+      - pattern: (await fetch(...)).json()
+    pattern-sinks:
+      - patterns:
+          - pattern: $DB.prepare($QUERY)
+          - focus-metavariable: $QUERY

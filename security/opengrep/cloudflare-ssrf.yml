@@ -1,0 +1,42 @@
+rules:
+  - id: cloudflare.fetch.tainted-url
+    message: Untrusted Workers request or event data controls an outbound fetch() URL without a host allowlist.
+    severity: ERROR
+    languages:
+      - javascript
+      - typescript
+    mode: taint
+    metadata:
+      cwe:
+        - "CWE-918: Server-Side Request Forgery (SSRF)"
+      category: security
+      technology:
+        - cloudflare-workers
+      confidence: MEDIUM
+      references:
+        - https://developers.cloudflare.com/workers/
+    pattern-sources:
+      # Hono request data (Workers HTTP routes and incoming webhooks)
+      - pattern: $C.req.query(...)
+      - pattern: $C.req.param(...)
+      - pattern: $C.req.json()
+      - pattern: $C.req.text()
+      - pattern: $C.req.header(...)
+      # Cloudflare Queues and R2 event notifications: message bodies of a batch
+      - patterns:
+          - pattern-inside: |
+              for (const $MSG of $BATCH.messages) { ... }
+          - pattern: $MSG.body
+      # Cron/scheduled jobs: documents pulled from an external feed
+      - pattern: (await fetch(...)).json()
+    pattern-sinks:
+      - patterns:
+          - pattern-either:
+              - pattern: fetch($URL, ...)
+              - pattern: fetch(new Request($URL, ...), ...)
+          - pattern-not-inside: |
+              if (!$ALLOWED.has(new URL($X).hostname)) return $RET;
+              ...
+          # the feed request that produces cron input is a source, not a sink
+          - pattern-not-inside: (await fetch(...)).json()
+          - focus-metavariable: $URL

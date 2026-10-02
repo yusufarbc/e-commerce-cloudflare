@@ -1,29 +1,7 @@
-# Ignore node modules and dependencies
-**/node_modules/**
+# Dependencies and build output
 node_modules/
-
-# Ignore local dev databases/caches/build artifacts
-**/dist/**
 dist/
 .wrangler/
-**/.wrangler/**
-.git/
-**/.git/**
 
-# Ignore agents skills templates and scripts
-.agents/
-**/.agents/**
-scripts/
-**/scripts/**
-api/scratch/**
-scratch/**
-
-# Ignore Dockerfile
-api/Dockerfile
-**/Dockerfile
-
-# Ignore GitHub directory (workflows & dependabot configs)
-.github/
-**/.github/**
-
-
+# Local tool binaries (scripts/install-gitleaks.sh)
+.tools/
