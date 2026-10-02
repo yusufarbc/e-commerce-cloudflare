@@ -37,7 +37,7 @@ export function HeroSection({ scrollToProducts }) {
 
     return (
         <section className="container mx-auto px-4 mb-8 overflow-hidden">
-            <div className="relative w-full h-[400px] md:h-[550px] rounded-[3rem] overflow-hidden shadow-2xl group border-[12px] border-white">
+            <div className="relative w-full h-[400px] md:h-[550px] rounded-[3rem] overflow-hidden shadow-2xl group border-12 border-white">
                 {slides.map((slide, index) => (
                     <div
                         key={index}
@@ -45,7 +45,7 @@ export function HeroSection({ scrollToProducts }) {
                     >
                         <div className="absolute inset-0">
                             <img src={slide.image} alt={slide.title} className="w-full h-full object-cover" />
-                            <div className="absolute inset-0 bg-gradient-to-r from-corporate-black via-corporate-black/40 to-transparent" />
+                            <div className="absolute inset-0 bg-linear-to-r from-corporate-black via-corporate-black/40 to-transparent" />
                         </div>
 
                         <div className="relative z-10 h-full flex items-center p-6 md:p-24">

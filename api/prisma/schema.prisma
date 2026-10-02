@@ -1,11 +1,13 @@
 generator client {
-  provider        = "prisma-client-js"
-  previewFeatures = ["driverAdapters"]
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+  // The Worker runs on workerd; the client is compiled to WASM, no native engine.
+  runtime  = "workerd"
 }
 
+// The connection is the D1 binding (see src/prisma.js); the URL lives in prisma.config.js.
 datasource db {
   provider = "sqlite"
-  url      = "file:./dev.db"
 }
 
 model Urun {

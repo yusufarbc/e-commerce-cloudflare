@@ -114,3 +114,6 @@ PayTR Direkt API/
 
 # ── Local tool binaries (scripts/install-gitleaks.sh) ─────────
 .tools/
+
+# Generated Prisma client (npm run generate)
+api/src/generated/

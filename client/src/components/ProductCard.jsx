@@ -58,8 +58,8 @@ export function ProductCard({ product }) {
     };
 
     return (
-        <div className={`group bg-white shadow-sm rounded-xl overflow-hidden flex flex-col h-full border border-gray-100 hover:shadow-xl hover:border-indigo-600/50 transition-all duration-300 hover:-translate-y-1 ${!inStock ? 'opacity-70 grayscale-[30%]' : ''}`}>
-            <Link to={product.slug ? `/urun/${product.slug}` : `/product/${product.id}`} className="block relative aspect-square bg-gradient-to-br from-gray-50 to-gray-100 overflow-hidden">
+        <div className={`group bg-white shadow-xs rounded-xl overflow-hidden flex flex-col h-full border border-gray-100 hover:shadow-xl hover:border-indigo-600/50 transition-all duration-300 hover:-translate-y-1 ${!inStock ? 'opacity-70 grayscale-30' : ''}`}>
+            <Link to={product.slug ? `/urun/${product.slug}` : `/product/${product.id}`} className="block relative aspect-square bg-linear-to-br from-gray-50 to-gray-100 overflow-hidden">
                 {/* Image Wrap */}
                 <div className="w-full h-full bg-white flex items-center justify-center p-4 pb-2">
                     {product.resimUrl ? (
@@ -79,7 +79,7 @@ export function ProductCard({ product }) {
                 {/* Badges */}
                 <div className="absolute top-2 left-2 flex flex-col gap-1.5">
                     {discountPercentage > 0 && (
-                        <div className="bg-brand-primary text-white px-2 py-0.5 rounded-sm shadow-xl flex flex-col items-center leading-none">
+                        <div className="bg-brand-primary text-white px-2 py-0.5 rounded-xs shadow-xl flex flex-col items-center leading-none">
                             <span className="text-[9px] font-black tracking-tighter uppercase">İNDİRİM</span>
                             <span className="text-xs font-black tracking-tighter">%{discountPercentage} İndirim</span>
                         </div>
@@ -105,10 +105,10 @@ export function ProductCard({ product }) {
                 </button>
 
                 {/* Quick View Overlay */}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                <div className="absolute inset-0 bg-linear-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
             </Link>
 
-            <div className="p-4 flex flex-col flex-grow">
+            <div className="p-4 flex flex-col grow">
                 {/* Brand */}
                 {product.marka && (
                     <span className="text-[11px] text-gray-400 font-semibold uppercase tracking-widest mb-1 block">
@@ -123,7 +123,7 @@ export function ProductCard({ product }) {
                 </Link>
 
                 {/* Description - REMOVED as per request */}
-                {/* <p className="text-sm text-gray-500 mb-4 line-clamp-2 flex-grow">
+                {/* <p className="text-sm text-gray-500 mb-4 line-clamp-2 grow">
                     {plainDescription}
                 </p> */}
 
@@ -153,7 +153,7 @@ export function ProductCard({ product }) {
                             isAdding
                             ? 'bg-green-600 text-white scale-95 shadow-md'
                             : inStock
-                                ? 'bg-[#dc2a12] text-white hover:bg-corporate-black hover:text-indigo-600 shadow-sm hover:shadow-md active:scale-95'
+                                ? 'bg-action-red text-white hover:bg-corporate-black hover:text-indigo-600 shadow-xs hover:shadow-md active:scale-95'
                                 : 'bg-gray-100 text-gray-400 cursor-not-allowed'
                         }`}
                         aria-label="Sepete Ekle"
@@ -183,16 +183,16 @@ export function ProductCard({ product }) {
  */
 export function ProductCardSkeleton() {
     return (
-        <div className="bg-white shadow-sm rounded-xl overflow-hidden flex flex-col h-full border border-gray-100 animate-pulse">
-            <div className="aspect-square bg-gradient-to-br from-gray-200 to-gray-300" />
+        <div className="bg-white shadow-xs rounded-xl overflow-hidden flex flex-col h-full border border-gray-100 animate-pulse">
+            <div className="aspect-square bg-linear-to-br from-gray-200 to-gray-300" />
             <div className="p-4 flex flex-col gap-3">
-                <div className="h-3 bg-gray-200 rounded w-1/4" />
-                <div className="h-4 bg-gray-200 rounded w-3/4" />
-                <div className="h-4 bg-gray-200 rounded w-1/2" />
-                <div className="h-3 bg-gray-200 rounded w-full" />
-                <div className="h-3 bg-gray-200 rounded w-2/3" />
+                <div className="h-3 bg-gray-200 rounded-sm w-1/4" />
+                <div className="h-4 bg-gray-200 rounded-sm w-3/4" />
+                <div className="h-4 bg-gray-200 rounded-sm w-1/2" />
+                <div className="h-3 bg-gray-200 rounded-sm w-full" />
+                <div className="h-3 bg-gray-200 rounded-sm w-2/3" />
                 <div className="flex justify-between items-center mt-auto pt-2">
-                    <div className="h-6 bg-gray-200 rounded w-20" />
+                    <div className="h-6 bg-gray-200 rounded-sm w-20" />
                     <div className="h-10 bg-gray-200 rounded-full w-24" />
                 </div>
             </div>

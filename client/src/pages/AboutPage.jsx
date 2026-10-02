@@ -114,7 +114,7 @@ export function AboutPage() {
                                 { title: 'Profesyonel Destek', desc: 'Alanında uzman ekibimizle teknik destek.' }
                             ].map((item, index) => (
                                 <div key={index} className="flex gap-4 p-4 rounded-xl hover:bg-gray-50 transition-colors">
-                                    <div className="w-8 h-8 bg-black text-indigo-600 rounded-full flex items-center justify-center flex-shrink-0 font-bold">✓</div>
+                                    <div className="w-8 h-8 bg-black text-indigo-600 rounded-full flex items-center justify-center shrink-0 font-bold">✓</div>
                                     <div>
                                         <h3 className="font-bold text-corporate-black mb-1">{item.title}</h3>
                                         <p className="text-sm text-gray-500">{item.desc}</p>

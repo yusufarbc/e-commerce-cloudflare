@@ -116,13 +116,13 @@ export function OrderTrackingPage() {
             <div className="max-w-6xl mx-auto px-4 py-10 relative">
                 <div className="bg-white rounded-xl shadow-lg overflow-hidden border border-gray-100">
                     {/* Header */}
-                    <div className="bg-gradient-to-r from-primary-600 to-primary-800 text-white p-6">
+                    <div className="bg-linear-to-r from-primary-600 to-primary-800 text-white p-6">
                         <div className="flex justify-between items-center">
                             <div>
                                 <h1 className="text-2xl font-bold">{t('header.trackOrder')}</h1>
                                 <p className="text-primary-100 mt-1">Sipariş No: #{order.siparisNumarasi}</p>
                             </div>
-                            <div className="bg-white/20 p-2 rounded-lg backdrop-blur-sm flex gap-2">
+                            <div className="bg-white/20 p-2 rounded-lg backdrop-blur-xs flex gap-2">
                                 <a href={whatsappLink} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-white hover:text-green-200 transition" title={t('orders.whatsappSupport')}>
                                     <Phone size={20} />
                                 </a>
@@ -205,7 +205,7 @@ export function OrderTrackingPage() {
                                     <div key={index} className="flex justify-between items-center py-4 first:pt-0 last:pb-0">
                                         <div className="flex items-center space-x-4">
                                             {item.resimUrl ? (
-                                                <div className="w-16 h-16 rounded-xl overflow-hidden border border-gray-100 flex-shrink-0 bg-white shadow-sm">
+                                                <div className="w-16 h-16 rounded-xl overflow-hidden border border-gray-100 shrink-0 bg-white shadow-xs">
                                                     <img 
                                                         src={item.resimUrl} 
                                                         alt={item.urunAd} 
@@ -213,7 +213,7 @@ export function OrderTrackingPage() {
                                                     />
                                                 </div>
                                             ) : (
-                                                <div className="bg-gray-100 p-4 rounded-xl text-gray-400 flex-shrink-0 shadow-sm">
+                                                <div className="bg-gray-100 p-4 rounded-xl text-gray-400 shrink-0 shadow-xs">
                                                     <Package size={24} />
                                                 </div>
                                             )}
@@ -275,7 +275,7 @@ export function OrderTrackingPage() {
 
                 {/* Cancel Order Modal */}
                 {isCancelModalOpen && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs animate-in fade-in duration-200">
                         <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200">
                             <div className="p-6">
                                 <div className="flex items-center justify-between mb-4">
@@ -292,7 +292,7 @@ export function OrderTrackingPage() {
                                 </div>
 
                                 <div className="mb-4 p-4 bg-orange-50 border border-orange-200 rounded-xl flex items-start gap-3">
-                                    <AlertCircle className="w-5 h-5 text-orange-600 flex-shrink-0 mt-0.5" />
+                                    <AlertCircle className="w-5 h-5 text-orange-600 shrink-0 mt-0.5" />
                                     <div>
                                         <p className="text-sm font-bold text-orange-800">
                                             İade / İptal Kısıtlaması
@@ -342,7 +342,7 @@ export function OrderTrackingPage() {
                 )}
                 {/* Return Request Modal */}
                 {isReturnModalOpen && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs animate-in fade-in duration-200">
                         <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200">
                             <div className="p-6">
                                 <h3 className="text-xl font-bold text-gray-900 mb-4">İade Talebi Oluştur</h3>

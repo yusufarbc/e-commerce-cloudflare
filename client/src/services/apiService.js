@@ -21,7 +21,7 @@ export const fetchProducts = async (params = {}) => {
         return response.data;
     } catch (error) {
         console.error('Failed to fetch products:', error);
-        throw new Error('Ürünler yüklenemedi. Lütfen tekrar deneyin.');
+        throw new Error('Ürünler yüklenemedi. Lütfen tekrar deneyin.', { cause: error });
     }
 };
 
@@ -36,7 +36,7 @@ export const fetchProductById = async (id) => {
         return response.data;
     } catch (error) {
         console.error('Failed to fetch product with id:', id, error);
-        throw new Error('Ürün detayları yüklenemedi.');
+        throw new Error('Ürün detayları yüklenemedi.', { cause: error });
     }
 };
 
@@ -51,7 +51,7 @@ export const fetchProductBySlug = async (slug) => {
         return response.data;
     } catch (error) {
         console.error('Failed to fetch product with slug:', slug, error);
-        throw new Error('Ürün detayları yüklenemedi.');
+        throw new Error('Ürün detayları yüklenemedi.', { cause: error });
     }
 };
 
@@ -69,7 +69,7 @@ export const fetchCategories = async () => {
         return response.data;
     } catch (error) {
         console.error('Failed to fetch categories:', error);
-        throw new Error('Kategoriler yüklenemedi.');
+        throw new Error('Kategoriler yüklenemedi.', { cause: error });
     }
 };
 
@@ -102,7 +102,7 @@ export const fetchBrands = async () => {
         return response.data;
     } catch (error) {
         console.error('Failed to fetch brands:', error);
-        throw new Error('Markalar yüklenemedi.');
+        throw new Error('Markalar yüklenemedi.', { cause: error });
     }
 };
 
@@ -132,7 +132,7 @@ export const createOrder = async (orderData) => {
             throw { validationErrors, message: 'Lütfen form bilgilerinizi kontrol edin.' };
         }
 
-        throw new Error('Sipariş oluşturulamadı. Lütfen tekrar deneyin.');
+        throw new Error('Sipariş oluşturulamadı. Lütfen tekrar deneyin.', { cause: error });
     }
 };
 
@@ -149,7 +149,7 @@ export const trackOrder = async (token) => {
         return response.data;
     } catch (error) {
         console.error('Failed to track order:', error);
-        throw new Error('Sipariş bulunamadı. Lütfen takip numaranızı kontrol edin.');
+        throw new Error('Sipariş bulunamadı. Lütfen takip numaranızı kontrol edin.', { cause: error });
     }
 };
 
@@ -165,7 +165,7 @@ export const cancelOrder = async (token, reason) => {
         return response.data;
     } catch (error) {
         console.error('Failed to cancel order:', error);
-        throw new Error('Sipariş iptal edilemedi. Lütfen müşteri hizmetleri ile iletişime geçin.');
+        throw new Error('Sipariş iptal edilemedi. Lütfen müşteri hizmetleri ile iletişime geçin.', { cause: error });
     }
 };
 

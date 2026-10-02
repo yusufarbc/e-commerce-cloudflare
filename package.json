@@ -16,7 +16,7 @@
     "prepare": "husky"
   },
   "devDependencies": {
-    "concurrently": "^8.2.0",
+    "concurrently": "^10.0.5",
     "husky": "^9.1.7"
   }
 }
