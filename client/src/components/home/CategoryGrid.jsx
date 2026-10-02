@@ -33,7 +33,7 @@ export function CategoryGrid({ activeCategory }) {
                             onClick={() => navigate(`/magaza?kategori=${sub.slug}`)}
                             className="bg-white rounded-2xl shadow-md hover:shadow-2xl transition-all duration-500 cursor-pointer overflow-hidden border border-gray-100 group hover:-translate-y-2"
                         >
-                            <div className="aspect-square bg-gradient-to-br from-gray-50 to-gray-100 relative overflow-hidden">
+                            <div className="aspect-square bg-linear-to-br from-gray-50 to-gray-100 relative overflow-hidden">
                                 {sub.resim ? (
                                     <img src={sub.resim} alt={sub.ad} className="w-full h-full object-cover p-6 transition-transform duration-500 group-hover:scale-110" />
                                 ) : (
@@ -41,7 +41,7 @@ export function CategoryGrid({ activeCategory }) {
                                         <Hammer size={64} />
                                     </div>
                                 )}
-                                <div className="absolute inset-0 bg-gradient-to-t from-corporate-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                                <div className="absolute inset-0 bg-linear-to-t from-corporate-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                             </div>
                             <div className="p-5 text-center bg-white">
                                 <h3 className="font-black text-base text-corporate-black group-hover:text-indigo-600 transition-colors duration-300 line-clamp-2">{sub.ad}</h3>

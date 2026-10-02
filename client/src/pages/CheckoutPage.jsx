@@ -421,7 +421,7 @@ export function CheckoutPage() {
                                             <label className="block text-sm font-medium text-gray-700 mb-1">Ad Soyad *</label>
                                             <input
                                                 type="text" name="fullName" value={formData.fullName}
-                                                className={`w-full border-2 p-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all ${errors.fullName ? 'border-red-500' : 'border-gray-200'}`}
+                                                className={`w-full border-2 p-3 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all ${errors.fullName ? 'border-red-500' : 'border-gray-200'}`}
                                                 onChange={handleInputChange}
                                             />
                                             {errors.fullName && <p className="text-red-500 text-xs mt-1">{errors.fullName}</p>}
@@ -431,7 +431,7 @@ export function CheckoutPage() {
                                             <label className="block text-sm font-medium text-gray-700 mb-1">E-posta *</label>
                                             <input
                                                 type="email" name="email" value={formData.email}
-                                                className={`w-full border-2 p-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all ${errors.email ? 'border-red-500' : 'border-gray-200'}`}
+                                                className={`w-full border-2 p-3 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all ${errors.email ? 'border-red-500' : 'border-gray-200'}`}
                                                 onChange={handleInputChange}
                                             />
                                             {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email}</p>}
@@ -442,7 +442,7 @@ export function CheckoutPage() {
                                             <input
                                                 type="tel" name="phone" value={formData.phone}
                                                 placeholder="05XX XXX XX XX"
-                                                className={`w-full border-2 p-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all ${errors.phone ? 'border-red-500' : 'border-gray-200'}`}
+                                                className={`w-full border-2 p-3 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all ${errors.phone ? 'border-red-500' : 'border-gray-200'}`}
                                                 onChange={handlePhoneChange}
                                             />
                                             {errors.phone && <p className="text-red-500 text-xs mt-1">{errors.phone}</p>}
@@ -452,7 +452,7 @@ export function CheckoutPage() {
                                             <label className="block text-sm font-medium text-gray-700 mb-1">Adres *</label>
                                             <textarea
                                                 name="address" value={formData.address} rows={3}
-                                                className={`w-full border-2 p-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all resize-none ${errors.address ? 'border-red-500' : 'border-gray-200'}`}
+                                                className={`w-full border-2 p-3 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all resize-none ${errors.address ? 'border-red-500' : 'border-gray-200'}`}
                                                 onChange={handleInputChange}
                                             />
                                             {errors.address && <p className="text-red-500 text-xs mt-1">{errors.address}</p>}
@@ -462,7 +462,7 @@ export function CheckoutPage() {
                                             <label className="block text-sm font-medium text-gray-700 mb-1">İl *</label>
                                             <select
                                                 name="city" value={formData.city}
-                                                className={`w-full border-2 p-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all ${errors.city ? 'border-red-500' : 'border-gray-200'}`}
+                                                className={`w-full border-2 p-3 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all ${errors.city ? 'border-red-500' : 'border-gray-200'}`}
                                                 onChange={handleCityChange}
                                             >
                                                 <option value="">İl Seçiniz</option>
@@ -477,7 +477,7 @@ export function CheckoutPage() {
                                             <label className="block text-sm font-medium text-gray-700 mb-1">İlçe *</label>
                                             <select
                                                 name="district" value={formData.district}
-                                                className={`w-full border-2 p-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all ${errors.district ? 'border-red-500' : 'border-gray-200'}`}
+                                                className={`w-full border-2 p-3 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all ${errors.district ? 'border-red-500' : 'border-gray-200'}`}
                                                 onChange={handleInputChange}
                                                 disabled={!formData.city}
                                             >
@@ -493,7 +493,7 @@ export function CheckoutPage() {
                                             <label className="block text-sm font-medium text-gray-700 mb-1">Posta Kodu *</label>
                                             <input
                                                 type="text" name="zipCode" value={formData.zipCode}
-                                                className={`w-full border-2 p-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all ${errors.zipCode ? 'border-red-500' : 'border-gray-200'}`}
+                                                className={`w-full border-2 p-3 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all ${errors.zipCode ? 'border-red-500' : 'border-gray-200'}`}
                                                 onChange={handleInputChange}
                                             />
                                             {errors.zipCode && <p className="text-red-500 text-xs mt-1">{errors.zipCode}</p>}
@@ -507,7 +507,7 @@ export function CheckoutPage() {
                                                 type="checkbox"
                                                 checked={formData.isCorporate}
                                                 onChange={(e) => setFormData({ ...formData, isCorporate: e.target.checked })}
-                                                className="w-5 h-5 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                                                className="w-5 h-5 rounded-sm border-gray-300 text-indigo-600 focus:ring-indigo-500"
                                             />
                                             <span className="font-medium">Kurumsal Fatura İstiyorum</span>
                                         </label>
@@ -575,7 +575,7 @@ export function CheckoutPage() {
                                         <div className="space-y-3">
                                             {cartItems.map(item => (
                                                 <div key={item.cartKey || item.id} className="flex items-center gap-4 p-3 bg-gray-50 rounded-xl">
-                                                    <div className="w-16 h-16 bg-white rounded-lg overflow-hidden flex-shrink-0">
+                                                    <div className="w-16 h-16 bg-white rounded-lg overflow-hidden shrink-0">
                                                         {item.resimUrl ? (
                                                             <img src={item.resimUrl} alt={item.ad} className="w-full h-full object-contain" />
                                                         ) : (
@@ -617,7 +617,7 @@ export function CheckoutPage() {
                                                         setErrors({ ...errors, salesAgreement: null });
                                                     }
                                                 }}
-                                                className="w-5 h-5 mt-0.5 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                                                className="w-5 h-5 mt-0.5 rounded-sm border-gray-300 text-indigo-600 focus:ring-indigo-500"
                                             />
                                             <span className="text-sm">
                                                 <button onClick={(e) => handleLegalClick(e, '/legal/on-bilgilendirme.html')} className="text-action-red font-medium hover:underline">
@@ -692,7 +692,7 @@ export function CheckoutPage() {
                                                             className={`w-full border-2 p-2.5 md:p-3 rounded-xl text-center ${errors.cardExpMonth ? 'border-red-500' : 'border-gray-200'}`}
                                                             maxLength={2}
                                                         />
-                                                        <span className="text-xl text-gray-400 flex-shrink-0">/</span>
+                                                        <span className="text-xl text-gray-400 shrink-0">/</span>
                                                         <input
                                                             type="text"
                                                             name="cardExpYear"
@@ -737,7 +737,7 @@ export function CheckoutPage() {
                                                         <select
                                                             value={selectedInstallment}
                                                             onChange={(e) => setSelectedInstallment(Number(e.target.value))}
-                                                            className="w-full border-2 p-3 rounded-xl border-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                                                            className="w-full border-2 p-3 rounded-xl border-gray-200 focus:outline-hidden focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                                                         >
                                                             <option value={1}>Tek Çekim - ₺{displayTotal.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}</option>
                                                             {installments.map((inst, idx) => (
@@ -755,7 +755,7 @@ export function CheckoutPage() {
                                             )}
 
                                             <div className="bg-blue-50 p-4 rounded-lg flex items-start gap-3 text-sm text-blue-700 mt-4">
-                                                <Lock className="flex-shrink-0 mt-0.5" size={16} />
+                                                <Lock className="shrink-0 mt-0.5" size={16} />
                                                 <p>Ödeme bilgileriniz 256-bit SSL sertifikası ile korunmaktadır. Kart bilgileriniz sistemimizde saklanmaz.</p>
                                             </div>
                                         </div>
@@ -835,7 +835,7 @@ export function CheckoutPage() {
                                             {item.ad} x{item.quantity}
                                             {item.selectedColor ? ` (${item.selectedColor})` : ''}
                                         </span>
-                                        <span className="font-medium flex-shrink-0">
+                                        <span className="font-medium shrink-0">
                                             ₺{(Number(item.indirimliFiyat || item.fiyat) * item.quantity).toLocaleString('tr-TR', { minimumFractionDigits: 2 })}
                                         </span>
                                     </div>
@@ -867,7 +867,7 @@ export function CheckoutPage() {
                                     <span className="text-action-red">₺{displayTotal.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}</span>
                                 </div>
                                 {weightError && (
-                                    <div className="mt-2 bg-red-50 border border-red-200 text-red-700 px-3 py-2 rounded text-xs">
+                                    <div className="mt-2 bg-red-50 border border-red-200 text-red-700 px-3 py-2 rounded-sm text-xs">
                                         Bu sipariş kargo limitlerini aşmaktadır (100kg+). Lütfen toplu alım için iletişime geçiniz.
                                     </div>
                                 )}
@@ -896,7 +896,7 @@ export function CheckoutPage() {
             {/* Legal Modal */}
             {
                 showModal && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
                         <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl h-5/6 flex flex-col animate-in zoom-in duration-300">
                             <div className="flex justify-between items-center p-4 border-b">
                                 <h3 className="text-lg font-bold">Sözleşme Metni</h3>
@@ -919,7 +919,7 @@ export function CheckoutPage() {
 
             {/* Test Cards Modal */}
             {showTestCards && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
                     <div className="bg-white rounded-2xl max-w-lg w-full max-h-[80vh] flex flex-col shadow-2xl animate-in zoom-in-95 duration-200">
                         {/* Header */}
                         <div className="p-5 border-b flex items-center justify-between">
@@ -992,7 +992,7 @@ export function CheckoutPage() {
                     <button
                         type="button"
                         onClick={() => setShowTestCards(true)}
-                        className="bg-gradient-to-br from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white font-extrabold px-6 py-4 rounded-2xl shadow-[0_8px_30px_rgba(99,91,255,0.45)] hover:shadow-[0_8px_40px_rgba(99,91,255,0.65)] active:scale-95 transition-all duration-200 flex items-center gap-3 border-2 border-white/20"
+                        className="bg-linear-to-br from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white font-extrabold px-6 py-4 rounded-2xl shadow-[0_8px_30px_rgba(99,91,255,0.45)] hover:shadow-[0_8px_40px_rgba(99,91,255,0.65)] active:scale-95 transition-all duration-200 flex items-center gap-3 border-2 border-white/20"
                     >
                         <span className="text-xl">🧪</span>
                         <div className="flex flex-col items-start leading-tight">

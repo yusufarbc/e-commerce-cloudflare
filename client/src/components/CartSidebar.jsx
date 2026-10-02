@@ -29,7 +29,7 @@ export function CartSidebar() {
         <>
             {/* Backdrop */}
             <div
-                className={`fixed inset-0 bg-black/60 backdrop-blur-sm z-40 transition-opacity duration-300 ${isSidebarOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
+                className={`fixed inset-0 bg-black/60 backdrop-blur-xs z-40 transition-opacity duration-300 ${isSidebarOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
                     }`}
                 onClick={closeSidebar}
             />
@@ -38,7 +38,7 @@ export function CartSidebar() {
             <div className={`fixed inset-y-0 right-0 w-full max-w-md bg-white shadow-2xl z-50 flex flex-col transition-transform duration-300 ease-out ${isSidebarOpen ? 'translate-x-0' : 'translate-x-full'
                 }`}>
                 {/* Header */}
-                <div className="flex items-center justify-between px-6 py-4 border-b bg-gradient-to-r from-brand-primary/10 to-transparent">
+                <div className="flex items-center justify-between px-6 py-4 border-b bg-linear-to-r from-brand-primary/10 to-transparent">
                     <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-full bg-brand-primary flex items-center justify-center">
                             <ShoppingBag size={20} className="text-corporate-black" />
@@ -82,7 +82,7 @@ export function CartSidebar() {
                                 return (
                                     <li key={item.cartKey || item.id} className="flex gap-4 p-3 bg-gray-50 rounded-xl group hover:bg-gray-100 transition-colors">
                                         {/* Image */}
-                                        <div className="w-20 h-20 flex-shrink-0 overflow-hidden rounded-lg bg-white border border-gray-200">
+                                        <div className="w-20 h-20 shrink-0 overflow-hidden rounded-lg bg-white border border-gray-200">
                                             {item.resimUrl ? (
                                                 <img
                                                     src={item.resimUrl}

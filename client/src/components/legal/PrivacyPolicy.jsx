@@ -12,14 +12,14 @@ export function PrivacyPolicy() {
                 KVKK Aydınlatma Metni
             </h1>
 
-            <div className="bg-white p-6 md:p-8 rounded-2xl shadow-sm border border-gray-100 space-y-6 text-gray-700 leading-relaxed text-sm">
+            <div className="bg-white p-6 md:p-8 rounded-2xl shadow-xs border border-gray-100 space-y-6 text-gray-700 leading-relaxed text-sm">
 
                 <section>
                     <h2 className="text-lg font-bold text-corporate-black uppercase mb-2">1. Veri Sorumlusu</h2>
                     <p>
                         6698 sayılı Kişisel Verilerin Korunması Kanunu (“KVKK”) uyarınca, kişisel verileriniz; veri sorumlusu olarak <strong>E-Market Teknoloji ve Ticaret Limited Şirketi</strong> tarafından aşağıda belirtilen kapsamda işlenmektedir.
                     </p>
-                    <div className="mt-2 bg-gray-50 p-4 rounded border border-gray-200 text-sm">
+                    <div className="mt-2 bg-gray-50 p-4 rounded-sm border border-gray-200 text-sm">
                         <p><strong>Adres:</strong> Karaköy Mah. Rıhtım Cd. No: 15 Beyoğlu / İstanbul</p>
                         <p><strong>MERSİS No:</strong> 0123456789012345</p>
                     </div>

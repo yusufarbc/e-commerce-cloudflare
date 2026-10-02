@@ -25,5 +25,9 @@
   "devDependencies": {
     "prisma": "^7.10.0",
     "vitest": "^5.0.3"
+  },
+  "overrides": {
+    "deepmerge-ts": "^8.0.2",
+    "mysql2": "^3.24.5"
   }
 }

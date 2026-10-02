@@ -86,7 +86,7 @@ export function Footer() {
                                     href={instagram}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="w-10 h-10 rounded-lg bg-white/5 flex items-center justify-center text-gray-400 hover:bg-gradient-to-tr hover:from-purple-600 hover:to-pink-600 hover:text-white transition-all hover:scale-110"
+                                    className="w-10 h-10 rounded-lg bg-white/5 flex items-center justify-center text-gray-400 hover:bg-linear-to-tr hover:from-purple-600 hover:to-pink-600 hover:text-white transition-all hover:scale-110"
                                     aria-label="Instagram"
                                 >
                                     <InstagramIcon />
@@ -206,9 +206,9 @@ export function Footer() {
                         <MastercardIcon />
                         <TroyIcon />
                         <div className="h-4 w-px bg-white/20 mx-1" />
-                        <span className="text-white font-black tracking-widest text-[10px] uppercase bg-white/10 px-2.5 py-1 rounded-sm border border-white/10">iyzico</span>
-                        <span className="text-white font-black tracking-widest text-[10px] uppercase bg-white/10 px-2.5 py-1 rounded-sm border border-white/10">PayTR</span>
-                        <span className="text-white font-black tracking-widest text-[10px] uppercase bg-white/10 px-2.5 py-1 rounded-sm border border-white/10">Param</span>
+                        <span className="text-white font-black tracking-widest text-[10px] uppercase bg-white/10 px-2.5 py-1 rounded-xs border border-white/10">iyzico</span>
+                        <span className="text-white font-black tracking-widest text-[10px] uppercase bg-white/10 px-2.5 py-1 rounded-xs border border-white/10">PayTR</span>
+                        <span className="text-white font-black tracking-widest text-[10px] uppercase bg-white/10 px-2.5 py-1 rounded-xs border border-white/10">Param</span>
                     </div>
                 </div>
             </div>

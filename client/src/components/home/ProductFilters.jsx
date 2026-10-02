@@ -19,7 +19,7 @@ export function ProductFilters({
 }) {
     return (
         <aside className={`${showFilters ? 'fixed inset-0 z-50 bg-black/50 md:relative md:bg-transparent' : 'hidden md:block'
-            } md:w-64 md:flex-shrink-0`}>
+            } md:w-64 md:shrink-0`}>
             <div className={`${showFilters ? 'absolute right-0 top-0 bottom-0 w-80 bg-white shadow-2xl overflow-y-auto' : ''
                 } md:sticky md:top-24`}>
                 {/* Mobile Close Button */}
@@ -47,7 +47,7 @@ export function ProductFilters({
                                     value={minPrice}
                                     onChange={(e) => setMinPrice(e.target.value)}
                                     placeholder="0"
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-indigo-600 transition-colors"
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-hidden focus:border-indigo-600 transition-colors"
                                 />
                             </div>
                             <div>
@@ -57,7 +57,7 @@ export function ProductFilters({
                                     value={maxPrice}
                                     onChange={(e) => setMaxPrice(e.target.value)}
                                     placeholder="10000"
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-indigo-600 transition-colors"
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-hidden focus:border-indigo-600 transition-colors"
                                 />
                             </div>
                             <div className="flex gap-2">
@@ -91,7 +91,7 @@ export function ProductFilters({
                             Marka
                         </h3>
                         <div className="space-y-2 max-h-60 overflow-y-auto">
-                            <label className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-2 rounded transition-colors">
+                            <label className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-2 rounded-sm transition-colors">
                                 <input
                                     type="radio"
                                     name="brand"
@@ -102,7 +102,7 @@ export function ProductFilters({
                                 <span className="text-sm font-medium">Tüm Markalar</span>
                             </label>
                             {brands.map(brand => (
-                                <label key={brand.id} className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-2 rounded transition-colors">
+                                <label key={brand.id} className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-2 rounded-sm transition-colors">
                                     <input
                                         type="radio"
                                         name="brand"
@@ -125,7 +125,7 @@ export function ProductFilters({
                         <select
                             value={sortBy}
                             onChange={(e) => applySorting(e.target.value)}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-indigo-600 transition-colors font-medium text-sm"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-hidden focus:border-indigo-600 transition-colors font-medium text-sm"
                         >
                             <option value="newest">En Yeni</option>
                             <option value="price-asc">Fiyat (Düşükten Yükseğe)</option>

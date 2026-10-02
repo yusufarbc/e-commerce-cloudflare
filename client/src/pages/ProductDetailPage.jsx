@@ -197,14 +197,14 @@ export function ProductDetailPage() {
     if (loading) return (
         <div className="max-w-7xl mx-auto px-4 py-12">
             <div className="animate-pulse">
-                <div className="h-6 bg-gray-200 rounded w-32 mb-8" />
+                <div className="h-6 bg-gray-200 rounded-sm w-32 mb-8" />
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
                     <div className="aspect-square bg-gray-200 rounded-2xl" />
                     <div className="space-y-4">
-                        <div className="h-4 bg-gray-200 rounded w-24" />
-                        <div className="h-8 bg-gray-200 rounded w-3/4" />
-                        <div className="h-6 bg-gray-200 rounded w-32" />
-                        <div className="h-24 bg-gray-200 rounded" />
+                        <div className="h-4 bg-gray-200 rounded-sm w-24" />
+                        <div className="h-8 bg-gray-200 rounded-sm w-3/4" />
+                        <div className="h-6 bg-gray-200 rounded-sm w-32" />
+                        <div className="h-24 bg-gray-200 rounded-sm" />
                         <div className="h-14 bg-gray-200 rounded-xl" />
                     </div>
                 </div>
@@ -256,7 +256,7 @@ export function ProductDetailPage() {
                     {/* Image Gallery */}
                     <div className="lg:col-span-6 space-y-4">
                         {/* Main Image */}
-                        <div className="relative bg-white rounded-2xl shadow-md border border-gray-100 overflow-hidden aspect-square lg:aspect-[4/5] max-h-[550px] group">
+                        <div className="relative bg-white rounded-2xl shadow-md border border-gray-100 overflow-hidden aspect-square lg:aspect-4/5 max-h-[550px] group">
                             {images[selectedImageIndex] ? (
                                 <>
                                     <img
@@ -283,13 +283,13 @@ export function ProductDetailPage() {
                             {/* Top-left badges */}
                             <div className="absolute top-4 left-4 flex flex-col gap-2 z-10">
                                 {discountPercentage > 0 && (
-                                    <div className="bg-brand-primary text-white px-4 py-2 rounded-sm shadow-xl flex flex-col items-center leading-none">
+                                    <div className="bg-brand-primary text-white px-4 py-2 rounded-xs shadow-xl flex flex-col items-center leading-none">
                                         <span className="text-[10px] font-black uppercase tracking-widest">İNDİRİM</span>
                                         <span className="text-lg font-black tracking-tighter">%{discountPercentage} İndirim</span>
                                     </div>
                                 )}
                                 {product.iadeImkaniVar === false && (
-                                    <div className="bg-black/85 text-white px-3 py-2 rounded-sm shadow-xl text-[11px] font-bold uppercase tracking-wide">
+                                    <div className="bg-black/85 text-white px-3 py-2 rounded-xs shadow-xl text-[11px] font-bold uppercase tracking-wide">
                                         İade imkanı yoktur
                                     </div>
                                 )}
@@ -338,7 +338,7 @@ export function ProductDetailPage() {
                                     <button
                                         key={index}
                                         onClick={() => setSelectedImageIndex(index)}
-                                        className={`flex-shrink-0 w-20 h-20 rounded-xl overflow-hidden border-2 transition-all ${selectedImageIndex === index
+                                        className={`shrink-0 w-20 h-20 rounded-xl overflow-hidden border-2 transition-all ${selectedImageIndex === index
                                             ? 'border-indigo-600 shadow-lg'
                                             : 'border-gray-200 hover:border-gray-300'
                                             }`}
@@ -377,7 +377,7 @@ export function ProductDetailPage() {
                                         <span className="text-3xl md:text-4xl font-black text-corporate-black tracking-tighter">
                                             ₺{Number(product.indirimliFiyat).toLocaleString('tr-TR', { minimumFractionDigits: 2 })}
                                         </span>
-                                        <div className="bg-action-red/10 text-action-red text-[10px] font-black px-2 py-1 rounded uppercase tracking-widest mb-1">
+                                        <div className="bg-action-red/10 text-action-red text-[10px] font-black px-2 py-1 rounded-sm uppercase tracking-widest mb-1">
                                             Özel Fiyat
                                         </div>
                                     </div>
@@ -527,7 +527,7 @@ export function ProductDetailPage() {
                                                 }`}
                                             title={color.name}
                                         >
-                                            <div className={`w-full aspect-square rounded-2xl border-4 transition-all duration-300 shadow-sm ${selectedColor === color.name
+                                            <div className={`w-full aspect-square rounded-2xl border-4 transition-all duration-300 shadow-xs ${selectedColor === color.name
                                                 ? 'border-corporate-black shadow-xl ring-4 ring-corporate-black/5'
                                                 : 'border-transparent group-hover:border-gray-200'
                                                 }`}
@@ -579,7 +579,7 @@ export function ProductDetailPage() {
                                         >
                                             {!product.varyantBasligi && (
                                                 <>
-                                                    <div className={`w-full aspect-square rounded-2xl border-4 transition-all duration-300 shadow-sm ${selectedColor === color
+                                                    <div className={`w-full aspect-square rounded-2xl border-4 transition-all duration-300 shadow-xs ${selectedColor === color
                                                         ? 'border-corporate-black shadow-xl ring-4 ring-corporate-black/5'
                                                         : 'border-transparent group-hover:border-gray-200'
                                                         }`}
