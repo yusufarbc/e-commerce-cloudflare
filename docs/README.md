@@ -1,26 +1,31 @@
-# 📚 E-Market Documentation
+# 📚 E-Market Dokümantasyonu
 
-Welcome to the E-Market documentation hub. All guides are listed below — start with the relevant section for your current task.
+E-Market dokümantasyon merkezine hoş geldiniz. Tüm rehberler aşağıda; yapmak
+istediğiniz işe uygun bölümden başlayın.
 
 ---
 
-## 🗂️ Documentation Index
+## 🗂️ Doküman dizini
 
-| Guide | Description |
+| Rehber | Açıklama |
 | :--- | :--- |
-| [CI/CD Pipeline](cicd_pipeline.md) | GitHub Actions workflow — test & build, backend deploy, frontend deploy |
-| [Cloudflare Deployment Guide](cloudflare_deployment_guide.md) | Full step-by-step deployment of Workers, D1, R2, and Pages |
-| [Google Services Integration](google_services.md) | sGTM proxy, GA4, GSC, GMC XML feed, Consent Mode v2, KVKK-compliant analytics |
-| [Google Drive Backup](google_drive_backup.md) | Automated encrypted D1 database backup to Google Drive via GitHub Actions |
-| [Payment Gateways](payment_gateways.md) | Param POS, iyzico, PayTR — configuration, 3D Secure flows, test credentials |
-| [KVKK & GDPR Compliance](kvkk_compliance.md) | Edge IP masking, PII scrubbing, CMP, data inventory, breach notification |
+| [CI/CD Hattı](cicd_pipeline.md) | GitHub Actions workflow'u: güvenlik kapıları, build ve test, deploy, DAST |
+| [DevSecOps Hattı Tasarımı](devsecops_pipeline.md) | Araç araç tasarım, tedarik zinciri sertleştirmesi, rate limit, güvenlik başlıkları, WAF adımları |
+| [Cloudflare Deploy Rehberi](cloudflare_deployment_guide.md) | Workers, D1, R2, static assets ve Cloudflare Access kurulumu |
+| [Google Servisleri Entegrasyonu](google_services.md) | GTM proxy'si, GA4, Search Console, Merchant Center feed'i, Consent Mode v2 |
+| [Google Drive Yedeği](google_drive_backup.md) | D1 veritabanının GitHub Actions ile şifreli olarak Google Drive'a yedeklenmesi |
+| [Ödeme Sağlayıcıları](payment_gateways.md) | Param POS, iyzico, PayTR: yapılandırma, 3D Secure akışı, yeni sağlayıcı ekleme |
+| [KVKK ve GDPR Uyumu](kvkk_compliance.md) | Uçta IP maskeleme, kişisel veri temizleme, rıza yönetimi, veri envanteri, ihlal bildirimi |
+
+Güvenlik araçlarının yapılandırma dosyaları için:
+[security/README.md](../security/README.md).
 
 ---
 
-## 🔗 Quick Links
+## 🔗 Hızlı bağlantılar
 
-- 🏠 **[Project README](../README.md)** — Architecture, quickstart, and live endpoints
-- 🤝 **[Contributing Guide](../CONTRIBUTING.md)** — How to contribute, branch policy, commit standards
-- 📜 **[Changelog](../CHANGELOG.md)** — Release history
-- 🛡️ **[Security Policy](../SECURITY.md)** — Vulnerability reporting process
-- 📋 **[Code of Conduct](../CODE_OF_CONDUCT.md)** — Community standards
+- 🏠 **[Proje README](../README.md)**: mimari, hızlı başlangıç ve canlı adresler
+- 🤝 **[Katkı Rehberi](../CONTRIBUTING.md)**: katkı süreci, dal politikası, commit kuralları
+- 📜 **[Değişiklik Günlüğü](../CHANGELOG.md)**: sürüm geçmişi
+- 🛡️ **[Güvenlik Politikası](../SECURITY.md)**: zafiyet bildirme süreci
+- 📋 **[Davranış Kuralları](../CODE_OF_CONDUCT.md)**: topluluk standartları

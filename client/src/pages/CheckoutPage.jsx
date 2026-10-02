@@ -274,7 +274,7 @@ export function CheckoutPage() {
 
         // Block if weight error
         if (weightError) {
-            alert('Sipariş ağırlığı kargo limitlerini aşıyor (100kg+). Lütfen satis@e-market.com ile iletişime geçiniz.');
+            alert('Sipariş ağırlığı kargo limitlerini aşıyor (100kg+). Lütfen satis@ecommerceflaredev.web.tr ile iletişime geçiniz.');
             return;
         }
 
@@ -852,8 +852,8 @@ export function CheckoutPage() {
                                     {weightError ? (
                                         <div className="text-right">
                                             <span className="block text-action-red font-bold text-sm">Limit Aşıldı</span>
-                                            <a href="mailto:satis@e-market.com" className="text-xs underline text-blue-600">
-                                                satis@e-market.com
+                                            <a href="mailto:satis@ecommerceflaredev.web.tr" className="text-xs underline text-blue-600">
+                                                satis@ecommerceflaredev.web.tr
                                             </a>
                                         </div>
                                     ) : (

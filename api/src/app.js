@@ -103,7 +103,7 @@ export default {
     async scheduled(event, env, ctx) {
         console.log('[Cron Trigger] Active: executing scheduled task for cron: %s', event.cron);
         try {
-            const clientUrl = env.CLIENT_URL || 'https://e-market.com';
+            const clientUrl = env.CLIENT_URL || 'https://ecommerceflaredev.web.tr';
             const sitemapUrl = `${clientUrl}/sitemap.xml`;
             // Trigger a warm-up call to the sitemap endpoint to build cache
             const apiFetchUrl = `${env.API_URL || 'http://localhost:8787'}/sitemap.xml`;

@@ -178,8 +178,8 @@ export function CartSidebar() {
                         <div className="bg-blue-50 p-3 rounded-xl">
                             <p className="text-xs text-blue-700 text-center">
                                 Toplu siparişler için{' '}
-                                <a href="mailto:satis@e-market.com" className="font-bold underline">
-                                    satis@e-market.com
+                                <a href="mailto:satis@ecommerceflaredev.web.tr" className="font-bold underline">
+                                    satis@ecommerceflaredev.web.tr
                                 </a>
                             </p>
                         </div>

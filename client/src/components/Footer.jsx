@@ -53,7 +53,7 @@ const TroyIcon = () => (
 export function Footer() {
     const { settings } = useSettings();
     const siteTitle = settings.siteAdi || 'E-Market';
-    const email = settings.iletisimEmail || 'bilgi@e-market.com';
+    const email = settings.iletisimEmail || 'bilgi@ecommerceflaredev.web.tr';
     const instagram = settings.instagramUrl || 'https://www.instagram.com/emarketltd/';
     const facebook = settings.facebookUrl || 'https://www.facebook.com/emarketltd/';
     const rawNum = settings.whatsappNumarasi || '';

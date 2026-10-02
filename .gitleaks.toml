@@ -3,12 +3,14 @@ title = "e-commerce-cloudflare gitleaks config"
 [extend]
 useDefault = true
 
+# CI scans the full git history, so these entries cover files that no longer
+# exist in the working tree.
 [[allowlists]]
-description = "Research corpus: intentionally vulnerable snapshots, scanned by security-research.yml"
+description = "History only: intentionally vulnerable research corpus, moved to its own repository on 2026-10-02"
 paths = ['''^research/corpus/''']
 
 [[allowlists]]
-description = "Burned demo JWT secret: public in history before research/organic-snapshot-v1, no longer used by the app"
+description = "Burned demo JWT secret: public in history, rotated and no longer used by the app"
 regexTarget = "match"
 regexes = ['''secure-admin-token-secret-12345''']
 

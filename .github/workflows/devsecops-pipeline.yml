@@ -1,6 +1,6 @@
 name: DevSecOps Delivery Pipeline
 
-# Fail-closed CI gates -> Cloudflare CD (see DEVSECOPS_PIPELINE.MD).
+# Fail-closed CI gates -> Cloudflare CD (see docs/devsecops_pipeline.md).
 # Plain `pull_request` is used (never `pull_request_target`) to avoid
 # Poisoned Pipeline Execution from forked PRs.
 on:
@@ -133,17 +133,16 @@ jobs:
           scan-type: fs
           scan-ref: .
           scanners: misconfig
-          skip-dirs: research
           severity: HIGH,CRITICAL
           exit-code: "1"
 
-      # Deployment policy for the API Worker config (policy/wrangler.rego): no secrets in
-      # vars, preview D1/R2 never pointing at live data, no wildcard CORS in real envs.
+      # Deployment policy for the API Worker config (security/policy/wrangler.rego): no
+      # secrets in vars, preview D1/R2 never pointing at live data, no wildcard CORS.
       - name: Wrangler policy (Conftest / OPA)
         shell: bash
         run: |
           docker run --rm --volume "$PWD:/project" --workdir /project "$CONFTEST_IMAGE" \
-            test api/wrangler.toml --policy policy --namespace wrangler.deploy
+            test api/wrangler.toml --policy security/policy --namespace wrangler.deploy
 
       - name: Checkout pinned Semgrep community rules
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -177,12 +176,11 @@ jobs:
             -not -name '*.test.yaml' -not -name 'html-in-template-string.yaml' | sort)
           echo "Loaded $(( ${#configs[@]} / 2 )) rule files from semgrep-rules@$SEMGREP_RULES_SHA"
           semgrep scan "${configs[@]}" \
-            --exclude research \
             --exclude .semgrep-rules \
             --metrics off \
             --error
 
-      # Platform-aware taint rules for D1, R2 and fetch sinks (research/rules/edge), run on
+      # Platform-aware taint rules for D1, R2 and fetch sinks (security/opengrep), run on
       # the API with Opengrep's intra-file inter-procedural taint mode.
       - name: Opengrep custom Workers rules (API)
         shell: bash
@@ -193,7 +191,7 @@ jobs:
           echo '35779bdd72e92129c8df2a77f0c55e8c08356801ea92591ef32108d6b28d564c  '"$RUNNER_TEMP/opengrep" | sha256sum --check
           chmod +x "$RUNNER_TEMP/opengrep"
           "$RUNNER_TEMP/opengrep" scan \
-            --config research/rules/edge \
+            --config security/opengrep \
             --taint-intrafile \
             --error \
             api/src
@@ -216,7 +214,6 @@ jobs:
         uses: github/codeql-action/init@1190a975f95ce23525efb6a3fc21ea29567c1b52 # v3
         with:
           languages: javascript-typescript
-          config-file: ./.github/codeql/codeql-config.yml
 
       - name: Analyze with CodeQL
         uses: github/codeql-action/analyze@1190a975f95ce23525efb6a3fc21ea29567c1b52 # v3
@@ -434,7 +431,7 @@ jobs:
         run: |
           if [[ "$TARGET" == storefront ]]; then url="$SITE_URL"; else url="$API_URL/api/v1/products"; fi
           mkdir -p zap
-          cp .zap/rules.tsv zap/rules.tsv
+          cp security/zap/rules.tsv zap/rules.tsv
           chmod -R a+rwX zap
           # -I: warnings alone do not fail this step; the next step gates on High risk.
           set +e

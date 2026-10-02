@@ -371,7 +371,7 @@ export function OrderTrackingPage() {
 
                                 <div className="mb-6">
                                     <label className="block text-sm font-medium text-gray-700 mb-1">Fotoğraf (Opsiyonel)</label>
-                                    <p className="text-xs text-gray-500 mb-2">Hasarlı ürün fotoğraflarını Whatsapp hattımızdan veya bilgi@e-market.com adresinden sipariş numaranızla iletmeniz süreci hızlandıracaktır.</p>
+                                    <p className="text-xs text-gray-500 mb-2">Hasarlı ürün fotoğraflarını Whatsapp hattımızdan veya bilgi@ecommerceflaredev.web.tr adresinden sipariş numaranızla iletmeniz süreci hızlandıracaktır.</p>
                                 </div>
 
                                 <div className="flex justify-end gap-2">

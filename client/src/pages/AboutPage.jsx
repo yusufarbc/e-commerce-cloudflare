@@ -27,7 +27,7 @@ export function AboutPage() {
                                 Kalite, hız ve müşteri memnuniyeti odaklı hizmet anlayışımızla yanınızdayız.
                             </p>
                             <p className="text-base text-gray-500">
-                                <strong>e-market.com</strong>, Türkiye genelinde hizmet veren <strong>E-Market Teknoloji ve Ticaret Limited Şirketi</strong>'nin dijital satış kanalıdır.
+                                <strong>ecommerceflaredev.web.tr</strong>, Türkiye genelinde hizmet veren <strong>E-Market Teknoloji ve Ticaret Limited Şirketi</strong>'nin dijital satış kanalıdır.
                                 Siparişleriniz, E-Market güvencesiyle paketlenmekte ve faturalandırılmaktadır.
                             </p>
                         </div>
@@ -134,7 +134,7 @@ export function AboutPage() {
                             <a href="/iletisim" className="bg-brand-primary text-white px-8 py-3 rounded-xl font-bold hover:bg-indigo-700 transition-all hover:shadow-lg hover:shadow-yellow-500/20">
                                 İletişim Sayfası
                             </a>
-                            <a href="https://wa.me/908500000000?text=Merhaba%2C%20e-market.com%20%C3%BCzerinden%20size%20ula%C5%9F%C4%B1yorum." target="_blank" rel="noopener noreferrer" className="bg-green-600 text-white px-8 py-3 rounded-xl font-bold hover:bg-green-500 transition-all hover:shadow-lg hover:shadow-green-500/20">
+                            <a href="https://wa.me/908500000000?text=Merhaba%2C%20ecommerceflaredev.web.tr%20%C3%BCzerinden%20size%20ula%C5%9F%C4%B1yorum." target="_blank" rel="noopener noreferrer" className="bg-green-600 text-white px-8 py-3 rounded-xl font-bold hover:bg-green-500 transition-all hover:shadow-lg hover:shadow-green-500/20">
                                 WhatsApp Destek
                             </a>
                         </div>

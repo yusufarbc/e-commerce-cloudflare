@@ -4,7 +4,7 @@ E-Market is a modern, high-performance, fully serverless e-commerce framework de
 
 Unlike traditional monoliths or containerized setups, E-Market leverages lightweight V8 isolates (**Cloudflare Workers**), serverless SQL databases (**Cloudflare D1**), free-egress object storage (**Cloudflare R2**), and static assets served from Workers at the edge to deliver sub-millisecond response times, absolute privacy compliance, and near-zero running costs.
 
-This project is open-source, fully responsive, and works as a Progressive Web App (PWA) out-of-the-box.
+This project is open-source, fully responsive, and works as a Progressive Web App (PWA) out-of-the-box. It is also a reference implementation of a fail-closed DevSecOps pipeline built entirely from free tools.
 
 ---
 
@@ -59,15 +59,17 @@ graph TD
 
 ```text
 e-commerce-cloudflare/
-├── client/              # React Storefront (Workers static assets)
-├── admin/               # React Admin Dashboard + proxy Worker (behind Cloudflare Access)
-├── api/                 # Hono REST API Worker (Cloudflare Workers)
-│   ├── prisma/          # Prisma SQLite migrations and seed scripts
-│   └── src/             # API Controllers, Repositories, Middlewares, and Services
-├── research/            # Academic study: serverless SAST corpus, protocol, analysis
-├── scripts/             # Backup upload utility
-├── .github/             # CI/CD Workflows, Dependabot, and Issue Templates
-└── package.json         # Monorepo management scripts
+├── client/              # React storefront (Workers static assets, PWA)
+├── admin/               # React admin dashboard + proxy Worker (behind Cloudflare Access)
+├── api/                 # Hono REST API Worker
+│   ├── migrations/      # D1 SQL migrations (applied by the pipeline)
+│   ├── prisma/          # Prisma schema and seed data (seed.sql)
+│   └── src/             # Routes, controllers, services, repositories, middlewares
+├── security/            # Opengrep rules, Conftest policy, ZAP overrides
+├── docs/                # Guides (Turkish)
+├── scripts/             # Gitleaks installer, Google Drive backup uploader
+├── .github/             # DevSecOps pipeline, backup workflow, Dependabot, templates
+└── package.json         # Monorepo scripts
 ```
 
 ---
@@ -85,23 +87,26 @@ Install all node modules recursively across the monorepo:
 npm run install:all
 ```
 
-### 2. Set Up Local SQLite Database
-Run D1 migrations locally using Wrangler and Prisma generate:
+### 2. Set Up the Local D1 Database
+Generate the Prisma client and apply the migrations to a local D1 instance:
 ```bash
-# Generate Prisma Client
-npm run dev:api -- npx prisma generate
-
-# Apply migrations to local D1 instance
+(cd api && npx prisma generate)
 npm run db:migrate
 ```
 
 ### 3. Seed Database
-Seed initial system configurations and dummy products into your local database:
+Load the sample categories, brands, products and store settings (`api/prisma/seed.sql`):
 ```bash
 npm run db:seed
 ```
 
-### 4. Start Development Servers
+### 4. Install the Pre-commit Secret Scanner
+The pre-commit hook refuses commits when Gitleaks is missing. Install the version CI uses (checksum-verified, into the gitignored `.tools/`):
+```bash
+sh scripts/install-gitleaks.sh
+```
+
+### 5. Start Development Servers
 Run all applications (Storefront, Admin, and Workers API) concurrently:
 ```bash
 npm run dev
@@ -137,29 +142,20 @@ repository owner.
 
 ## 💳 Payment Gateway Configurations
 
-E-Market includes built-in, ready-to-use integrations for Turkey's leading payment gateways. To select a provider, set the `PAYMENT_PROVIDER` environment variable in your `api/.env` file:
+E-Market includes ready-to-use integrations for Turkey's leading payment gateways (Param POS, iyzico, PayTR). The provider is selected per environment with the `PAYMENT_PROVIDER` var in `api/wrangler.toml`:
 
-```env
-# Switchable options: param, iyzico, paytr
-PAYMENT_PROVIDER=param
-
-# Param POS Gateway Configuration:
-PARAM_CLIENT_CODE=your-code
-PARAM_CLIENT_USERNAME=your-username
-PARAM_CLIENT_PASSWORD=your-password
-PARAM_GUID=your-guid
-
-# iyzico Configuration:
-IYZICO_API_KEY=your-api-key
-IYZICO_SECRET_KEY=your-secret-key
-IYZICO_BASE_URL=https://sandbox-api.iyzipay.com
-
-# PayTR Configuration:
-PAYTR_MERCHANT_ID=your-merchant-id
-PAYTR_MERCHANT_KEY=your-merchant-key
-PAYTR_MERCHANT_SALT=your-merchant-salt
-PAYTR_BASE_URL=https://www.paytr.com
+```toml
+[env.staging.vars]
+PAYMENT_PROVIDER = "iyzico"   # param | iyzico | paytr
+IYZICO_BASE_URL = "https://sandbox-api.iyzipay.com"
 ```
+
+Credentials are never stored in `vars`; set them as secrets
+(`npx wrangler secret put IYZICO_API_KEY --env staging`) or, for local
+development, in `api/.dev.vars`. The pipeline's Conftest policy blocks a deploy
+if a secret-like key appears in `vars`. See
+[Payment Gateways](docs/payment_gateways.md) for every variable and the 3D
+Secure flow.
 
 ---
 
@@ -193,14 +189,15 @@ Staging ortamında ödeme testi yapmak için kullanabileceğiniz kart numaralar�
 E-Market enforces data privacy natively at the edge. 
 
 - **Proxy Routing:** Client-side telemetry is loaded from `/api/v1/metrics/gtm.js` and events are sent to `/api/v1/metrics/collect`.
-- **IP Masking:** Client IP address octets are masked (e.g. `192.168.1.123` -> `192.168.1.0`) before forwarding to analytics endpoints.
-- **PII Scrubbing:** Emails and phone number formats are scrubbed out of payloads via regex scanning at the edge.
+- **IP Masking:** The last IPv4 octet (`203.0.113.42` → `203.0.113.0`) or the IPv6 interface identifier is removed before anything is forwarded to analytics.
+- **PII Scrubbing:** E-mail addresses and phone numbers are masked in free text, and values under personal-data keys (name, address, e-mail, phone, national ID) are replaced whole.
+- **Consent:** Add a consent management platform before going live; see [Google Services](docs/google_services.md#6-kvkk-uyumlu-consent-mode-v2).
 
 ---
 
 ## 💾 Automated Database Backups to Google Drive
 
-E-Market includes a nightly automated backup pipeline (`.github/workflows/backup.yml`) that exports your remote production D1 SQL database content, compresses it (`gzip`), and encrypts it symmetrically using `GPG` for maximum security. The encrypted file is uploaded directly to a Google Drive folder using a native Node.js upload utility (`scripts/uploadToDrive.js`) without external npm library dependencies.
+E-Market includes a backup workflow (`.github/workflows/backup.yml`) that exports the production D1 database, compresses it (`gzip`) and encrypts it with GPG (AES-256). The encrypted file is uploaded to a Google Drive folder by a dependency-free Node.js utility (`scripts/uploadToDrive.js`). In the demo it runs on demand; uncomment the `schedule` block for nightly backups.
 
 ### Configuration
 To configure the backup pipeline, add the following Repository Secrets to your GitHub repository:
@@ -235,7 +232,7 @@ tool in the chain is free.
 There is no manual deploy script: deployments happen only through the
 pipeline. See [CI/CD Pipeline](docs/cicd_pipeline.md),
 [Cloudflare Deployment Guide](docs/cloudflare_deployment_guide.md) and
-[DEVSECOPS_PIPELINE.MD](DEVSECOPS_PIPELINE.MD).
+[DevSecOps Pipeline Design](docs/devsecops_pipeline.md).
 
 ---
 
@@ -243,9 +240,12 @@ pipeline. See [CI/CD Pipeline](docs/cicd_pipeline.md),
 
 Detailed guides for every aspect of E-Market are available in the [`docs/`](docs/) directory:
 
+The guides are written in Turkish.
+
 | Guide | Description |
 | :--- | :--- |
 | [CI/CD Pipeline](docs/cicd_pipeline.md) | GitHub Actions workflow stages, job dependencies, and secrets setup |
+| [DevSecOps Pipeline Design](docs/devsecops_pipeline.md) | Tool-by-tool design, supply-chain hardening, runtime protection, WAF runbook |
 | [Cloudflare Deployment Guide](docs/cloudflare_deployment_guide.md) | One-time Cloudflare setup: zone, D1/R2 per environment, Cloudflare Access, API token |
 | [Google Services Integration](docs/google_services.md) | sGTM proxy on Workers, GA4, Search Console, Merchant Center, Consent Mode v2 |
 | [Google Drive Backup](docs/google_drive_backup.md) | Automated encrypted D1 database backup pipeline to Google Drive |

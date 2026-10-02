@@ -8,17 +8,38 @@ This project adheres to [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ## [Unreleased]
 
+---
+
+## [1.1.0] — 2026-10-02
+
 ### Added
-- Google Services integration documentation (sGTM, GA4, GSC, GMC, Consent Mode v2)
-- Google Drive automated backup documentation
-- Payment gateway configuration guide (Param POS, iyzico, PayTR)
-- KVKK & GDPR compliance documentation
-- Pull request template for open-source contributions
-- English translations of GitHub issue templates
+- Fail-closed DevSecOps pipeline (`.github/workflows/devsecops-pipeline.yml`): actionlint and zizmor, Gitleaks over the full history, OSV-Scanner and npm audit, Semgrep CE with pinned community rules, Opengrep with Cloudflare Workers taint rules (`security/opengrep/`), CodeQL, Trivy, a Conftest policy for `wrangler.toml` (`security/policy/`), CycloneDX SBOMs, and a post-deploy OWASP ZAP baseline scan
+- Two environments, `staging` and `production`, each deployed from its own branch; production deployments require reviewer approval
+- Cloudflare Access for the admin dashboard; the API verifies the Access JWT
+- Per-IP rate limiting with the Workers Rate Limiting binding
+- Security headers on the API (`secureHeaders`) and on the storefront and admin (`public/_headers`)
+- Server-side validation of the checkout body (zod schema)
+- Required local Gitleaks pre-commit hook with a checksum-verified installer (`scripts/install-gitleaks.sh`)
+- Guides for Google services, Google Drive backups, payment gateways and KVKK/GDPR (Turkish)
 
 ### Changed
-- Cleaned up `.gitignore` — added `.wrangler/`, backup artifact patterns, and `skills-lock.json`
-- Removed `api/scratch/` debug scripts from version control
+- Storefront and admin moved from Cloudflare Pages to Workers static assets
+- Canonical URLs, structured data, sitemap links and contact addresses use the project domain `ecommerceflaredev.web.tr`
+- Backup workflow runs on Node.js 22 with a pinned Wrangler and passes the GPG passphrase on stdin
+- Local seeding uses Wrangler and `prisma/seed.sql` against the local D1 database
+- Documentation moved under `docs/` and translated to Turkish; security tool configuration moved under `security/`
+
+### Removed
+- Password-based admin login and its secrets
+- Unused `soap` dependency, legacy Express rate limiter, unused components and utilities, the committed `prisma/dev.db` and `prisma/seed.js`
+- Research corpus and experiment workflows (moved to a separate repository)
+
+### Security
+- Plaintext JWT secret, default admin password, reflected CORS origin and an unauthenticated debug endpoint removed
+- GTM proxy builds its URL from a fixed host and an allowlisted container id (SSRF)
+- Customer data escaped in e-mail HTML, the sitemap, the Param SOAP body and the PayTR form; CR/LF stripped from e-mail headers
+- Storefront product cards strip HTML with `DOMParser` instead of `innerHTML` (DOM XSS)
+- Analytics proxy masks values under personal-data keys (name, address) completely
 
 ---
 

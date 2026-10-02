@@ -49,6 +49,27 @@ describe('security headers', () => {
     });
 });
 
+describe('checkout validation', () => {
+    const post = (body) => call('/api/v1/orders/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body,
+    });
+
+    it('rejects a body that does not match the checkout schema', async () => {
+        const res = await post(JSON.stringify({ items: [], guestInfo: { name: 'A' } }));
+        expect(res.status).toBe(400);
+        const json = await res.json();
+        expect(json.status).toBe('failure');
+        expect(json.errors.map((e) => e.path)).toContain('items');
+    });
+
+    it('rejects malformed JSON with 400 instead of a server error', async () => {
+        const res = await post('{not json');
+        expect(res.status).toBe(400);
+    });
+});
+
 describe('removed endpoints', () => {
     it('no longer serves /api/v1/debug-db', async () => {
         expect((await call('/api/v1/debug-db')).status).toBe(404);

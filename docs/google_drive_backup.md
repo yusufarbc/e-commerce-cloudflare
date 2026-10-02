@@ -1,56 +1,66 @@
-# Automated Google Drive Database Backup
+# Google Drive'a Otomatik Veritabanı Yedeği
 
-E-Market includes a fully automated, encrypted nightly backup pipeline that exports the Cloudflare D1 database, compresses and encrypts the dump, and uploads it securely to Google Drive. The entire pipeline runs on GitHub Actions with zero external npm dependencies.
+E-Market, Cloudflare D1 veritabanını dışa aktaran, dökümü sıkıştırıp şifreleyen
+ve Google Drive'a yükleyen bir yedekleme hattı içerir. Hat GitHub Actions
+üzerinde çalışır; yükleme betiği harici npm bağımlılığı kullanmaz.
+
+> [!NOTE]
+> Demo ortamında gece zamanlaması kapalıdır; yedek **Actions** sekmesinden elle
+> başlatılır. Otomatik yedek için `.github/workflows/backup.yml` dosyasındaki
+> `schedule` bloğunun yorumunu kaldırın.
 
 ---
 
-## Architecture
+## Mimari
 
 ```mermaid
 sequenceDiagram
-    participant GH as GitHub Actions (Cron 00:00 UTC)
+    participant GH as GitHub Actions
     participant CF as Cloudflare D1 API
-    participant GPG as GPG (Encrypt)
+    participant GPG as GPG (şifreleme)
     participant Drive as Google Drive
 
     GH->>CF: wrangler d1 export --remote
-    CF-->>GH: d1-backup.sql (plaintext SQL dump)
+    CF-->>GH: d1-backup.sql (düz SQL dökümü)
     GH->>GH: gzip → d1-backup.sql.gz
-    GH->>GPG: gpg --symmetric (passphrase from secret)
-    GPG-->>GH: d1-backup.sql.gz.gpg (encrypted)
+    GH->>GPG: gpg --symmetric (parola secret'tan, stdin ile)
+    GPG-->>GH: d1-backup.sql.gz.gpg (şifreli)
     GH->>Drive: uploadToDrive.js (Service Account OAuth2 JWT)
-    Drive-->>GH: File ID confirmed
+    Drive-->>GH: Dosya kimliği onaylandı
 ```
 
 ---
 
-## Step 1: Create a Google Cloud Project
+## 1. Adım: Google Cloud projesi oluşturun
 
-1. Go to [console.cloud.google.com](https://console.cloud.google.com)
-2. Click **Select a project** → **New Project**
-3. Name it (e.g., `e-market-backups`) and click **Create**
-4. Note the **Project ID** for the next steps
-
----
-
-## Step 2: Enable the Google Drive API
-
-1. In your GCP project, go to **APIs & Services** → **Library**
-2. Search for `Google Drive API` and click **Enable**
+1. [console.cloud.google.com](https://console.cloud.google.com) adresine gidin.
+2. **Select a project** → **New Project** seçin.
+3. Projeye bir ad verin (ör. `e-market-backups`) ve **Create**'e tıklayın.
+4. Sonraki adımlar için **Project ID** değerini not edin.
 
 ---
 
-## Step 3: Create a Service Account
+## 2. Adım: Google Drive API'yi etkinleştirin
 
-A Service Account is a non-human Google identity used by the backup script to authenticate with the Drive API — no user login required.
+1. GCP projesinde **APIs & Services** → **Library** bölümüne gidin.
+2. `Google Drive API` araması yapın ve **Enable**'a tıklayın.
 
-1. Go to **IAM & Admin** → **Service Accounts** → **Create Service Account**
-2. Name it `e-market-backup-agent` and click **Create and Continue**
-3. Skip role assignment (the Drive folder permission is set separately) → **Done**
-4. Click on the new service account → **Keys** tab → **Add Key** → **Create New Key** → **JSON**
-5. The JSON key file downloads automatically. **Store this file securely — it cannot be re-downloaded.**
+---
 
-The JSON key file looks like this:
+## 3. Adım: Service Account oluşturun
+
+Service Account, yedekleme betiğinin Drive API'de kimlik doğrulamak için
+kullandığı insan dışı bir Google kimliğidir; kullanıcı girişi gerekmez.
+
+1. **IAM & Admin** → **Service Accounts** → **Create Service Account** seçin.
+2. Adını `e-market-backup-agent` yapın ve **Create and Continue**'ya tıklayın.
+3. Rol atamasını atlayın (Drive klasör izni ayrıca verilir) → **Done**.
+4. Yeni service account'a tıklayın → **Keys** sekmesi → **Add Key** →
+   **Create New Key** → **JSON**.
+5. JSON anahtar dosyası otomatik iner. **Dosyayı güvenli saklayın; tekrar
+   indirilemez.**
+
+JSON anahtar dosyası şuna benzer:
 
 ```json
 {
@@ -66,111 +76,109 @@ The JSON key file looks like this:
 
 ---
 
-## Step 4: Prepare Your Google Drive Folder
+## 4. Adım: Google Drive klasörünü hazırlayın
 
-1. Open [drive.google.com](https://drive.google.com)
-2. Create a new folder named `E-Market DB Backups` (or similar)
-3. Right-click the folder → **Share**
-4. In the "Add people" field, enter the service account's **`client_email`** address (e.g. `e-market-backup-agent@e-market-backups.iam.gserviceaccount.com`)
-5. Set permission to **Editor** and click **Send**
+1. [drive.google.com](https://drive.google.com) adresini açın.
+2. `E-Market DB Backups` (veya benzeri) adında yeni bir klasör oluşturun.
+3. Klasöre sağ tıklayın → **Share**.
+4. "Add people" alanına service account'un **`client_email`** adresini yazın
+   (ör. `e-market-backup-agent@e-market-backups.iam.gserviceaccount.com`).
+5. İzni **Editor** yapın ve **Send**'e tıklayın.
 
-**Get the Folder ID:**
-Open the folder in your browser. The URL will look like:
-```
+**Klasör kimliğini alın:** Klasörü tarayıcıda açın. URL şuna benzer:
+
+```text
 https://drive.google.com/drive/folders/1aBcDeFgHiJkLmNoPqRsTuVwXyZ1234567
 ```
-The long string after `/folders/` is your **Folder ID**.
+
+`/folders/` sonrasındaki uzun dizi **Folder ID** değeridir.
 
 ---
 
-## Step 5: Configure GitHub Secrets
+## 5. Adım: GitHub secret'larını tanımlayın
 
-In your GitHub repository go to **Settings** → **Secrets and variables** → **Actions** → **New repository secret** and add each of the following:
+GitHub reposunda **Settings** → **Secrets and variables** → **Actions** →
+**New repository secret** yolunu izleyin ve şunları ekleyin:
 
-| Secret Name | Value |
+| Secret adı | Değer |
 | :--- | :--- |
-| `CLOUDFLARE_API_TOKEN` | A Cloudflare API token with **D1 Edit** permissions |
-| `CLOUDFLARE_ACCOUNT_ID` | Your Cloudflare Account ID (found in the Workers dashboard) |
-| `BACKUP_ENCRYPTION_PASSPHRASE` | A strong random passphrase (e.g. 32+ character random string) used to encrypt the backup with GPG |
-| `GDRIVE_SERVICE_ACCOUNT` | The **full contents** of the service account JSON key file (paste as-is) |
-| `GDRIVE_FOLDER_ID` | The Google Drive Folder ID from Step 4 |
+| `CLOUDFLARE_API_TOKEN` | **D1 Edit** yetkisi olan bir Cloudflare API token'ı (deploy token'ı bu yetkiyi zaten içerir) |
+| `CLOUDFLARE_ACCOUNT_ID` | Cloudflare hesap kimliği |
+| `BACKUP_ENCRYPTION_PASSPHRASE` | Yedeği GPG ile şifrelemek için güçlü, rastgele bir parola (32+ karakter) |
+| `GDRIVE_SERVICE_ACCOUNT` | Service account JSON anahtar dosyasının **tüm içeriği** (olduğu gibi yapıştırın) |
+| `GDRIVE_FOLDER_ID` | 4. adımdaki Google Drive klasör kimliği |
 
 > [!CAUTION]
-> Never commit the JSON key file or passphrase to the repository. Always use GitHub Secrets.
+> JSON anahtar dosyasını veya parolayı asla repoya commit etmeyin. Her zaman
+> GitHub Secrets kullanın.
 
 ---
 
-## Step 6: How the Backup Workflow Runs
+## 6. Adım: Yedekleme workflow'u nasıl çalışır
 
-The workflow file is at [`.github/workflows/backup.yml`](../.github/workflows/backup.yml).
+Workflow dosyası:
+[`.github/workflows/backup.yml`](../.github/workflows/backup.yml).
 
-It runs automatically every night at **00:00 UTC** and can also be triggered manually from the **Actions** tab.
+**Aşamalar:**
 
-**Pipeline stages:**
-
-1. **Export** — Wrangler exports the production D1 database as a plain SQL dump:
+1. **Dışa aktarma:** Wrangler production D1 veritabanını düz SQL dökümü
+   olarak dışa aktarır:
    ```bash
-   npx wrangler d1 export ecommerce-d1 --remote --output=d1-backup.sql
+   npx wrangler@4.145.0 d1 export ecommerceflaredev-d1-production --remote --output=d1-backup.sql
    ```
-
-2. **Compress** — The SQL file is gzip-compressed to reduce size:
+2. **Sıkıştırma:** SQL dosyası gzip ile sıkıştırılır (`d1-backup.sql.gz`).
+3. **Şifreleme:** Sıkıştırılmış dosya parolayla, AES-256 ile simetrik olarak
+   şifrelenir. Parola komut satırında değil stdin üzerinden verilir:
    ```bash
-   gzip d1-backup.sql   # → d1-backup.sql.gz
+   printf '%s' "$BACKUP_ENCRYPTION_PASSPHRASE" | gpg --batch --yes --pinentry-mode loopback \
+     --passphrase-fd 0 --symmetric --cipher-algo AES256 \
+     --output d1-backup.sql.gz.gpg d1-backup.sql.gz
    ```
-
-3. **Encrypt** — The compressed file is symmetrically encrypted with GPG using your passphrase:
-   ```bash
-   gpg --symmetric --batch --yes \
-     --passphrase "$BACKUP_ENCRYPTION_PASSPHRASE" \
-     -o d1-backup.sql.gz.gpg d1-backup.sql.gz
-   ```
-   The result is `d1-backup.sql.gz.gpg` — the file is **unreadable without the passphrase**.
-
-4. **Upload** — The encrypted file is uploaded to Google Drive via a zero-dependency Node.js script (`scripts/uploadToDrive.js`) that authenticates using the Service Account JWT:
+   Sonuç `d1-backup.sql.gz.gpg` dosyasıdır; **parola olmadan okunamaz.**
+4. **Yükleme:** Şifreli dosya, service account JWT'siyle kimlik doğrulayan
+   bağımlılıksız bir Node.js betiğiyle (`scripts/uploadToDrive.js`) Google
+   Drive'a yüklenir:
    ```bash
    node scripts/uploadToDrive.js d1-backup.sql.gz.gpg
    ```
 
 ---
 
-## Step 7: Restoring a Backup
-
-To decrypt and restore a backup file:
+## 7. Adım: Yedeği geri yükleme
 
 ```bash
-# 1. Decrypt the backup
-gpg --decrypt \
-    --batch \
-    --passphrase "YOUR_PASSPHRASE" \
-    -o d1-backup.sql.gz \
-    d1-backup.sql.gz.gpg
+# 1. Şifreyi çözün (parola istenir)
+gpg --decrypt -o d1-backup.sql.gz d1-backup.sql.gz.gpg
 
-# 2. Decompress
+# 2. Açın
 gunzip d1-backup.sql.gz   # → d1-backup.sql
 
-# 3. Restore to a local D1 instance (for inspection)
-npx wrangler d1 execute ecommerce-d1 --local --file=d1-backup.sql
+# 3. İncelemek için yerel D1'e yükleyin (api/ dizininde)
+npx wrangler@4.145.0 d1 execute DB --local --file=d1-backup.sql
 
-# 4. Restore to remote production D1 (use with extreme caution!)
-npx wrangler d1 execute ecommerce-d1 --remote --file=d1-backup.sql
+# 4. Uzak production D1'e geri yükleyin (çok dikkatli kullanın!)
+npx wrangler@4.145.0 d1 execute DB --env production --remote --file=d1-backup.sql
 ```
 
 > [!WARNING]
-> Restoring to the **remote** production database overwrites live data. Always verify the backup contents locally first before applying remotely.
+> **Uzak** production veritabanına geri yükleme canlı verinin üzerine yazar.
+> Uzak ortama uygulamadan önce yedeğin içeriğini her zaman yerelde doğrulayın.
 
 ---
 
-## Backup Retention
+## Saklama süresi
 
-The backup workflow does not automatically delete old files from Google Drive. Google Drive's storage quota applies. Recommended practices:
+Workflow eski dosyaları Google Drive'dan otomatik silmez; Google Drive kotası
+geçerlidir. Önerilen uygulamalar:
 
-- **Manual rotation**: Delete backups older than 90 days monthly.
-- **Automated rotation**: Use Google Drive's native **Storage management** feature or a scheduled Apps Script to auto-delete files older than N days.
+- **Elle döndürme:** 90 günden eski yedekleri ayda bir silin.
+- **Otomatik döndürme:** Google Drive'ın **Storage management** özelliğini
+  veya N günden eski dosyaları silen zamanlanmış bir Apps Script kullanın.
 
 ---
 
-## Related Documentation
+## İlgili dokümanlar
 
-- [Google Services Integration](google_services.md)
-- [CI/CD Pipeline](cicd_pipeline.md)
-- [KVKK Compliance](kvkk_compliance.md)
+- [Google Servisleri Entegrasyonu](google_services.md)
+- [CI/CD Hattı](cicd_pipeline.md)
+- [KVKK Uyumu](kvkk_compliance.md)
