@@ -1,6 +1,6 @@
 
 -- Database Cleanup
-DELETE FROM siparis_gecmisi;
+DELETE FROM islem_gecmisi;
 DELETE FROM iade_talepleri;
 DELETE FROM siparis_kalemleri;
 DELETE FROM siparisler;
