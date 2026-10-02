@@ -26,7 +26,7 @@ export function DistanceSalesAgreement() {
                         </div>
                         <div className="bg-gray-50 p-4 rounded-lg">
                             <h3 className="font-bold border-b pb-2 mb-2">ALICI</h3>
-                            <p>e-market.com üzerinden sipariş veren kullanıcı.</p>
+                            <p>ecommerceflaredev.web.tr üzerinden sipariş veren kullanıcı.</p>
                         </div>
                     </div>
                 </section>

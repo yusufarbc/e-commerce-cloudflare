@@ -84,8 +84,8 @@ export class FeedController {
             }
         });
 
-        const baseUrl = config.clientUrl || 'https://e-market.com';
-        const cdnUrl = config.cdnUrl || 'https://cdn.e-market.com';
+        const baseUrl = config.clientUrl || 'https://ecommerceflaredev.web.tr';
+        const cdnUrl = config.cdnUrl || 'https://cdn.ecommerceflaredev.web.tr';
 
         // XML Header
         let xml = `<?xml version="1.0" encoding="UTF-8"?>

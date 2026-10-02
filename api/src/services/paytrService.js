@@ -1,4 +1,5 @@
 import crypto from 'node:crypto';
+import { escapeMarkup } from '../utils/escape.js';
 
 /**
  * PaytrService — PayTR Payment Gateway Integration
@@ -99,7 +100,7 @@ export class PaytrService {
         const baseUrl = this.config.baseUrl || 'https://www.paytr.com';
         
         const orderNumber = order.siparisNumarasi;
-        const email = order.eposta || 'bilgi@e-market.com';
+        const email = order.eposta || 'bilgi@ecommerceflaredev.web.tr';
         const userIp = buyer.ip || '127.0.0.1';
         
         // PayTR Direct API expects payment_amount as a decimal string
@@ -143,33 +144,33 @@ export class PaytrService {
     <title>PayTR Yönlendiriliyor...</title>
 </head>
 <body>
-    <form id="paytr-form" action="${actionUrl}" method="post">
-        <input type="hidden" name="cc_owner" value="${ccOwner}">
-        <input type="hidden" name="card_number" value="${cardNumber}">
-        <input type="hidden" name="expiry_month" value="${expiryMonth}">
-        <input type="hidden" name="expiry_year" value="${expiryYear}">
-        <input type="hidden" name="cvv" value="${cvv}">
-        <input type="hidden" name="merchant_id" value="${merchantId}">
-        <input type="hidden" name="user_ip" value="${userIp}">
-        <input type="hidden" name="merchant_oid" value="${orderNumber}">
-        <input type="hidden" name="email" value="${email}">
-        <input type="hidden" name="payment_type" value="${paymentType}">
-        <input type="hidden" name="payment_amount" value="${paymentAmount}">
-        <input type="hidden" name="currency" value="${currency}">
-        <input type="hidden" name="test_mode" value="${testMode}">
-        <input type="hidden" name="non_3d" value="${non3d}">
-        <input type="hidden" name="merchant_ok_url" value="${successUrl}">
-        <input type="hidden" name="merchant_fail_url" value="${failUrl}">
-        <input type="hidden" name="user_name" value="${`${buyer.name} ${buyer.surname}`.toUpperCase()}">
-        <input type="hidden" name="user_address" value="${order.adres || 'Turkiye'}">
-        <input type="hidden" name="user_phone" value="${buyer.phone || '05555555555'}">
-        <input type="hidden" name="user_basket" value="${userBasket}">
-        <input type="hidden" name="debug_on" value="${debugOn}">
-        <input type="hidden" name="client_lang" value="${clientLang}">
-        <input type="hidden" name="paytr_token" value="${paytrToken}">
-        <input type="hidden" name="non3d_test_failed" value="${non3dTestFailed}">
-        <input type="hidden" name="installment_count" value="${installmentCount}">
-        <input type="hidden" name="card_type" value="${cardType}">
+    <form id="paytr-form" action="${escapeMarkup(actionUrl)}" method="post">
+        <input type="hidden" name="cc_owner" value="${escapeMarkup(ccOwner)}">
+        <input type="hidden" name="card_number" value="${escapeMarkup(cardNumber)}">
+        <input type="hidden" name="expiry_month" value="${escapeMarkup(expiryMonth)}">
+        <input type="hidden" name="expiry_year" value="${escapeMarkup(expiryYear)}">
+        <input type="hidden" name="cvv" value="${escapeMarkup(cvv)}">
+        <input type="hidden" name="merchant_id" value="${escapeMarkup(merchantId)}">
+        <input type="hidden" name="user_ip" value="${escapeMarkup(userIp)}">
+        <input type="hidden" name="merchant_oid" value="${escapeMarkup(orderNumber)}">
+        <input type="hidden" name="email" value="${escapeMarkup(email)}">
+        <input type="hidden" name="payment_type" value="${escapeMarkup(paymentType)}">
+        <input type="hidden" name="payment_amount" value="${escapeMarkup(paymentAmount)}">
+        <input type="hidden" name="currency" value="${escapeMarkup(currency)}">
+        <input type="hidden" name="test_mode" value="${escapeMarkup(testMode)}">
+        <input type="hidden" name="non_3d" value="${escapeMarkup(non3d)}">
+        <input type="hidden" name="merchant_ok_url" value="${escapeMarkup(successUrl)}">
+        <input type="hidden" name="merchant_fail_url" value="${escapeMarkup(failUrl)}">
+        <input type="hidden" name="user_name" value="${escapeMarkup(`${buyer.name} ${buyer.surname}`.toUpperCase())}">
+        <input type="hidden" name="user_address" value="${escapeMarkup(order.adres || 'Turkiye')}">
+        <input type="hidden" name="user_phone" value="${escapeMarkup(buyer.phone || '05555555555')}">
+        <input type="hidden" name="user_basket" value="${escapeMarkup(userBasket)}">
+        <input type="hidden" name="debug_on" value="${escapeMarkup(debugOn)}">
+        <input type="hidden" name="client_lang" value="${escapeMarkup(clientLang)}">
+        <input type="hidden" name="paytr_token" value="${escapeMarkup(paytrToken)}">
+        <input type="hidden" name="non3d_test_failed" value="${escapeMarkup(non3dTestFailed)}">
+        <input type="hidden" name="installment_count" value="${escapeMarkup(installmentCount)}">
+        <input type="hidden" name="card_type" value="${escapeMarkup(cardType)}">
     </form>
     <script type="text/javascript">
         document.getElementById("paytr-form").submit();

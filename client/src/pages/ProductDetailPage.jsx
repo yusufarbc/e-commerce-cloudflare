@@ -233,7 +233,7 @@ export function ProductDetailPage() {
                 keywords={`${product.ad}, ${product.kategori?.ad || ''}, ${product.marka?.ad || ''}`}
                 ogType="product"
                 ogImage={product.resimUrl}
-                canonical={`https://e-market.com/urun/${product.slug || product.id}`}
+                canonical={`https://ecommerceflaredev.web.tr/urun/${product.slug || product.id}`}
                 structuredData={structuredData}
             />
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -498,7 +498,7 @@ export function ProductDetailPage() {
                         {/* Bulk Order Info (Compact) */}
                         <div className="bg-blue-50/50 border border-blue-100 p-4 rounded-2xl">
                             <p className="text-blue-900 text-[11px] font-medium leading-relaxed">
-                                <strong>Toplu Sipariş?</strong> Projeleriniz ve toplu alımlarınız için <a href="mailto:satis@e-market.com" className="underline font-bold hover:text-blue-700">satis@e-market.com</a> üzerinden iletişime geçebilirsiniz.
+                                <strong>Toplu Sipariş?</strong> Projeleriniz ve toplu alımlarınız için <a href="mailto:satis@ecommerceflaredev.web.tr" className="underline font-bold hover:text-blue-700">satis@ecommerceflaredev.web.tr</a> üzerinden iletişime geçebilirsiniz.
                             </p>
                         </div>
                     </div>

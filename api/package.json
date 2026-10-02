@@ -7,19 +7,16 @@
   "type": "module",
   "main": "src/app.js",
   "scripts": {
-    "dev": "npx wrangler dev",
-    "seed": "node prisma/seed.js",
+    "dev": "npx --yes wrangler@4.145.0 dev",
+    "seed": "npx --yes wrangler@4.145.0 d1 execute DB --local --file prisma/seed.sql",
     "test": "vitest run",
-    "seed:remote": "npx --yes wrangler@4.145.0 d1 execute DB --remote --file prisma/seed.sql"
-  },
-  "prisma": {
-    "seed": "node prisma/seed.js"
+    "seed:remote": "npx --yes wrangler@4.145.0 d1 execute DB --remote --file prisma/seed.sql",
+    "migrate": "npx --yes wrangler@4.145.0 d1 migrations apply DB --local"
   },
   "dependencies": {
     "@prisma/adapter-d1": "^5.22.0",
     "@prisma/client": "^5.22.0",
     "hono": "^4.13.0",
-    "soap": "^1.10.0",
     "zod": "^4.4.3"
   },
   "devDependencies": {

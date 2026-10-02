@@ -36,10 +36,10 @@ export function MaintenancePage() {
                 <div className="mt-12 pt-8 border-t border-white/10 flex flex-col items-center gap-4">
                     <p className="text-sm text-gray-400">Acil durumlar için bize ulaşın:</p>
                     <a
-                        href="mailto:bilgi@e-market.com"
+                        href="mailto:bilgi@ecommerceflaredev.web.tr"
                         className="text-indigo-600 font-bold hover:text-white transition-colors text-lg"
                     >
-                        bilgi@e-market.com
+                        bilgi@ecommerceflaredev.web.tr
                     </a>
                 </div>
             </div>
