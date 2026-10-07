@@ -122,23 +122,25 @@ export class ReturnService {
 
         const updatedReturn = await this.returnRepository.update(id, data);
 
-        // Update order status if approved or rejected
-        let targetOrderStatus = 'IADE_TALEP_EDILDI';
-        if (body.durum === 'ONAYLANDI') {
-            targetOrderStatus = 'IADE_EDILDI';
-        } else if (body.durum === 'REDDEDILDI') {
-            targetOrderStatus = 'TESLIM_EDILDI'; // Rollback status
+        // The order status follows the return decision; a note-only update leaves it alone.
+        if (body.durum) {
+            let targetOrderStatus = 'IADE_TALEP_EDILDI';
+            if (body.durum === 'ONAYLANDI') {
+                targetOrderStatus = 'IADE_EDILDI';
+            } else if (body.durum === 'REDDEDILDI') {
+                targetOrderStatus = 'TESLIM_EDILDI'; // Rollback status
+            }
+
+            await this.orderRepository.update(iade.siparisId, { durum: targetOrderStatus });
+
+            await this.orderRepository.createOrderHistory({
+                siparisId: iade.siparisId,
+                eskiDurum: iade.siparis.durum,
+                yeniDurum: targetOrderStatus,
+                not: `İade talebi ${body.durum} olarak güncellendi. Admin Notu: ${body.adminNotu || '-'}`,
+                islemYapan: 'ADMIN'
+            });
         }
-
-        await this.orderRepository.update(iade.siparisId, { durum: targetOrderStatus });
-
-        await this.orderRepository.createOrderHistory({
-            siparisId: iade.siparisId,
-            eskiDurum: iade.siparis.durum,
-            yeniDurum: targetOrderStatus,
-            not: `İade talebi ${body.durum} olarak güncellendi. Admin Notu: ${body.adminNotu || '-'}`,
-            islemYapan: 'ADMIN'
-        });
 
         return updatedReturn;
     }

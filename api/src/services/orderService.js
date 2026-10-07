@@ -2,6 +2,23 @@ import { config } from '../config.js';
 import prisma from '../prisma.js';
 import { PaymentService } from './paymentService.js';
 
+/** An error caused by the request (bad cart, stock), reported as 400 by the error handler. */
+function clientError(message) {
+    const error = new Error(message);
+    error.statusCode = 400;
+    return error;
+}
+
+/** Ten-digit order number, first digit non-zero, from crypto.getRandomValues. */
+export function generateOrderNumber() {
+    const digits = crypto.getRandomValues(new Uint8Array(10));
+    let value = String(1 + (digits[0] % 9));
+    for (let i = 1; i < digits.length; i++) {
+        value += String(digits[i] % 10);
+    }
+    return value;
+}
+
 /**
  * Service for managing order processing and checkout operations.
  * Houses business rules including validations, shipping cost calculations, payment integration, and email triggers.
@@ -35,47 +52,57 @@ export class OrderService {
         let totalWeight = 0;
         const indexItems = []; // Array to map line items for Prisma schema
 
-        // Validate products and calculate total weight/prices
+        // Validate products and calculate total weight/prices. Every line must be a product that is
+        // on sale and in stock; a cart line that does not resolve is an error, not a skipped line.
+        const quantityByProduct = new Map();
         for (const item of items) {
             const product = await this.productService.getProductById(item.id);
-            if (product) {
-                const unitPrice = Number(product.indirimliFiyat || product.fiyat);
-                const productColors = Array.isArray(product.renkSecenekleri)
-                    ? product.renkSecenekleri.filter(Boolean)
-                    : [];
-                let selectedColor = typeof item.selectedColor === 'string' ? item.selectedColor.trim() : '';
-
-                if (productColors.length > 0 && !selectedColor) {
-                    selectedColor = productColors[0];
-                }
-
-                if (selectedColor && !productColors.includes(selectedColor)) {
-                    throw new Error(`Selected color for ${product.ad} is invalid.`);
-                }
-
-                // Use the selected color name directly
-                const finalColorName = selectedColor;
-
-                subTotal += unitPrice * item.quantity;
-                totalWeight += Number(product.agirlik || 1) * item.quantity;
-
-                // Build database snapshot record representation
-                indexItems.push({
-                    urunId: product.id,
-                    secilenRenk: finalColorName,
-                    adet: item.quantity,
-                    iadeyeUygunMuSnapshot: product.iadeImkaniVar !== false,
-                    fiyat: unitPrice,
-                    urunAdSnapshot: product.ad,
-                    urunFiyatSnapshot: unitPrice,
-                    toplamFiyat: unitPrice * item.quantity
-                });
+            if (!product || product.aktif === false) {
+                throw clientError('Sepetinizdeki bir ürün artık satışta değil.');
             }
+
+            const requested = (quantityByProduct.get(product.id) || 0) + item.quantity;
+            quantityByProduct.set(product.id, requested);
+            if (requested > Number(product.stokAdedi || 0)) {
+                throw clientError(`${product.ad} için yeterli stok yok.`);
+            }
+
+            const unitPrice = Number(product.indirimliFiyat || product.fiyat);
+            const productColors = Array.isArray(product.renkSecenekleri)
+                ? product.renkSecenekleri.filter(Boolean)
+                : [];
+            let selectedColor = typeof item.selectedColor === 'string' ? item.selectedColor.trim() : '';
+
+            if (productColors.length > 0 && !selectedColor) {
+                selectedColor = productColors[0];
+            }
+
+            if (selectedColor && !productColors.includes(selectedColor)) {
+                throw clientError(`Selected color for ${product.ad} is invalid.`);
+            }
+
+            // Use the selected color name directly
+            const finalColorName = selectedColor;
+
+            subTotal += unitPrice * item.quantity;
+            totalWeight += Number(product.agirlik || 1) * item.quantity;
+
+            // Build database snapshot record representation
+            indexItems.push({
+                urunId: product.id,
+                secilenRenk: finalColorName,
+                adet: item.quantity,
+                iadeyeUygunMuSnapshot: product.iadeImkaniVar !== false,
+                fiyat: unitPrice,
+                urunAdSnapshot: product.ad,
+                urunFiyatSnapshot: unitPrice,
+                toplamFiyat: unitPrice * item.quantity
+            });
         }
 
         // Safeguard: Block orders exceeding 100kg limits
         if (totalWeight > 100) {
-            throw new Error('Order total weight exceeds 100kg limit. Please contact satis@ecommerceflaredev.web.tr or our WhatsApp line for bulk cargo shipping pricing.');
+            throw clientError('Order total weight exceeds 100kg limit. Please contact satis@ecommerceflaredev.web.tr or our WhatsApp line for bulk cargo shipping pricing.');
         }
 
         // Shipping Fee Logic (Dynamic Multi-Policy Pricing)
@@ -152,8 +179,9 @@ export class OrderService {
         // 2. Generate and Insert Pending Order Record
         const { isCorporate, companyName, taxOffice, taxNumber } = checkoutData.invoiceInfo || {};
 
-        // Generate short 6-digit reference number
-        const siparisNumarasi = Math.floor(100000 + Math.random() * 900000).toString();
+        // The order number identifies the order to payment gateways and customers, so it must be
+        // unique and not guessable: 10 digits from a CSPRNG.
+        const siparisNumarasi = generateOrderNumber();
 
         // Split Full Name into First and Last names
         const fullNameParts = customerInfo.name.trim().split(' ');
@@ -345,6 +373,8 @@ export class OrderService {
             return rejectWithRefund('Order is no longer awaiting payment.');
         }
 
+        await this.orderRepository.adjustStock(siparis.kalemler, -1);
+
         const freshOrder = await this.orderRepository.getOrderById(siparis.id);
         if (freshOrder) {
             await this.emailService.sendOrderConfirmation(freshOrder.eposta, freshOrder.ad, {
@@ -426,6 +456,10 @@ export class OrderService {
         }
 
         await this.orderRepository.cancelOrder(order.id, { refunded: refundStatus === 'SUCCESS' });
+        if (refundStatus === 'SUCCESS') {
+            // Stock was taken out when the payment arrived; an unpaid order never held any.
+            await this.orderRepository.adjustStock(order.kalemler, 1);
+        }
 
         // Send cancellation email to customer
         if (order.eposta) {

@@ -9,11 +9,24 @@ export class SettingsController {
     }
 
     /**
-     * Get system settings (Public or Admin)
+     * Get system settings (Admin)
      */
     getSettings = asyncHandler(async (req, res, next) => {
         const settings = await this.settingsService.getSettings();
         res.json(settings);
+    });
+
+    /**
+     * Get system settings for the storefront. Secrets are left out: the Google Merchant feed
+     * token protects /api/v1/feeds and must only be visible in the admin dashboard.
+     */
+    getPublicSettings = asyncHandler(async (req, res, next) => {
+        const settings = await this.settingsService.getSettings();
+        if (!settings) {
+            return res.json(settings);
+        }
+        const { googleMerchantToken, ...publicSettings } = settings;
+        res.json(publicSettings);
     });
 
     /**

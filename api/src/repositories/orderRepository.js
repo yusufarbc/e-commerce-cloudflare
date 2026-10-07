@@ -84,6 +84,26 @@ export class OrderRepository extends BaseRepository {
     }
 
     /**
+     * Moves stock for an order's line items: -1 takes the quantities out of stock (payment
+     * received), +1 puts them back (paid order cancelled and refunded).
+     *
+     * D1 has no interactive transactions, so each product is updated with its own atomic
+     * increment; a concurrent checkout can still oversell by the quantity in flight.
+     *
+     * @param {Array<{urunId: string, adet: number}>} items - Order line items.
+     * @param {-1|1} direction - Take out of (-1) or return to (+1) stock.
+     */
+    async adjustStock(items, direction) {
+        for (const item of items || []) {
+            if (!item.urunId || !(item.adet > 0)) continue;
+            await this.prisma.urun.update({
+                where: { id: item.urunId },
+                data: { stokAdedi: { increment: direction * item.adet } }
+            });
+        }
+    }
+
+    /**
      * Updates the payment token for an order.
      * @param {string} id - Order ID.
      * @param {string} token - Payment gateway token.

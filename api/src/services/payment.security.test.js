@@ -144,6 +144,7 @@ describe('OrderService payment completion', () => {
             }),
             getOrderByTrackingToken: vi.fn(async () => order),
             cancelOrder: vi.fn(async () => {}),
+            adjustStock: vi.fn(async () => {}),
         };
         payments = { verifyCallback: vi.fn(), cancelPayment: vi.fn(async () => ({ status: 'success' })) };
         email = {
@@ -160,6 +161,7 @@ describe('OrderService payment completion', () => {
         expect(result.status).toBe('success');
         expect(repo.markOrderPaid).toHaveBeenCalledWith('order-1', 'iyzico-555');
         expect(email.sendOrderConfirmation).toHaveBeenCalledTimes(1);
+        expect(repo.adjustStock).toHaveBeenCalledWith(order.kalemler, -1);
     });
 
     it('acknowledges a replayed callback without new side effects', async () => {
@@ -169,6 +171,7 @@ describe('OrderService payment completion', () => {
         expect(replay.status).toBe('success');
         expect(repo.markOrderPaid).toHaveBeenCalledTimes(1);
         expect(email.sendOrderConfirmation).toHaveBeenCalledTimes(1);
+        expect(repo.adjustStock).toHaveBeenCalledTimes(1);
         expect(payments.cancelPayment).not.toHaveBeenCalled();
     });
 
@@ -216,6 +219,7 @@ describe('OrderService payment completion', () => {
         await service.cancelOrder('track-1', 'changed my mind');
         expect(payments.cancelPayment).toHaveBeenCalledWith('paytr-123456', 'changed my mind', 250);
         expect(repo.cancelOrder).toHaveBeenCalledWith('order-1', { refunded: true });
+        expect(repo.adjustStock).toHaveBeenCalledWith(order.kalemler, 1);
     });
 
     it('keeps a paid order when the refund fails', async () => {

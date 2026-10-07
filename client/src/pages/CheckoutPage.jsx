@@ -348,7 +348,7 @@ export function CheckoutPage() {
 
         } catch (error) {
             console.error('Checkout error:', error.response ? error.response.data : error);
-            alert('Ödeme hatası: ' + (error.response?.data?.errorMessage || error.message || 'Bilinmeyen hata.'));
+            alert('Ödeme hatası: ' + (error.response?.data?.errorMessage || error.response?.data?.error || error.message || 'Bilinmeyen hata.'));
         } finally {
             setLoading(false); // Keep loading false if error
         }
