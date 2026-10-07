@@ -1,6 +1,28 @@
 import { asyncHandler } from '../utils/asyncHandler.js';
 
 /**
+ * Checks the numeric product fields an admin sends. A negative or non-numeric price would flow
+ * into order totals and payment amounts, so it is rejected instead of stored.
+ * @param {Object} data - Parsed product fields (only the ones present are checked).
+ * @returns {string|null} Error message, or null if valid.
+ */
+export function validateProductNumbers(data) {
+    if ('fiyat' in data && !(Number.isFinite(data.fiyat) && data.fiyat > 0)) {
+        return 'Fiyat sıfırdan büyük bir sayı olmalıdır.';
+    }
+    if ('indirimliFiyat' in data && data.indirimliFiyat !== null && !(Number.isFinite(data.indirimliFiyat) && data.indirimliFiyat > 0)) {
+        return 'İndirimli fiyat sıfırdan büyük bir sayı olmalıdır.';
+    }
+    if ('stokAdedi' in data && !(Number.isInteger(data.stokAdedi) && data.stokAdedi >= 0)) {
+        return 'Stok adedi sıfır veya pozitif bir tam sayı olmalıdır.';
+    }
+    if ('agirlik' in data && !(Number.isFinite(data.agirlik) && data.agirlik > 0)) {
+        return 'Ağırlık sıfırdan büyük bir sayı olmalıdır.';
+    }
+    return null;
+}
+
+/**
  * Ürün HTTP isteklerini yöneten Controller.
  * ProductController
  */
@@ -45,7 +67,8 @@ export class ProductController {
         const { id } = req.params;
         const product = await this.productService.getProductById(id);
 
-        if (!product) {
+        // Inactive products are drafts or withdrawn; only the admin API shows them.
+        if (!product || product.aktif === false) {
             return res.status(404).json({ error: 'Ürün bulunamadı' });
         }
 
@@ -68,7 +91,7 @@ export class ProductController {
         const { slug } = req.params;
         const product = await this.productService.getProductBySlug(slug);
 
-        if (!product) {
+        if (!product || product.aktif === false) {
             return res.status(404).json({ error: 'Ürün bulunamadı' });
         }
 
@@ -101,7 +124,7 @@ export class ProductController {
             .replace(/[^a-z0-9]+/g, '-')
             .replace(/(^-|-$)/g, '');
 
-        const product = await this.productService.createProduct({
+        const data = {
             ad: body.ad,
             slug: slug,
             fiyat: parseFloat(body.fiyat),
@@ -122,8 +145,14 @@ export class ProductController {
             varyantBasligi: body.varyantBasligi || null,
             kategoriId: body.kategoriId || null,
             markaId: body.markaId || null
-        });
+        };
 
+        const invalid = validateProductNumbers(data);
+        if (invalid) {
+            return res.status(400).json({ status: 'error', errorMessage: invalid });
+        }
+
+        const product = await this.productService.createProduct(data);
         res.json({ status: 'success', data: product });
     });
 
@@ -161,6 +190,11 @@ export class ProductController {
         if (body.varyantBasligi !== undefined) data.varyantBasligi = body.varyantBasligi;
         if (body.kategoriId !== undefined) data.kategoriId = body.kategoriId || null;
         if (body.markaId !== undefined) data.markaId = body.markaId || null;
+
+        const invalid = validateProductNumbers(data);
+        if (invalid) {
+            return res.status(400).json({ status: 'error', errorMessage: invalid });
+        }
 
         const product = await this.productService.updateProduct(id, data);
         res.json({ status: 'success', data: product });
