@@ -19,6 +19,7 @@ This project adheres to [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 ### Changed
 - Major dependency upgrades: Prisma 5 → 7 (the generated client is no longer committed; `predev`/`pretest` run `prisma generate`), Tailwind CSS 3 → 4, React 18 → 19, ESLint 8 → 10 (flat config), vitest 4 → 5, i18next 25 → 26, react-i18next 16 → 17, concurrently 8 → 10
 - `npm audit` for the API needs `overrides` for two transitive dependencies of the Prisma CLI (`deepmerge-ts`, `mysql2`); remove them when Prisma ships fixed versions
+- The root `package.json` overrides `shell-quote` (pinned to 1.9.0 by `concurrently`, GHSA-pqg4-j6r4-53mv); remove the override when `concurrently` ships a fixed version
 
 ### Fixed
 - `GET /api/v1/settings` returned 500 and order status history could not be written, because the D1 schema had drifted from the Prisma schema
