@@ -14,9 +14,12 @@
  * @property {function(order: Object, basketItems: Array, buyer: Object): Promise<Object>} startPaymentProcess
  *   Initiates a 3D Secure payment. Returns an object containing at minimum { status, ucdHtml }.
  * @property {function(callbackData: Object): Promise<Object>|Object} verifyCallback
- *   Verifies the gateway's callback payload. Returns { status, paymentId, siparisNumarasi, ... }.
- * @property {function(paymentId: string, reason: string): Promise<Object>} cancelPayment
- *   Cancels or refunds a completed payment. Returns { status, message }.
+ *   Verifies the gateway's callback payload. Returns { status, paymentId, siparisNumarasi, amount, ... }.
+ *   `siparisNumarasi` and `amount` must come from data the gateway vouches for (a signature or a
+ *   server-to-server confirmation), never from unsigned fields of the browser POST. A provider whose
+ *   amount was fixed by a signed request at initiation returns `amountBoundAtInit: true` instead.
+ * @property {function(paymentId: string, reason: string, amount: number): Promise<Object>} cancelPayment
+ *   Cancels or fully refunds a completed payment. Returns { status, message }.
  * @property {function(bin: string, amount: number): Promise<Array>} getInstallmentOptions
  *   Returns available installment plans for a card BIN. Returns empty array if not supported.
  */
@@ -104,18 +107,45 @@ export class PaymentService {
     }
 
     /**
-     * Cancels or refunds a completed payment transaction.
+     * Builds the payment reference stored on the order (`odemeId`). The provider prefix keeps
+     * refunds routed to the gateway that took the payment, even if PAYMENT_PROVIDER changes later.
      *
-     * @param {string} paymentId  - Provider-specific payment reference ID.
-     * @param {string} reason     - Human-readable cancellation reason.
-     * @param {string} [provider] - Explicit provider override (useful when order history holds provider info).
+     * @param {string} provider  - 'iyzico' | 'param' | 'paytr'.
+     * @param {string} paymentId - Provider-specific payment reference.
+     * @returns {string} e.g. 'iyzico-12345678'.
+     */
+    static paymentReference(provider, paymentId) {
+        return `${provider}-${paymentId}`;
+    }
+
+    /**
+     * Splits a stored payment reference into provider and provider-specific id.
+     * References without a known prefix are attributed to the active provider.
+     *
+     * @param {string} reference - Value of `odemeId`.
+     * @returns {{ provider: string, paymentId: string }}
+     */
+    parsePaymentReference(reference) {
+        const match = /^(iyzico|param|paytr)-(.+)$/.exec(reference || '');
+        if (match) {
+            return { provider: match[1], paymentId: match[2] };
+        }
+        return { provider: this.getProvider(), paymentId: reference };
+    }
+
+    /**
+     * Cancels or fully refunds a completed payment transaction.
+     *
+     * @param {string} reference - Stored payment reference (`odemeId`, provider-prefixed).
+     * @param {string} reason    - Human-readable cancellation reason.
+     * @param {number} amount    - Amount that was charged, in TRY (PayTR needs it for a full refund).
      * @returns {Promise<Object>} Refund result: { status, message }.
      */
-    async cancelPayment(paymentId, reason, provider) {
-        const activeProvider = provider || this.getProvider();
-        const service = this._getService(activeProvider);
-        console.log('[PaymentService] Cancelling payment — provider: %s', activeProvider);
-        return service.cancelPayment(paymentId, reason);
+    async cancelPayment(reference, reason, amount) {
+        const { provider, paymentId } = this.parsePaymentReference(reference);
+        const service = this._getService(provider);
+        console.log('[PaymentService] Cancelling payment — provider: %s', provider);
+        return service.cancelPayment(paymentId, reason, amount);
     }
 
     /**

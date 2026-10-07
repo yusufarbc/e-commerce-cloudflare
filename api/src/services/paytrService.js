@@ -1,5 +1,6 @@
 import crypto from 'node:crypto';
 import { escapeMarkup } from '../utils/escape.js';
+import { timingSafeEqual } from '../utils/timingSafeEqual.js';
 
 /**
  * PaytrService — PayTR Payment Gateway Integration
@@ -213,11 +214,21 @@ export class PaytrService {
         const merchantKey = this.config.merchantKey;
         const merchantSalt = this.config.merchantSalt;
 
+        // With PayTR unconfigured the key and salt are empty strings, and anyone can compute an
+        // HMAC under an empty key, so an unconfigured provider must reject every notification.
+        if (!merchantKey || !merchantSalt || typeof hash !== 'string') {
+            return {
+                status: 'failure',
+                errorMessage: 'PayTR yapılandırılmamış veya imza eksik.',
+                siparisNumarasi: merchantOid
+            };
+        }
+
         // payload = merchant_oid + merchant_salt + status + total_amount
         const payload = merchantOid + merchantSalt + status + totalAmount;
         const computedHash = this._computeHmac(payload, merchantKey);
 
-        if (computedHash !== hash) {
+        if (!timingSafeEqual(computedHash, hash)) {
             console.error('[PayTR] Callback signature mismatch!');
             return {
                 status: 'failure',
@@ -239,7 +250,7 @@ export class PaytrService {
 
         return {
             status: 'success',
-            paymentId: `paytr-${merchantOid}`,
+            paymentId: merchantOid,
             siparisNumarasi: merchantOid,
             amount: amountDecimal,
             rawResult: callbackData
@@ -249,36 +260,34 @@ export class PaytrService {
     /**
      * Initiates a full refund for a PayTR transaction via /odeme/api/iade.
      *
-     * PayTR payment IDs are stored with a 'paytr-' prefix; this prefix is stripped
-     * before sending to the API. Refund amount is set to '0.00' to indicate a full refund.
+     * PayTR has no "refund everything" shortcut: `return_amount` must be the amount to refund,
+     * and the token signs merchant_id + merchant_oid + return_amount + merchant_salt.
      *
-     * @param {string} paymentId - Payment ID (prefixed with 'paytr-').
-     * @param {string} reason    - Human-readable refund reason (logged only).
+     * @param {string} merchantOid - PayTR merchant_oid (our order number).
+     * @param {string} reason      - Human-readable refund reason (logged only).
+     * @param {number} amount      - Charged amount in TRY.
      * @returns {Promise<Object>} { status: 'success', paymentId, message }
-     * @throws {Error} If PayTR API returns a non-success response.
+     * @throws {Error} If the amount is missing or PayTR API returns a non-success response.
      */
-    async cancelPayment(paymentId, reason) {
-        console.log('[PayTR] Refunding payment %s, Reason: %s', paymentId, reason);
+    async cancelPayment(merchantOid, reason, amount) {
+        console.log('[PayTR] Refunding payment %s, Reason: %s', merchantOid, reason);
 
-        const merchantOid = paymentId.replace(/^paytr-/, '');
+        if (!(Number(amount) > 0)) {
+            throw new Error('PayTR iadesi için tutar gereklidir.');
+        }
+
         const merchantId = this.config.merchantId;
         const merchantKey = this.config.merchantKey;
         const merchantSalt = this.config.merchantSalt;
         const baseUrl = this.config.baseUrl || 'https://www.paytr.com';
+        const returnAmount = Number(amount).toFixed(2);
 
-        // Retrieve order details to get total price if needed
-        // For PayTR refund api, we call `/odeme/api/iade`
-        // We will assume full refund, which needs transaction amount.
-        // PayTR requires amount in decimal format (e.g. 10.50).
-        // Since we don't have the original order here, we require caller to provide refund details or query database.
-        // Let's calculate standard payload.
-        
-        const paytrToken = this._computeHmac(merchantId + merchantOid + '0.00' + merchantSalt, merchantKey);
+        const paytrToken = this._computeHmac(merchantId + merchantOid + returnAmount + merchantSalt, merchantKey);
 
         const payload = new URLSearchParams({
             merchant_id: merchantId,
             merchant_oid: merchantOid,
-            refund_amount: '0.00', // 0.00 means full refund in some systems or it requires exact amount
+            return_amount: returnAmount,
             paytr_token: paytrToken
         });
 
@@ -302,7 +311,7 @@ export class PaytrService {
 
         return {
             status: 'success',
-            paymentId: paymentId,
+            paymentId: merchantOid,
             message: 'PayTR iade işlemi onaylandı.'
         };
     }

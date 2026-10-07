@@ -1,4 +1,5 @@
 import { escapeMarkup } from '../utils/escape.js';
+import { timingSafeEqual } from '../utils/timingSafeEqual.js';
 
 /**
  * ParamService — Param POS Payment Gateway Integration
@@ -234,53 +235,133 @@ export class ParamService {
     }
 
     /**
-     * Verifies the 3D Secure callback POST data received from Param.
+     * Base64 SHA-1 digest, the format Param uses for its hashes.
      *
-     * Param sends mdStatus='1' for a successful 3D authentication.
-     * All other mdStatus values indicate failure or cancellation.
+     * @param {string} data - String to hash.
+     * @returns {Promise<string>} Base64-encoded SHA-1 digest.
+     * @private
+     */
+    async _sha1Base64(data) {
+        const digest = await crypto.subtle.digest('SHA-1', new TextEncoder().encode(data));
+        return btoa(String.fromCharCode(...new Uint8Array(digest)));
+    }
+
+    /**
+     * Verifies the 3D Secure callback and completes the payment with TP_WMD_Pay.
+     *
+     * The callback is a browser POST, so none of its fields can be trusted on their own:
+     *   1. `islemHash` must equal Base64(SHA1(islemGUID + md + mdStatus + orderId + GUID lowercased)).
+     *      The merchant GUID is secret, so this binds `orderId` to Param's transaction.
+     *   2. With Param's 3D model the card is not charged until TP_WMD_Pay is called. The payment
+     *      counts as successful only if Param answers that server-to-server call with a receipt.
+     * The amount was fixed by the signed TP_WMD_UCD request built from the order total, so the
+     * result carries `amountBoundAtInit` instead of an amount read from the callback.
      *
      * @param {Object} callbackData            - POST body from Param's browser redirect.
+     * @param {string} callbackData.md         - 3D Secure session data, passed back to TP_WMD_Pay.
      * @param {string} callbackData.mdStatus   - 3D Secure result code ('1' = success).
-     * @param {string} callbackData.orderId    - Order reference number.
-     * @param {string} callbackData.islemGUID  - Param transaction GUID (used as paymentId).
-     * @returns {Object} { status, paymentId?, siparisNumarasi, errorMessage?, amount?, rawResult }
+     * @param {string} callbackData.orderId    - Order reference number (Siparis_ID).
+     * @param {string} callbackData.islemGUID  - Param transaction GUID.
+     * @param {string} callbackData.islemHash  - Param's hash over the fields above.
+     * @returns {Promise<Object>} { status, paymentId?, siparisNumarasi, errorMessage?, amountBoundAtInit? }
      */
-    verifyCallback(callbackData) {
-        console.log('[Param] Verifying callback:', callbackData);
+    async verifyCallback(callbackData) {
+        console.log('[Param] Verifying callback for order %s', callbackData.orderId);
 
-        const mdStatus        = callbackData.mdStatus || callbackData.md_status;
-        const isSuccess       = mdStatus === '1';
-        const siparisNumarasi = callbackData.orderId || callbackData.siparis_id || callbackData.Siparis_ID;
+        const { md, mdStatus, orderId, islemGUID, islemHash } = callbackData;
+        const failure = (errorMessage) => ({ status: 'failure', errorMessage, siparisNumarasi: orderId });
 
-        if (!isSuccess) {
-            return {
-                status:        'failure',
-                errorCode:     mdStatus,
-                errorMessage:  callbackData.md_errormessage || 'Ödeme doğrulaması başarısız.',
-                siparisNumarasi
-            };
+        if (!md || !mdStatus || !orderId || !islemGUID || !islemHash || !this.config.guid) {
+            return failure('Ödeme doğrulaması başarısız.');
+        }
+
+        const expectedHash = await this._sha1Base64(
+            `${islemGUID}${md}${mdStatus}${orderId}${this.config.guid.toLowerCase()}`
+        );
+        if (!timingSafeEqual(expectedHash, islemHash)) {
+            console.error('[Param] Callback hash mismatch for order %s', orderId);
+            return failure('Geçersiz ödeme doğrulama imzası.');
+        }
+
+        if (mdStatus !== '1') {
+            return failure(callbackData.md_errormessage || 'Ödeme doğrulaması başarısız.');
+        }
+
+        const bodyContent = `
+    <TP_WMD_Pay xmlns="https://turkpos.com.tr/">
+      <G>
+        <CLIENT_CODE>${this.config.clientCode}</CLIENT_CODE>
+        <CLIENT_USERNAME>${this.config.clientUsername}</CLIENT_USERNAME>
+        <CLIENT_PASSWORD>${this.config.clientPassword}</CLIENT_PASSWORD>
+      </G>
+      <GUID>${this.config.guid}</GUID>
+      <UCD_MD>${escapeMarkup(md)}</UCD_MD>
+      <Islem_GUID>${escapeMarkup(islemGUID)}</Islem_GUID>
+      <Siparis_ID>${escapeMarkup(orderId)}</Siparis_ID>
+    </TP_WMD_Pay>`;
+
+        let responseXml;
+        try {
+            responseXml = await this._sendSoapRequest('TP_WMD_Pay', bodyContent);
+        } catch (error) {
+            console.error('[Param] TP_WMD_Pay failed:', error);
+            return failure('Ödeme tamamlanamadı.');
+        }
+
+        const sonuc    = Number(this._extractTag(responseXml, 'Sonuc'));
+        const sonucAck = this._extractTag(responseXml, 'Sonuc_Ack') || this._extractTag(responseXml, 'Sonuc_Str');
+        const dekontId = this._extractTag(responseXml, 'Dekont_ID');
+
+        if (!(sonuc > 0) || !dekontId || !(Number(dekontId) > 0)) {
+            return failure(sonucAck || 'Ödeme tamamlanamadı.');
         }
 
         return {
-            status:         'success',
-            paymentId:      callbackData.islemGUID || callbackData.dekont_id || callbackData.Dekont_ID,
-            siparisNumarasi,
-            amount:         callbackData.transactionAmount || callbackData.islem_tutar || callbackData.Islem_Tutar,
-            rawResult:      callbackData
+            status:            'success',
+            paymentId:         dekontId,
+            siparisNumarasi:   orderId,
+            amountBoundAtInit: true
         };
     }
 
     /**
      * Cancels or refunds a Param POS transaction via the TP_Islem_Iptal_Iade SOAP action.
      *
+     * A same-day transaction can be voided ('IPTAL'); once the batch is closed Param only
+     * accepts a refund ('IADE') with the amount, so a failed void falls back to a full refund.
+     *
      * @param {string} dekontId - Param Dekont_ID (receipt ID) of the transaction to cancel.
      * @param {string} reason   - Human-readable cancellation reason (logged only; not sent to Param).
+     * @param {number} [amount] - Charged amount in TRY, required for the refund fallback.
      * @returns {Promise<Object>} { status: 'success', dekontId, message }
-     * @throws {Error} If Param returns a non-success result code.
+     * @throws {Error} If Param rejects both the void and the refund.
      */
-    async cancelPayment(dekontId, reason) {
+    async cancelPayment(dekontId, reason, amount) {
         console.log('[Param] Cancelling payment %s — reason: %s', dekontId, reason);
 
+        try {
+            await this._cancelOrRefund('IPTAL', dekontId, '');
+            return { status: 'success', dekontId, message: 'Payment successfully cancelled.' };
+        } catch (voidError) {
+            if (amount === undefined || amount === null) {
+                throw voidError;
+            }
+            console.warn('[Param] Void failed (%s), trying a refund', voidError.message);
+            await this._cancelOrRefund('IADE', dekontId, this._formatAmount(amount));
+            return { status: 'success', dekontId, message: 'Payment successfully refunded.' };
+        }
+    }
+
+    /**
+     * Sends one TP_Islem_Iptal_Iade request.
+     *
+     * @param {'IPTAL'|'IADE'} durum - Void or refund.
+     * @param {string} dekontId      - Param Dekont_ID.
+     * @param {string} tutar         - Amount with comma decimal separator; empty for a void.
+     * @throws {Error} If Param returns a non-success result code.
+     * @private
+     */
+    async _cancelOrRefund(durum, dekontId, tutar) {
         const bodyContent = `
     <TP_Islem_Iptal_Iade xmlns="https://turkpos.com.tr/">
       <G>
@@ -289,10 +370,10 @@ export class ParamService {
         <CLIENT_PASSWORD>${this.config.clientPassword}</CLIENT_PASSWORD>
       </G>
       <GUID>${this.config.guid}</GUID>
-      <Durum>IPTAL</Durum>
+      <Durum>${durum}</Durum>
       <Siparis_ID></Siparis_ID>
-      <Dekont_ID>${dekontId}</Dekont_ID>
-      <Tutar></Tutar>
+      <Dekont_ID>${escapeMarkup(dekontId)}</Dekont_ID>
+      <Tutar>${tutar}</Tutar>
     </TP_Islem_Iptal_Iade>`;
 
         const responseXml = await this._sendSoapRequest('TP_Islem_Iptal_Iade', bodyContent);
@@ -303,12 +384,6 @@ export class ParamService {
         if (sonuc !== '1') {
             throw new Error(sonucStr || 'İptal işlemi başarısız.');
         }
-
-        return {
-            status:   'success',
-            dekontId: dekontId,
-            message:  'Payment successfully cancelled.'
-        };
     }
 
     /**
