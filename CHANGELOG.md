@@ -8,6 +8,10 @@ This project adheres to [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ## [Unreleased]
 
+---
+
+## [1.2.0] — 2026-10-07
+
 ### Added
 - Optional Resend e-mail provider (`EMAIL_PROVIDER = "resend"`)
 - Migration `0005_schema_sync.sql` and a test that compares the migrations with the Prisma schema
