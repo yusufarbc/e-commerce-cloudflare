@@ -11,18 +11,18 @@ function clientError(message) {
 
 /**
  * Ten-digit order number, first digit non-zero, from crypto.getRandomValues.
- * Bytes are rejection-sampled (kept only below 250, or 225 for the first digit) and divided by 25,
- * so every digit is uniformly distributed.
+ * Each random byte gives two uniformly distributed hex digits; keeping only the decimal ones
+ * (1-9 for the first) leaves every digit equally likely, with no modulo or division bias.
  */
 export function generateOrderNumber() {
     let value = '';
     while (value.length < 10) {
         for (const byte of crypto.getRandomValues(new Uint8Array(16))) {
-            const limit = value.length === 0 ? 225 : 250;
-            if (byte >= limit) continue;
-            const digit = Math.floor(byte / 25) + (value.length === 0 ? 1 : 0);
-            value += String(digit);
-            if (value.length === 10) break;
+            for (const hex of byte.toString(16).padStart(2, '0')) {
+                if (value.length < 10 && (value.length === 0 ? /[1-9]/ : /[0-9]/).test(hex)) {
+                    value += hex;
+                }
+            }
         }
     }
     return value;
