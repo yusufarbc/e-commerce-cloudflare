@@ -9,12 +9,21 @@ function clientError(message) {
     return error;
 }
 
-/** Ten-digit order number, first digit non-zero, from crypto.getRandomValues. */
+/**
+ * Ten-digit order number, first digit non-zero, from crypto.getRandomValues.
+ * Bytes are rejection-sampled (kept only below 250, or 225 for the first digit) and divided by 25,
+ * so every digit is uniformly distributed.
+ */
 export function generateOrderNumber() {
-    const digits = crypto.getRandomValues(new Uint8Array(10));
-    let value = String(1 + (digits[0] % 9));
-    for (let i = 1; i < digits.length; i++) {
-        value += String(digits[i] % 10);
+    let value = '';
+    while (value.length < 10) {
+        for (const byte of crypto.getRandomValues(new Uint8Array(16))) {
+            const limit = value.length === 0 ? 225 : 250;
+            if (byte >= limit) continue;
+            const digit = Math.floor(byte / 25) + (value.length === 0 ? 1 : 0);
+            value += String(digit);
+            if (value.length === 10) break;
+        }
     }
     return value;
 }
