@@ -4,6 +4,6 @@ import { adapt } from '../utils/honoAdapter.js';
 
 const router = new Hono();
 
-router.get('/', adapt(settingsController.getSettings));
+router.get('/', adapt(settingsController.getPublicSettings));
 
 export default router;
