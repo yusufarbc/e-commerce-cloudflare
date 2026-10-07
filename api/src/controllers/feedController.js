@@ -1,5 +1,6 @@
 import { config } from '../config.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
+import { timingSafeEqual } from '../utils/timingSafeEqual.js';
 
 /**
  * Google Shopping Feed Controller
@@ -64,7 +65,7 @@ export class FeedController {
         const token = req.query.token;
         const secretToken = settings?.googleMerchantToken || config.googleMerchantToken;
 
-        if (secretToken && token !== secretToken) {
+        if (secretToken && !timingSafeEqual(secretToken, token)) {
             return res.status(401).send('Unauthorized: Invalid or missing feed token');
         }
 
@@ -216,7 +217,8 @@ export class FeedController {
 
         // Set proper content type for XML
         res.set('Content-Type', 'application/xml; charset=utf-8');
-        res.set('Cache-Control', 'public, max-age=3600'); // Cache for 1 hour
+        // The URL carries the feed token, so shared caches must not store the response.
+        res.set('Cache-Control', 'private, max-age=3600');
         res.status(200).send(xml);
     });
 
