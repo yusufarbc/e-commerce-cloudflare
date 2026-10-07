@@ -61,22 +61,26 @@ export class OrderRepository extends BaseRepository {
     }
 
     /**
-     * Finalizes the order: marks status as 'HAZIRLANIYOR', payment as 'SUCCESS', and manages inventory/invoicing.
-     * Uses db transaction to ensure atomicity.
-     * 
-     * @param {string} id - Order ID.
-     * @returns {Promise<Object>} The finalized order.
+     * Marks a pending order as paid ('HAZIRLANIYOR', payment 'SUCCESS') and stores the payment reference.
+     *
+     * A single conditional update: only an order still in 'BEKLEMEDE' changes, so concurrent or
+     * replayed gateway callbacks cannot finalize the same order twice.
+     *
+     * @param {string} id      - Order ID.
+     * @param {string} odemeId - Provider-prefixed payment reference (e.g. 'iyzico-123').
+     * @returns {Promise<boolean>} True if this call moved the order to paid.
      */
-    async finalizeOrder(id) {
-        // Mark status as 'HAZIRLANIYOR', payment as 'SUCCESS' and update faturaDurumu
-        return this.model.update({
-            where: { id },
+    async markOrderPaid(id, odemeId) {
+        const { count } = await this.model.updateMany({
+            where: { id, durum: 'BEKLEMEDE' },
             data: {
                 durum: 'HAZIRLANIYOR',
                 odemeDurumu: 'SUCCESS',
+                odemeId,
                 faturaDurumu: 'DUZENLENMEDI' // Invoice to be issued later
             }
         });
+        return count === 1;
     }
 
     /**
@@ -142,12 +146,14 @@ export class OrderRepository extends BaseRepository {
     /**
      * Sets an order status to IPTAL_EDILDI (Canceled).
      * @param {string} id - Order ID.
+     * @param {Object} [options]
+     * @param {boolean} [options.refunded] - The payment was refunded; marks it 'REFUNDED'.
      * @returns {Promise<Object>} The updated order.
      */
-    async cancelOrder(id) {
+    async cancelOrder(id, { refunded = false } = {}) {
         return this.model.update({
             where: { id },
-            data: { durum: 'IPTAL_EDILDI' }
+            data: refunded ? { durum: 'IPTAL_EDILDI', odemeDurumu: 'REFUNDED' } : { durum: 'IPTAL_EDILDI' }
         });
     }
 
