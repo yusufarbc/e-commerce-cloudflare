@@ -1,6 +1,76 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import 'tailwindcss';
+
+@theme {
+  --color-brand-primary: #4f46e5;
+
+  --color-corporate-black: #0f172a;
+
+  --color-action-red: #dc2a12;
+
+  --color-bg-white: #ffffff;
+  --color-bg-soft: #f8fafc;
+
+  --color-text-gray: #64748b;
+  --color-text-main: #0f172a;
+
+  --color-primary-50: #f5f3ff;
+  --color-primary-100: #ede9fe;
+  --color-primary-200: #ddd6fe;
+  --color-primary-300: #c4b5fd;
+  --color-primary-400: #a78bfa;
+  --color-primary-500: #8b5cf6;
+  --color-primary-600: #7c3aed;
+  --color-primary-700: #6d28d9;
+  --color-primary-800: #5b21b6;
+  --color-primary-900: #4c1d95;
+  --color-primary: #4f46e5;
+  --color-primary-foreground: #ffffff;
+
+  --color-secondary-50: #f8fafc;
+  --color-secondary-100: #f1f5f9;
+  --color-secondary-200: #e2e8f0;
+  --color-secondary-300: #cbd5e1;
+  --color-secondary-400: #94a3b8;
+  --color-secondary-500: #64748b;
+  --color-secondary-600: #475569;
+  --color-secondary-700: #334155;
+  --color-secondary-800: #1e293b;
+  --color-secondary-900: #0f172a;
+  --color-secondary: #0f172a;
+  --color-secondary-foreground: #4f46e5;
+
+  --color-neutral-50: #ffffff;
+  --color-neutral-100: #f8fafc;
+  --color-neutral-200: #f1f5f9;
+  --color-neutral-300: #e2e8f0;
+  --color-neutral-400: #cbd5e1;
+  --color-neutral-500: #94a3b8;
+  --color-neutral-600: #64748b;
+  --color-neutral-700: #475569;
+  --color-neutral-800: #334155;
+  --color-neutral-900: #0f172a;
+
+  --font-sans: Outfit, Inter, system-ui, sans-serif;
+  --font-display: Outfit, Roboto, Inter, sans-serif;
+}
+
+/*
+  The default border color has changed to `currentcolor` in Tailwind CSS v4,
+  so we've added these compatibility styles to make sure everything still
+  looks the same as it did with Tailwind CSS v3.
+
+  If we ever want to remove these styles, we need to add an explicit border
+  color utility to any element that depends on these defaults.
+*/
+@layer base {
+  *,
+  ::after,
+  ::before,
+  ::backdrop,
+  ::file-selector-button {
+    border-color: var(--color-gray-200, currentcolor);
+  }
+}
 
 @layer base {
     :root {
@@ -124,6 +194,9 @@
 
 /* ===== Reset & Base Styles ===== */
 /* Note: Tailwind base covers some of this, but we'll reinforce specifically for the demo look */
+/* In @layer base so utility classes (bg-*, h-*, ...) still override these element rules:
+   Tailwind 4 puts utilities in a cascade layer, and unlayered CSS would always win. */
+@layer base {
 html {
     scroll-behavior: smooth;
 }
@@ -156,12 +229,15 @@ button {
 ul {
     list-style: none;
 }
+}
 
 /* ===== Container ===== */
 .container {
     max-width: 1280px;
     margin: 0 auto;
-    padding: 0 var(--spacing-md);
+    /* Horizontal only: the shorthand would also zero the py-* utilities (Tailwind 4 layers
+       utilities below unlayered CSS). */
+    padding-inline: var(--spacing-md);
 }
 
 /* ===== Navigation ===== */
@@ -983,8 +1059,10 @@ ul {
 }
 
 /* Smooth image rendering */
-img {
-    image-rendering: -webkit-optimize-contrast;
+@layer base {
+    img {
+        image-rendering: -webkit-optimize-contrast;
+    }
 }
 
 /* Remove tap highlight on mobile for interactive elements */
@@ -1001,4 +1079,4 @@ button, a, [role="button"] {
     outline: 2px solid #4f46e5;
     outline-offset: 2px;
     border-radius: 4px;
-}
+}

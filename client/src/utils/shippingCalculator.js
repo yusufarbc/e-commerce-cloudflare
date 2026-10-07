@@ -29,8 +29,8 @@ export const calculateShippingFee = ({ cartTotal, totalWeight, settings }) => {
     const ucretsizKargoAltLimit = settings?.ucretsizKargoAltLimit !== undefined ? Number(settings.ucretsizKargoAltLimit) : 5000;
     const weightMultiplier = settings?.kargoAgirlikCarpani > 0 ? Number(settings.kargoAgirlikCarpani) : 15.00;
 
-    let shippingFee = 0;
-    let isFreeShipping = false;
+    let shippingFee;
+    let isFreeShipping;
     let weightError = false;
 
     if (policy === 'UCRETSIZ') {

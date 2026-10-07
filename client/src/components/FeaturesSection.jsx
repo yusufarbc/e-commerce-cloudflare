@@ -10,7 +10,7 @@ export function FeaturesSection() {
                     <div className="group relative bg-white p-8 rounded-3xl shadow-lg hover:shadow-2xl transition-all duration-500 border border-gray-100 hover:border-brand-primary/50 hover:-translate-y-2">
 
                         <div className="relative">
-                            <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-brand-primary to-yellow-600 flex items-center justify-center mb-6 shadow-lg shadow-brand-primary/30 group-hover:scale-110 group-hover:rotate-3 transition-all duration-500">
+                            <div className="w-20 h-20 rounded-2xl bg-linear-to-br from-brand-primary to-yellow-600 flex items-center justify-center mb-6 shadow-lg shadow-brand-primary/30 group-hover:scale-110 group-hover:rotate-3 transition-all duration-500">
                                 <Truck size={36} className="text-white" />
                             </div>
                             <h3 className="text-xl font-black mb-3 text-corporate-black group-hover:text-brand-primary transition-colors">Hızlı Kargo</h3>
@@ -22,7 +22,7 @@ export function FeaturesSection() {
                     <div className="group relative bg-white p-8 rounded-3xl shadow-lg hover:shadow-2xl transition-all duration-500 border border-gray-100 hover:border-brand-primary/50 hover:-translate-y-2">
 
                         <div className="relative">
-                            <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center mb-6 shadow-lg shadow-green-500/30 group-hover:scale-110 group-hover:rotate-3 transition-all duration-500">
+                            <div className="w-20 h-20 rounded-2xl bg-linear-to-br from-green-500 to-emerald-600 flex items-center justify-center mb-6 shadow-lg shadow-green-500/30 group-hover:scale-110 group-hover:rotate-3 transition-all duration-500">
                                 <ShieldCheck size={36} className="text-white" />
                             </div>
                             <h3 className="text-xl font-black mb-3 text-corporate-black group-hover:text-brand-primary transition-colors">Güvenli Ödeme</h3>
@@ -34,7 +34,7 @@ export function FeaturesSection() {
                     <div className="group relative bg-white p-8 rounded-3xl shadow-lg hover:shadow-2xl transition-all duration-500 border border-gray-100 hover:border-brand-primary/50 hover:-translate-y-2">
 
                         <div className="relative">
-                            <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center mb-6 shadow-lg shadow-blue-500/30 group-hover:scale-110 group-hover:rotate-3 transition-all duration-500">
+                            <div className="w-20 h-20 rounded-2xl bg-linear-to-br from-blue-500 to-indigo-600 flex items-center justify-center mb-6 shadow-lg shadow-blue-500/30 group-hover:scale-110 group-hover:rotate-3 transition-all duration-500">
                                 <CreditCard size={36} className="text-white" />
                             </div>
                             <h3 className="text-xl font-black mb-3 text-corporate-black group-hover:text-brand-primary transition-colors">Taksit İmkanı</h3>
@@ -46,7 +46,7 @@ export function FeaturesSection() {
                     <div className="group relative bg-white p-8 rounded-3xl shadow-lg hover:shadow-2xl transition-all duration-500 border border-gray-100 hover:border-brand-primary/50 hover:-translate-y-2">
 
                         <div className="relative">
-                            <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-action-red to-red-600 flex items-center justify-center mb-6 shadow-lg shadow-action-red/30 group-hover:scale-110 group-hover:rotate-3 transition-all duration-500">
+                            <div className="w-20 h-20 rounded-2xl bg-linear-to-br from-action-red to-red-600 flex items-center justify-center mb-6 shadow-lg shadow-action-red/30 group-hover:scale-110 group-hover:rotate-3 transition-all duration-500">
                                 <RotateCcw size={36} className="text-white" />
                             </div>
                             <h3 className="text-xl font-black mb-3 text-corporate-black group-hover:text-brand-primary transition-colors">Kolay İade</h3>

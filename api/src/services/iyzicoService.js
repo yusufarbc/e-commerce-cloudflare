@@ -244,7 +244,10 @@ export class IyzicoService {
      * Verifies an iyzico 3D Secure callback and confirms the payment with iyzico's auth endpoint.
      *
      * iyzico POSTs a callback containing `paymentId`, `conversationId`, and `status`.
-     * We re-confirm with iyzico's `/payment/3dsec/auth` endpoint to prevent tampering.
+     * The callback passes through the buyer's browser, so its fields are untrusted: the payment
+     * is completed with iyzico's `/payment/3dsecure/auth` endpoint, and the order number and
+     * amount are read from that server-to-server response (`basketId`, `paidPrice`), never from
+     * the callback. A forged `conversationId` therefore cannot redirect a payment to another order.
      *
      * @param {Object} callbackData                - POST body from iyzico's 3D callback.
      * @param {string} callbackData.paymentId      - iyzico payment transaction ID.
@@ -283,10 +286,18 @@ export class IyzicoService {
             console.log('[iyzico] Verification API response:', verificationResult);
             
             if (verificationResult.status === 'success') {
+                if (!verificationResult.basketId || !verificationResult.paymentId) {
+                    return {
+                        status: 'failure',
+                        errorMessage: 'Ödeme doğrulama yanıtı eksik.',
+                        siparisNumarasi: conversationId
+                    };
+                }
                 return {
                     status: 'success',
-                    paymentId: verificationResult.paymentId,
-                    siparisNumarasi: conversationId,
+                    paymentId: String(verificationResult.paymentId),
+                    // basketId was set to the order number in the initialize request.
+                    siparisNumarasi: String(verificationResult.basketId),
                     amount: verificationResult.paidPrice,
                     rawResult: verificationResult
                 };
@@ -308,37 +319,37 @@ export class IyzicoService {
     }
 
     /**
-     * Refunds a paid iyzico transaction via the /payment/refund endpoint.
+     * Cancels a paid iyzico payment via the /payment/cancel endpoint (full amount).
      *
-     * Performs a full refund by paymentId. iyzico issues a unique refund conversationId
-     * to correlate the refund request.
+     * iyzico's /payment/refund works per basket item (paymentTransactionId), not per paymentId;
+     * a whole-payment cancel is the operation that takes the paymentId we store on the order.
+     * If iyzico no longer allows a cancel, the refund has to be made from the iyzico panel.
      *
-     * @param {string} paymentId - iyzico payment transaction ID to refund.
-     * @param {string} reason    - Human-readable refund reason (logged only; not sent to iyzico).
+     * @param {string} paymentId - iyzico payment ID.
+     * @param {string} reason    - Human-readable reason (logged only; not sent to iyzico).
      * @returns {Promise<Object>} { status: 'success', paymentId, message }
      * @throws {Error} If iyzico returns a non-success status.
      */
     async cancelPayment(paymentId, reason) {
-        console.log('[iyzico] Refunding payment %s, Reason: %s', paymentId, reason);
+        console.log('[iyzico] Cancelling payment %s, Reason: %s', paymentId, reason);
 
         const payload = {
             locale: 'tr',
-            conversationId: Math.floor(100000 + Math.random() * 900000).toString(),
+            conversationId: crypto.randomUUID(),
             paymentId: paymentId,
             ip: '127.0.0.1'
         };
 
-        // iyzico has refund endpoint
-        const result = await this._request('/payment/refund', 'POST', payload);
+        const result = await this._request('/payment/cancel', 'POST', payload);
 
         if (result.status !== 'success') {
-            throw new Error(result.errorMessage || 'iyzico iade işlemi başarısız.');
+            throw new Error(result.errorMessage || 'iyzico iptal işlemi başarısız.');
         }
 
         return {
             status: 'success',
             paymentId: paymentId,
-            message: 'iyzico iade işlemi onaylandı.'
+            message: 'iyzico iptal işlemi onaylandı.'
         };
     }
 

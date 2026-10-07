@@ -11,16 +11,23 @@
     "seed": "npx --yes wrangler@4.145.0 d1 execute DB --local --file prisma/seed.sql",
     "test": "vitest run",
     "seed:remote": "npx --yes wrangler@4.145.0 d1 execute DB --remote --file prisma/seed.sql",
-    "migrate": "npx --yes wrangler@4.145.0 d1 migrations apply DB --local"
+    "migrate": "npx --yes wrangler@4.145.0 d1 migrations apply DB --local",
+    "generate": "prisma generate",
+    "pretest": "prisma generate",
+    "predev": "prisma generate"
   },
   "dependencies": {
-    "@prisma/adapter-d1": "^5.22.0",
-    "@prisma/client": "^5.22.0",
+    "@prisma/adapter-d1": "^7.10.0",
+    "@prisma/client": "^7.10.0",
     "hono": "^4.13.0",
     "zod": "^4.4.3"
   },
   "devDependencies": {
-    "prisma": "^5.22.0",
-    "vitest": "^4.1.11"
+    "prisma": "^7.10.0",
+    "vitest": "^5.0.3"
+  },
+  "overrides": {
+    "deepmerge-ts": "^8.0.2",
+    "mysql2": "^3.24.5"
   }
 }

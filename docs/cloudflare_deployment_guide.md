@@ -104,8 +104,24 @@ WAF, ücretsiz rate limiting kuralı, Bot Fight Mode ve TLS/HSTS ayarları
 Wrangler ile yönetilemez; panelden bir kez yapılır. Adımlar
 [devsecops_pipeline.md](devsecops_pipeline.md) bölüm 5.3'tedir.
 
-## E-posta için ön koşul
+## E-posta
 
-`EMAIL` (`send_email`) binding'inin sipariş bildirimleri gönderebilmesi için
-zone'da **Email Routing** açık olmalı ve doğrulanmış bir hedef adres
-bulunmalıdır.
+Sipariş onayı, iptal ve yeni sipariş bildirimleri `api/src/services/emailService.js`
+ile gönderilir. Sağlayıcı ortam bazında `EMAIL_PROVIDER` ile seçilir:
+
+| `EMAIL_PROVIDER` | Gönderim yolu | Gerekenler |
+| --- | --- | --- |
+| `cloudflare` (varsayılan) | Workers `send_email` binding'i (`EMAIL`) | Zone'da **Email Routing** açık olmalı ve doğrulanmış bir hedef adres bulunmalı |
+| `resend` | [Resend](https://resend.com) REST API | Gönderen alan adı Resend'de doğrulanmış olmalı; API anahtarı secret olarak verilir |
+
+Resend'e geçmek için:
+
+```bash
+cd api
+npx wrangler secret put RESEND_API_KEY --env production
+```
+
+ardından `api/wrangler.toml` içinde ilgili ortamda `EMAIL_PROVIDER = "resend"`
+yapın. Gönderen ve yanıt adresi her iki sağlayıcıda da `SMTP_SENDER` ve
+`SMTP_REPLY_TO` değişkenlerinden gelir. Gönderim hatası loglanır, ama sipariş
+akışını hiçbir zaman durdurmaz.

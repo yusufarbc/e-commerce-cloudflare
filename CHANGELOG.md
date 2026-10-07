@@ -10,6 +10,32 @@ This project adheres to [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ---
 
+## [1.2.0] — 2026-10-07
+
+### Added
+- Optional Resend e-mail provider (`EMAIL_PROVIDER = "resend"`)
+- Migration `0005_schema_sync.sql` and a test that compares the migrations with the Prisma schema
+
+### Changed
+- Major dependency upgrades: Prisma 5 → 7 (the generated client is no longer committed; `predev`/`pretest` run `prisma generate`), Tailwind CSS 3 → 4, React 18 → 19, ESLint 8 → 10 (flat config), vitest 4 → 5, i18next 25 → 26, react-i18next 16 → 17, concurrently 8 → 10
+- `npm audit` for the API needs `overrides` for two transitive dependencies of the Prisma CLI (`deepmerge-ts`, `mysql2`); remove them when Prisma ships fixed versions
+- The root `package.json` overrides `shell-quote` (pinned to 1.9.0 by `concurrently`, GHSA-pqg4-j6r4-53mv); remove the override when `concurrently` ships a fixed version
+
+### Fixed
+- `GET /api/v1/settings` returned 500 and order status history could not be written, because the D1 schema had drifted from the Prisma schema
+- E-mails sent through the Cloudflare binding were rejected (`invalid message-id`); the messages now carry `Date` and `Message-ID`
+- WhatsApp and Facebook share icons on the product page were invisible (invalid `w-4.5` classes that Tailwind 3 ignored)
+- Cancelling a paid order never refunded it (the payment reference was stored in `odemeTokeni`, the refund read `odemeId`); a paid order is now cancelled only after the gateway confirms the refund
+- iyzico refunds called `/payment/refund` with a payment id, which that endpoint does not accept; they now use `/payment/cancel`. PayTR refunds sent `refund_amount=0.00` instead of `return_amount` with the charged amount. Param falls back from a void to a refund with the amount
+
+### Security
+- Param POS callbacks were accepted on `mdStatus=1` alone, so a forged POST to `/api/v1/payment/callback/param/success` marked any order as paid. The callback hash (`islemHash`) is now verified and the payment is completed server-to-server with `TP_WMD_Pay`
+- The iyzico callback took the order number from the browser-submitted `conversationId`, so a payment for a cheap order could be applied to an expensive one. The order number and amount now come from iyzico's `3dsecure/auth` response (`basketId`, `paidPrice`)
+- With PayTR not configured, notifications were checked against an HMAC with an empty key and salt, which anyone can compute; an unconfigured provider now rejects every notification. Signatures are compared in constant time
+- Paid amounts are compared with the order total, and an order moves from `BEKLEMEDE` to paid in one conditional update. Replayed or concurrent callbacks no longer re-send e-mails or revive cancelled orders; a verified payment that cannot be applied is refunded
+
+---
+
 ## [1.1.0] — 2026-10-02
 
 ### Added

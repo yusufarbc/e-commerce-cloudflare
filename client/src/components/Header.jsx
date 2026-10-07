@@ -73,7 +73,7 @@ export function Header() {
                         </button>
 
                         {/* Logo (Left) */}
-                        <Link to="/" className="flex-shrink-0">
+                        <Link to="/" className="shrink-0">
                             <img
                                 src="/images/logo-light.svg"
                                 alt="E-Market"
@@ -88,7 +88,7 @@ export function Header() {
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
                                 placeholder="Aramak istediğin ürünü yaz, kolayca bul!"
-                                className="w-full bg-slate-50 border border-slate-200 text-corporate-black placeholder-gray-400 px-6 py-3.5 rounded-lg focus:border-indigo-600 focus:bg-white focus:outline-none shadow-sm transition-all"
+                                className="w-full bg-slate-50 border border-slate-200 text-corporate-black placeholder-gray-400 px-6 py-3.5 rounded-lg focus:border-indigo-600 focus:bg-white focus:outline-hidden shadow-xs transition-all"
                             />
                             <button type="submit" className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 p-1 hover:scale-110 transition-transform">
                                 <Search size={24} />
@@ -102,7 +102,7 @@ export function Header() {
                                 onClick={toggleSidebar}
                             >
                                 <div className="absolute inset-0 bg-white/10 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
-                                <ShoppingCart size={20} className="relative z-10 flex-shrink-0" />
+                                <ShoppingCart size={20} className="relative z-10 shrink-0" />
                                 <div className="text-left leading-none relative z-10 flex flex-col justify-center">
                                     <span className="text-[9px] md:text-[10px] font-bold opacity-80 mb-0.5 hidden md:block">Sepetim</span>
                                     <span className="text-xs md:text-sm font-black whitespace-nowrap">{cartCount} Ürün</span>
@@ -157,7 +157,7 @@ export function Header() {
                                                         className="flex items-center gap-4 p-3 rounded-lg hover:bg-gray-50 transition-all text-left group/item border border-transparent hover:border-gray-100"
                                                     >
                                                         {sub.resim && (
-                                                            <div className="w-12 h-12 rounded-lg overflow-hidden border border-gray-100 flex-shrink-0 bg-white">
+                                                            <div className="w-12 h-12 rounded-lg overflow-hidden border border-gray-100 shrink-0 bg-white">
                                                                 <img src={sub.resim} alt={sub.ad} className="w-full h-full object-cover transition-transform group-hover/item:scale-110" />
                                                             </div>
                                                         )}
@@ -183,7 +183,7 @@ export function Header() {
                 <div className="fixed inset-0 z-40 md:hidden">
                     {/* Backdrop */}
                     <div
-                        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+                        className="absolute inset-0 bg-black/50 backdrop-blur-xs"
                         onClick={() => setMobileMenuOpen(false)}
                     />
 
@@ -197,7 +197,7 @@ export function Header() {
                                     value={searchQuery}
                                     onChange={(e) => setSearchQuery(e.target.value)}
                                     placeholder="Ürün ara..."
-                                    className="w-full bg-gray-100 text-corporate-black placeholder-gray-500 px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                    className="w-full bg-gray-100 text-corporate-black placeholder-gray-500 px-4 py-3 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-indigo-500"
                                 />
                                 <button type="submit" className="absolute right-3 top-1/2 -translate-y-1/2 text-corporate-black p-1">
                                     <Search size={20} />

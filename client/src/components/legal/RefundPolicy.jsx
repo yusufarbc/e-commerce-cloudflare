@@ -12,7 +12,7 @@ export function RefundPolicy() {
                 İptal ve İade Koşulları
             </h1>
 
-            <div className="bg-white p-6 md:p-8 rounded-2xl shadow-sm border border-gray-100 space-y-6 text-gray-700 leading-relaxed text-sm">
+            <div className="bg-white p-6 md:p-8 rounded-2xl shadow-xs border border-gray-100 space-y-6 text-gray-700 leading-relaxed text-sm">
 
                 <section>
                     <h2 className="text-lg font-bold text-corporate-black uppercase mb-2">1. İade Süreci</h2>
@@ -36,7 +36,7 @@ export function RefundPolicy() {
                     </p>
                 </section>
 
-                <section className="bg-amber-50 p-6 rounded-xl border border-amber-100 mt-8 shadow-sm">
+                <section className="bg-amber-50 p-6 rounded-xl border border-amber-100 mt-8 shadow-xs">
                     <h2 className="text-lg font-bold text-amber-900 uppercase mb-3 flex items-center gap-2">
                         <AlertCircle size={20} className="text-amber-600" />
                         4. Önemli Bilgilendirme (Kişiye Özel Hazırlanan Ürünler)

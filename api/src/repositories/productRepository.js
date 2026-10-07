@@ -7,7 +7,7 @@ import { BaseRepository } from './baseRepository.js';
 export class ProductRepository extends BaseRepository {
     /**
      * Creates an instance of ProductRepository.
-     * @param {import('@prisma/client').PrismaClient} dbClient - The database client (PrismaClient).
+     * @param {import('../generated/prisma/client.ts').PrismaClient} dbClient - The database client (PrismaClient).
      */
     constructor(dbClient) {
         super(dbClient.urun);
@@ -15,7 +15,7 @@ export class ProductRepository extends BaseRepository {
 
     /**
      * Retrieves all products including their associated category.
-     * @returns {Promise<Array<import('@prisma/client').Urun & { kategori: import('@prisma/client').Kategori }>>} A promise that resolves to an array of products with categories.
+     * @returns {Promise<Array<import('../generated/prisma/client.ts').Urun & { kategori: import('../generated/prisma/client.ts').Kategori }>>} A promise that resolves to an array of products with categories.
      */
     async findAllWithCategories(filters = {}) {
         const where = { aktif: true }; // Only active products by default
@@ -61,7 +61,7 @@ export class ProductRepository extends BaseRepository {
     /**
      * Retrieves a single product by its ID with relations.
      * @param {string} id - The ID of the product.
-     * @returns {Promise<import('@prisma/client').Urun|null>} The product with relations.
+     * @returns {Promise<import('../generated/prisma/client.ts').Urun|null>} The product with relations.
      */
     async findById(id) {
         return this.model.findUnique({
@@ -79,7 +79,7 @@ export class ProductRepository extends BaseRepository {
     /**
      * Retrieves a single product by its Slug with relations.
      * @param {string} slug - The SEO slug of the product.
-     * @returns {Promise<import('@prisma/client').Urun|null>} The product with relations.
+     * @returns {Promise<import('../generated/prisma/client.ts').Urun|null>} The product with relations.
      */
     async findBySlug(slug) {
         return this.model.findUnique({

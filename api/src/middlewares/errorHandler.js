@@ -1,6 +1,6 @@
 import { config } from '../config.js';
 import { ZodError } from 'zod';
-import { Prisma } from '@prisma/client';
+import { Prisma } from '../generated/prisma/client.ts';
 
 /**
  * Global Hata Yakalama Middleware'i (Hono Uyumlu).

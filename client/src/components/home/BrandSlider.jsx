@@ -46,10 +46,10 @@ export function BrandSlider({ brands, selectedBrandId, onSelectBrand }) {
                 {brands.map((brand) => (
                     <button
                         key={brand.id}
-                        className="flex flex-col items-center gap-4 flex-shrink-0 group focus:outline-none"
+                        className="flex flex-col items-center gap-4 shrink-0 group focus:outline-hidden"
                         onClick={() => onSelectBrand(selectedBrandId === brand.id ? null : brand.id)}
                     >
-                        <div className={`w-20 h-20 md:w-30 md:h-30 rounded-full bg-white shadow-2xl flex items-center justify-center p-2 border-[3px] transition-all duration-700 overflow-hidden ${selectedBrandId === brand.id
+                        <div className={`w-20 h-20 rounded-full bg-white shadow-2xl flex items-center justify-center p-2 border-[3px] transition-all duration-700 overflow-hidden ${selectedBrandId === brand.id
                             ? 'border-indigo-600 ring-8 ring-brand-primary/20 scale-110'
                             : 'border-transparent group-hover:border-indigo-600/30 group-hover:scale-105'
                             }`}

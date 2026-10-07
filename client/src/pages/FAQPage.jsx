@@ -106,9 +106,9 @@ function FAQItem({ question, answer }) {
             >
                 <span className="font-semibold text-corporate-black">{question}</span>
                 {isOpen ? (
-                    <ChevronUp size={20} className="text-indigo-600 flex-shrink-0" />
+                    <ChevronUp size={20} className="text-indigo-600 shrink-0" />
                 ) : (
-                    <ChevronDown size={20} className="text-gray-400 flex-shrink-0" />
+                    <ChevronDown size={20} className="text-gray-400 shrink-0" />
                 )}
             </button>
             {isOpen && (
@@ -156,7 +156,7 @@ export function FAQPage() {
                 </div>
 
                 {/* Contact CTA */}
-                <div className="mt-16 p-8 bg-gradient-to-r from-brand-primary/10 to-brand-primary/5 rounded-xl border-2 border-indigo-600">
+                <div className="mt-16 p-8 bg-linear-to-r from-brand-primary/10 to-brand-primary/5 rounded-xl border-2 border-indigo-600">
                     <h3 className="text-2xl font-bold text-corporate-black mb-3">Sorunuzu bulamadınız mı?</h3>
                     <p className="text-gray-600 mb-6">
                         Size yardımcı olmaktan mutluluk duyarız. Müşteri hizmetlerimiz ile iletişime geçin.

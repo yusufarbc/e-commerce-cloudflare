@@ -151,8 +151,9 @@ export class PaymentController {
         try {
             const result = await this.orderService.completePayment(req.body, 'paytr');
 
-            if (result.status === 'success') {
-                // PayTR requires the exact string "OK" — any other response triggers a retry
+            // PayTR requires the exact string "OK" — any other response triggers a retry. A verified
+            // notification that was handled without paying the order (`final`) is acknowledged too.
+            if (result.status === 'success' || result.final) {
                 return res.send('OK');
             }
 

@@ -1,5 +1,6 @@
 import { config } from '../config.js';
 import prisma from '../prisma.js';
+import { PaymentService } from './paymentService.js';
 
 /**
  * Service for managing order processing and checkout operations.
@@ -269,69 +270,110 @@ export class OrderService {
     }
 
     /**
-     * Completes and finalises a payment after a successful 3D Secure gateway callback.
+     * Completes and finalises a payment after a gateway callback.
      *
-     * Verifies the callback with the active provider, finalises the order status,
-     * releases stock holds, and dispatches order confirmation emails.
+     * The provider verifies the callback and reports which order was paid and how much, from data
+     * the gateway vouches for. The order then moves from 'BEKLEMEDE' to 'HAZIRLANIYOR' in one
+     * conditional update, so a replayed or concurrent callback cannot finalize it twice or revive
+     * a cancelled order. A verified payment that cannot be applied (order no longer pending,
+     * already paid by another payment, or underpaid) is refunded.
      *
      * @param {Object} callbackData - Raw callback payload from the payment gateway.
-     * @param {string} [provider]   - Explicit provider identifier ('iyzico', 'param', 'paytr').
-     *                               Falls back to the active PAYMENT_PROVIDER config if omitted.
-     * @returns {Promise<Object>}   { status, orderId, orderNumber, trackingToken } on success,
-     *                             { status: 'failure', errorMessage, orderNumber } on error.
+     * @param {'iyzico'|'param'|'paytr'} provider - Provider whose callback endpoint was called.
+     * @returns {Promise<Object>}   { status: 'success', orderId, orderNumber, trackingToken } when the
+     *                              order is paid (also for a repeated callback of the same payment);
+     *                              { status: 'failure', errorMessage, orderNumber, final? } otherwise.
+     *                              `final` marks a verified callback that was handled and must not be retried.
      */
     async completePayment(callbackData, provider) {
-        try {
-            const result = await this.paymentService.verifyCallback(callbackData, provider);
+        const result = await this.paymentService.verifyCallback(callbackData, provider);
 
-            if (result.status === 'success') {
-                console.log('Completing payment, Order Number:', result.siparisNumarasi);
+        if (result.status !== 'success') {
+            return {
+                status: 'failure',
+                errorMessage: result.errorMessage || 'Payment verification failed.',
+                orderNumber: result.siparisNumarasi
+            };
+        }
 
-                const siparis = await this.orderRepository.getOrderByNumber(result.siparisNumarasi);
+        const siparis = await this.orderRepository.getOrderByNumber(result.siparisNumarasi);
+        if (!siparis) {
+            throw new Error('Order not found for the given payment.');
+        }
 
-                if (!siparis) {
-                    throw new Error('Order not found for the given payment.');
-                }
+        const odemeId = PaymentService.paymentReference(provider, result.paymentId);
+        const paid = {
+            status: 'success',
+            orderId: siparis.id,
+            orderNumber: siparis.siparisNumarasi,
+            trackingToken: siparis.takipTokeni
+        };
 
-                // Update payment transaction token
-                await this.orderRepository.updatePaymentToken(siparis.id, result.paymentId);
+        // Gateways retry notifications (PayTR until it gets "OK"); a payment already recorded on the
+        // order is acknowledged again without side effects (no second e-mail, no second refund).
+        const alreadyRecorded = (order) => (order.odemeDurumu === 'SUCCESS'
+            ? paid
+            : { status: 'failure', errorMessage: 'Order was cancelled.', orderNumber: siparis.siparisNumarasi, final: true });
+        if (siparis.odemeId === odemeId) {
+            return alreadyRecorded(siparis);
+        }
 
-                // Finalize order status and manage inventory
-                await this.orderRepository.finalizeOrder(siparis.id);
+        const rejectWithRefund = async (errorMessage) => {
+            console.error('[Payment] %s Order: %s, payment: %s', errorMessage, siparis.siparisNumarasi, odemeId);
+            await this._refundUnappliedPayment(odemeId, result.amount ?? siparis.toplamTutar, errorMessage);
+            return { status: 'failure', errorMessage, orderNumber: siparis.siparisNumarasi, final: true };
+        };
 
-                // Fetch finalized order details to trigger email dispatches
-                const freshOrder = await this.orderRepository.getOrderById(siparis.id);
+        if (siparis.durum !== 'BEKLEMEDE' || siparis.odemeDurumu === 'SUCCESS') {
+            return rejectWithRefund('Order is no longer awaiting payment.');
+        }
 
-                if (freshOrder) {
-                    // Send customer order confirmation
-                    await this.emailService.sendOrderConfirmation(freshOrder.eposta, freshOrder.ad, {
-                        id: freshOrder.id,
-                        orderNumber: freshOrder.siparisNumarasi,
-                        trackingToken: freshOrder.takipTokeni,
-                        total: freshOrder.toplamTutar,
-                        items: freshOrder.kalemler
-                    });
-
-                    // Send internal new order alert to seller team
-                    await this.emailService.sendSellerNewOrderNotification(freshOrder);
-                }
-
-                return {
-                    status: 'success',
-                    orderId: siparis.id,
-                    orderNumber: siparis.siparisNumarasi,
-                    trackingToken: siparis.takipTokeni
-                };
-            } else {
-                return {
-                    status: 'failure',
-                    errorMessage: result.errorMessage || 'Payment verification failed.',
-                    orderNumber: result.siparisNumarasi
-                };
+        if (!result.amountBoundAtInit) {
+            const amount = Number(result.amount);
+            if (!Number.isFinite(amount) || amount + 0.005 < Number(siparis.toplamTutar)) {
+                return rejectWithRefund('Paid amount does not match the order total.');
             }
+        }
+
+        const claimed = await this.orderRepository.markOrderPaid(siparis.id, odemeId);
+        if (!claimed) {
+            // Another request changed the order between the read and the update.
+            const current = await this.orderRepository.getOrderById(siparis.id);
+            if (current?.odemeId === odemeId) {
+                return alreadyRecorded(current);
+            }
+            return rejectWithRefund('Order is no longer awaiting payment.');
+        }
+
+        const freshOrder = await this.orderRepository.getOrderById(siparis.id);
+        if (freshOrder) {
+            await this.emailService.sendOrderConfirmation(freshOrder.eposta, freshOrder.ad, {
+                id: freshOrder.id,
+                orderNumber: freshOrder.siparisNumarasi,
+                trackingToken: freshOrder.takipTokeni,
+                total: freshOrder.toplamTutar,
+                items: freshOrder.kalemler
+            });
+            await this.emailService.sendSellerNewOrderNotification(freshOrder);
+        }
+
+        return paid;
+    }
+
+    /**
+     * Refunds a verified payment that could not be applied to its order. A failed refund is
+     * logged for manual follow-up; it must not turn the callback into a retry loop.
+     *
+     * @param {string} odemeId - Provider-prefixed payment reference.
+     * @param {number} amount  - Charged amount in TRY.
+     * @param {string} reason  - Why the payment was not applied.
+     * @private
+     */
+    async _refundUnappliedPayment(odemeId, amount, reason) {
+        try {
+            await this.paymentService.cancelPayment(odemeId, reason, Number(amount));
         } catch (error) {
-            console.error('Payment Completion Error:', error);
-            throw error;
+            console.error('[Payment Refund Failed] Manual refund needed for %s:', odemeId, error);
         }
     }
 
@@ -367,21 +409,23 @@ export class OrderService {
 
         let refundStatus = 'NONE';
 
-        if (order.odemeDurumu === 'SUCCESS' && order.odemeId) {
+        // A paid order is cancelled only after the gateway confirms the refund; otherwise the
+        // customer would lose the money and the order would no longer show it.
+        if (order.odemeDurumu === 'SUCCESS') {
+            if (!order.odemeId) {
+                throw new Error('Payment reference is missing; please contact customer support to cancel this order.');
+            }
             try {
-                let provider = this.paymentService.getProvider();
-                if (order.odemeId.startsWith('paytr-')) {
-                    provider = 'paytr';
-                }
-                await this.paymentService.cancelPayment(order.odemeId, reason, provider);
-                refundStatus = 'SUCCESS';
-                console.log('[Payment Refund] Successful, Order: %s', order.siparisNumarasi);
+                await this.paymentService.cancelPayment(order.odemeId, reason, Number(order.toplamTutar));
             } catch (error) {
                 console.error('[Payment Refund Failed] Order: %s', order.siparisNumarasi, error);
+                throw new Error('Refund could not be completed; please contact customer support to cancel this order.');
             }
+            refundStatus = 'SUCCESS';
+            console.log('[Payment Refund] Successful, Order: %s', order.siparisNumarasi);
         }
 
-        await this.orderRepository.cancelOrder(order.id);
+        await this.orderRepository.cancelOrder(order.id, { refunded: refundStatus === 'SUCCESS' });
 
         // Send cancellation email to customer
         if (order.eposta) {

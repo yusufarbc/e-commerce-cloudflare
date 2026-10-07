@@ -13,7 +13,7 @@ export function PreliminaryInfoForm() {
                 Ön Bilgilendirme Formu
             </h1>
 
-            <div className="bg-white p-6 md:p-8 rounded-2xl shadow-sm border border-gray-100 space-y-6 text-gray-700 leading-relaxed text-sm">
+            <div className="bg-white p-6 md:p-8 rounded-2xl shadow-xs border border-gray-100 space-y-6 text-gray-700 leading-relaxed text-sm">
 
                 <section>
                     <h2 className="text-lg font-bold text-corporate-black uppercase mb-2">1. Satıcı Bilgileri</h2>
