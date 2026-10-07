@@ -190,6 +190,9 @@ export function ProductDetailPage() {
     ) : null;
 
     const rawDescription = product?.aciklama || '';
+    // The description is admin-authored HTML; sanitize it before rendering so a pasted
+    // <script> or event handler cannot run in customers' browsers (where card data is entered).
+    const safeDescription = DOMPurify.sanitize(rawDescription);
     const decodedDescription = decodeHtmlEntities(rawDescription);
     const plainDescription = stripHtml(decodedDescription).trim();
     const seoDescription = plainDescription.substring(0, 160) || product?.ad || '';
@@ -614,7 +617,7 @@ export function ProductDetailPage() {
                     <h2 className="text-2xl font-black text-corporate-black mb-8">Açıklama</h2>
                     <div className="prose prose-lg max-w-none">
                         {product.aciklama ? (
-                            <div dangerouslySetInnerHTML={{ __html: product.aciklama }} />
+                            <div dangerouslySetInnerHTML={{ __html: safeDescription }} />
                         ) : (
                             <p className="text-gray-500">Bu ürün için açıklama bulunmuyor.</p>
                         )}

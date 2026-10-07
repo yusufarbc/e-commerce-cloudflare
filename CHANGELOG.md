@@ -8,6 +8,10 @@ This project adheres to [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ## [Unreleased]
 
+---
+
+## [1.3.0] — 2026-10-07
+
 ### Changed
 - Order numbers have 10 digits from a CSPRNG instead of 6 from `Math.random()` (fewer collisions on the unique column, not guessable)
 - Stock is taken out when a payment is confirmed and put back when a paid order is cancelled and refunded
@@ -15,10 +19,14 @@ This project adheres to [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 ### Fixed
 - Checkout accepted inactive or out-of-stock products and silently dropped unknown product ids; these now return 400 with a message the storefront shows
 - Updating only the admin note of a return request reset the order status to `IADE_TALEP_EDILDI`
+- Public product detail (`/products/:id`, by slug) returned inactive products; they now return 404
+- Admin product create/update accepted negative, zero or non-numeric prices, stock and weight; these now return 400
 
 ### Security
 - `GET /api/v1/settings` returned `googleMerchantToken`, the secret that protects the product feed; the public endpoint now leaves it out (the admin endpoint still returns it)
 - Admin image uploads take their type and extension from the file's magic bytes (WebP, JPEG, PNG only, at most 5 MB) instead of the client-supplied name and MIME type, so SVG or HTML cannot be stored on the CDN
+- The product description was rendered with `dangerouslySetInnerHTML` without sanitizing (stored XSS on the storefront, where card data is entered); it now goes through DOMPurify
+- The Google Shopping feed token is compared in constant time, and the feed response is `Cache-Control: private` because its URL carries the token
 
 ---
 
