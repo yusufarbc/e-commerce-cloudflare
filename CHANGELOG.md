@@ -8,6 +8,18 @@ This project adheres to [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ## [Unreleased]
 
+### Changed
+- Order numbers have 10 digits from a CSPRNG instead of 6 from `Math.random()` (fewer collisions on the unique column, not guessable)
+- Stock is taken out when a payment is confirmed and put back when a paid order is cancelled and refunded
+
+### Fixed
+- Checkout accepted inactive or out-of-stock products and silently dropped unknown product ids; these now return 400 with a message the storefront shows
+- Updating only the admin note of a return request reset the order status to `IADE_TALEP_EDILDI`
+
+### Security
+- `GET /api/v1/settings` returned `googleMerchantToken`, the secret that protects the product feed; the public endpoint now leaves it out (the admin endpoint still returns it)
+- Admin image uploads take their type and extension from the file's magic bytes (WebP, JPEG, PNG only, at most 5 MB) instead of the client-supplied name and MIME type, so SVG or HTML cannot be stored on the CDN
+
 ---
 
 ## [1.2.0] — 2026-10-07
