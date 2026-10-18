@@ -20,11 +20,11 @@
     "@prisma/adapter-d1": "^7.10.0",
     "@prisma/client": "^7.10.0",
     "hono": "^4.13.13",
-    "zod": "^4.4.3"
+    "zod": "^4.6.7"
   },
   "devDependencies": {
     "prisma": "^7.10.0",
-    "vitest": "^5.0.3"
+    "vitest": "^5.0.4"
   },
   "overrides": {
     "deepmerge-ts": "^8.0.2",
